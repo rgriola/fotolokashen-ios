@@ -75,6 +75,13 @@ class APIClient {
         // Add body if present
         if let body = body {
             request.httpBody = try encoder.encode(body)
+            
+            // Log request body for debugging
+            if ConfigLoader.shared.enableDebugLogging {
+                if let jsonString = String(data: request.httpBody!, encoding: .utf8) {
+                    print("[APIClient] Request body: \(jsonString)")
+                }
+            }
         }
         
         // Log request

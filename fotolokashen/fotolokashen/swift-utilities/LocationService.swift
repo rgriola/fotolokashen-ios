@@ -26,7 +26,7 @@ class LocationService: ObservableObject {
         type: String,
         latitude: Double,
         longitude: Double,
-        address: String?,
+        address: String,
         photo: UIImage,
         photoLocation: CLLocation?
     ) async throws -> Location {
@@ -43,17 +43,19 @@ class LocationService: ObservableObject {
                 placeId: "photo-\(Date().timeIntervalSince1970)",
                 name: name,
                 address: address,
-                lat: latitude,
-                lng: longitude,
+                latitude: latitude,
+                longitude: longitude,
                 type: type.lowercased(),
                 notes: nil,
                 rating: nil
             )
             
-            let location: Location = try await apiClient.post(
+            let response: CreateLocationResponse = try await apiClient.post(
                 "/api/locations",
                 body: createRequest
             )
+            
+            let location = response.userSave.location
             
             if config.enableDebugLogging {
                 print("[LocationService] Location created with ID: \(location.id)")

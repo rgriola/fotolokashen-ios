@@ -13,7 +13,7 @@ struct Location: Codable, Identifiable {
     let notes: String?
     let rating: Double?
     let createdAt: String
-    let photosCount: Int
+    let photosCount: Int?
     
     /// Coordinate for use with MapKit/Google Maps
     var coordinate: CLLocationCoordinate2D {
@@ -27,7 +27,7 @@ struct Location: Codable, Identifiable {
     
     /// Has photos
     var hasPhotos: Bool {
-        photosCount > 0
+        (photosCount ?? 0) > 0
     }
     
     /// Created date
@@ -93,12 +93,25 @@ extension Location: Hashable {
 struct CreateLocationRequest: Codable {
     let placeId: String
     let name: String
-    let address: String?
-    let lat: Double
-    let lng: Double
+    let address: String
+    let latitude: Double
+    let longitude: Double
     let type: String?
     let notes: String?
     let rating: Double?
+}
+
+// MARK: - Create Location Response
+
+struct CreateLocationResponse: Codable {
+    let userSave: UserSaveResponse
+}
+
+struct UserSaveResponse: Codable {
+    let id: Int
+    let userId: Int
+    let locationId: Int
+    let location: Location
 }
 
 // MARK: - Update Location Request

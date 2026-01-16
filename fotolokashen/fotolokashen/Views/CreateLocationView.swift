@@ -245,13 +245,24 @@ struct CreateLocationView: View {
     private func saveLocation() async {
         guard let location = photoLocation else { return }
         
+        // Ensure we have a valid address - use coordinates as fallback
+        let finalAddress: String
+        if address == "Loading address..." || address == "Address unavailable" || address == "No GPS data" {
+            // Use coordinates as fallback address
+            finalAddress = String(format: "%.6f, %.6f", 
+                                location.coordinate.latitude,
+                                location.coordinate.longitude)
+        } else {
+            finalAddress = address
+        }
+        
         do {
             let createdLoc = try await locationService.createLocation(
                 name: locationName,
                 type: locationType,
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
-                address: address != "Loading address..." && address != "Address unavailable" ? address : nil,
+                address: finalAddress,
                 photo: photo,
                 photoLocation: location
             )
