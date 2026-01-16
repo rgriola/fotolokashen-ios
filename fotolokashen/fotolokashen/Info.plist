@@ -13,5 +13,7 @@
 	</array>
 	<key>GMSApiKey</key>
 	<string>AIzaSyCyODwXXqCiorqErn9bVofWhYtmknwQ3n8</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Fotolokashen would like to save photos to your photo library so you can access them later.</string>
 </dict>
 </plist>

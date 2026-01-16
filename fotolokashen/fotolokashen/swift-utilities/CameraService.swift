@@ -2,6 +2,7 @@ import Foundation
 @preconcurrency import AVFoundation
 import UIKit
 import Combine
+import Photos
 
 /// Camera service for capturing photos
 class CameraService: NSObject, ObservableObject {
@@ -251,6 +252,29 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
             self.capturedImage = image
             print("[CameraService] Photo captured successfully")
             print("[CameraService] Image size: \(image.size)")
+            
+            // Save to photo library
+            self.saveToPhotoLibrary(image: image)
+        }
+    }
+    
+    /// Save image to photo library
+    private func saveToPhotoLibrary(image: UIImage) {
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+            guard status == .authorized else {
+                print("[CameraService] Photo library access not authorized")
+                return
+            }
+            
+            PHPhotoLibrary.shared().performChanges({
+                PHAssetChangeRequest.creationRequestForAsset(from: image)
+            }) { success, error in
+                if success {
+                    print("[CameraService] Photo saved to library")
+                } else if let error = error {
+                    print("[CameraService] Error saving to library: \(error.localizedDescription)")
+                }
+            }
         }
     }
 }
