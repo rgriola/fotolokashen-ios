@@ -63,7 +63,25 @@ struct Location: Codable, Identifiable {
 
 /// Response for fetching multiple locations
 struct LocationsResponse: Codable {
-    let locations: [Location]
+    let locations: [UserSaveWrapper]
+    
+    /// Unwrap the locations from UserSave objects
+    var unwrappedLocations: [Location] {
+        locations.map { $0.location }
+    }
+}
+
+/// Wrapper for UserSave objects returned by GET /api/locations
+struct UserSaveWrapper: Codable {
+    let id: Int
+    let userId: Int
+    let locationId: Int
+    let location: Location
+    let savedAt: String?
+    let color: String?
+    let isFavorite: Bool?
+    let personalRating: Double?
+    let caption: String?
 }
 
 /// Empty response for delete operations

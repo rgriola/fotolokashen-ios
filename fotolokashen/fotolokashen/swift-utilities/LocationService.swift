@@ -111,11 +111,14 @@ class LocationService: ObservableObject {
         do {
             let response: LocationsResponse = try await apiClient.get("/api/locations")
             
+            // Unwrap locations from UserSave objects
+            let locations = response.unwrappedLocations
+            
             if config.enableDebugLogging {
-                print("[LocationService] Fetched \(response.locations.count) locations")
+                print("[LocationService] Fetched \(locations.count) locations")
             }
             
-            return response.locations
+            return locations
         } catch {
             if config.enableDebugLogging {
                 print("[LocationService] Fetch locations failed: \(error)")
