@@ -91,8 +91,35 @@ struct LoginView: View {
 // MARK: - Logged In View
 
 struct LoggedInView: View {
+    init() {
+        // Configure tab bar appearance
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = .white
+        
+        // Set icon colors
+        appearance.stackedLayoutAppearance.normal.iconColor = .black
+        appearance.stackedLayoutAppearance.selected.iconColor = .black
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.black]
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor.black]
+        
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+    
     var body: some View {
-        LocationListView()
+        TabView {
+            LocationListView()
+                .tabItem {
+                    Label("Locations", systemImage: "list.bullet")
+                }
+            
+            MapView()
+                .tabItem {
+                    Label("Map", systemImage: "map")
+                }
+        }
+        .accentColor(.black)
     }
 }
 

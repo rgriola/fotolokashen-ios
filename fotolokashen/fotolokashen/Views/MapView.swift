@@ -68,7 +68,7 @@ struct GoogleMapView: UIViewRepresentable {
         let camera = GMSCameraPosition.camera(
             withLatitude: 40.7128,
             longitude: -74.0060,
-            zoom: 12.0
+            zoom: 18.0  // Street level (15) + 3 steps
         )
         let mapView = GMSMapView()
         mapView.camera = camera
@@ -83,6 +83,8 @@ struct GoogleMapView: UIViewRepresentable {
     }
     
     func updateUIView(_ mapView: GMSMapView, context: Context) {
+        print("[MapView] updateUIView called with \(locations.count) locations")
+        
         // Clear existing markers
         mapView.clear()
         
@@ -90,6 +92,8 @@ struct GoogleMapView: UIViewRepresentable {
         var bounds = GMSCoordinateBounds()
         
         for location in locations {
+            print("[MapView] Adding marker for: \(location.name) at \(location.latitude), \(location.longitude)")
+            
             let marker = GMSMarker()
             marker.position = CLLocationCoordinate2D(
                 latitude: location.latitude,
@@ -104,12 +108,17 @@ struct GoogleMapView: UIViewRepresentable {
             
             marker.map = mapView
             bounds = bounds.includingCoordinate(marker.position)
+            
+            print("[MapView] Marker added successfully")
         }
         
         // Fit map to show all markers
         if locations.count > 0 {
+            print("[MapView] Fitting map to show all \(locations.count) markers")
             let update = GMSCameraUpdate.fit(bounds, withPadding: 50.0)
             mapView.animate(with: update)
+        } else {
+            print("[MapView] No locations to display")
         }
     }
     
