@@ -147,9 +147,9 @@ class AuthService: ObservableObject {
         }
         
         // Get device information
-        let deviceName = await UIDevice.current.name
-        let systemVersion = await UIDevice.current.systemVersion
-        let model = await UIDevice.current.model
+        let deviceName = UIDevice.current.name
+        let systemVersion = UIDevice.current.systemVersion
+        let model = UIDevice.current.model
         let userAgent = "fotolokashen-ios/1.0 (iOS \(systemVersion); \(model))"
         
         let tokenRequest = TokenRequest(
@@ -213,9 +213,9 @@ class AuthService: ObservableObject {
         }
         
         // Get device information
-        let deviceName = await UIDevice.current.name
-        let systemVersion = await UIDevice.current.systemVersion
-        let model = await UIDevice.current.model
+        let deviceName = UIDevice.current.name
+        let systemVersion = UIDevice.current.systemVersion
+        let model = UIDevice.current.model
         let userAgent = "fotolokashen-ios/1.0 (iOS \(systemVersion); \(model))"
         
         let refreshRequest = RefreshTokenRequest(
