@@ -183,14 +183,7 @@ class PhotoUploadService: ObservableObject {
         
         var body = Data()
         
-        // Add file data
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(uploadParams.fileName)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-        body.append(data)
-        body.append("\r\n".data(using: .utf8)!)
-        
-        // Add other fields
+        // Add authentication and metadata fields FIRST
         let fields: [String: String] = [
             "fileName": uploadParams.fileName,
             "signature": uploadParams.signature,
@@ -217,6 +210,13 @@ class PhotoUploadService: ObservableObject {
             body.append(value.data(using: .utf8)!)
             body.append("\r\n".data(using: .utf8)!)
         }
+        
+        // Add file data LAST (ImageKit requires this)
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(uploadParams.fileName)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(data)
+        body.append("\r\n".data(using: .utf8)!)
         
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         request.httpBody = body
