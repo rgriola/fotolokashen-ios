@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Backend Configuration -->
+    <key>backendBaseURL</key>
+    <string>https://fotolokashen.com</string>
+    
+    <!-- Google Maps API Key (iOS) -->
+    <key>googleMapsAPIKey</key>
+    <string>AIzaSyCyODwXXqCiorqErn9bVofWhYtmknwQ3n8</string>
+    
+    <!-- ImageKit Configuration -->
+    <key>imagekitPublicKey</key>
+    <string>public_O/9pxeXVXghCIZD8o8ySi04JvK4=</string>
+    
+    <key>imagekitUrlEndpoint</key>
+    <string>https://ik.imagekit.io/rgriola</string>
+    
+    <!-- OAuth2 Configuration -->
+    <key>oauth</key>
+    <dict>
+        <key>clientId</key>
+        <string>fotolokashen-ios</string>
+        <key>redirectUri</key>
+        <string>fotolokashen://oauth-callback</string>
+        <key>scopes</key>
+        <array>
+            <string>read</string>
+            <string>write</string>
+        </array>
+    </dict>
+    
+    <!-- Image Compression Settings -->
+    <key>imageCompression</key>
+    <dict>
+        <key>maxPhotosPerLocation</key>
+        <integer>20</integer>
+        <key>uploadTargetBytes</key>
+        <integer>1500000</integer>
+        <key>compressionQualityStart</key>
+        <real>0.9</real>
+        <key>compressionQualityFloor</key>
+        <real>0.4</real>
+        <key>compressionMaxDimension</key>
+        <integer>3000</integer>
+    </dict>
+    
+    <!-- Feature Flags -->
+    <key>features</key>
+    <dict>
+        <key>enableOfflineMode</key>
+        <true/>
+        <key>enableDebugLogging</key>
+        <true/>
+    </dict>
+</dict>
+</plist>

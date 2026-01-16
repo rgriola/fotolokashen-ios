@@ -74,3 +74,6 @@ Temporary Items
 *.cer
 *.p12
 *.certSigningRequest
+
+# variables for web app
+.env.*

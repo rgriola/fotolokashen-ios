@@ -99,7 +99,7 @@ let (data, response) = try await URLSession.shared.data(from: url)
 3. Add to `Info.plist`:
 ```xml
 <key>GMSApiKey</key>
-<string>YOUR_API_KEY_HERE</string>
+<string>lLasRyKNGWIp2z4H5fvTXx/is8pF8EpwvCVRVklC1Hk=</string>
 ```
 
 ---
