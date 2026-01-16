@@ -45,7 +45,7 @@ class LocationService: ObservableObject {
                 address: address,
                 latitude: latitude,
                 longitude: longitude,
-                type: type.lowercased(),
+                type: type,  // Keep original case (uppercase) to match web app
                 notes: nil,
                 rating: nil
             )

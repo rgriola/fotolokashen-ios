@@ -12,28 +12,27 @@ struct CreateLocationView: View {
     var onLocationCreated: ((Location) -> Void)?
     
     @State private var locationName = ""
-    @State private var locationType = "Exterior"
+    @State private var locationType = "BROLL"
     @State private var address = "Loading address..."
     @State private var isLoadingAddress = true
     @State private var showingSuccess = false
     @State private var createdLocation: Location?
     
-    // Location types (matching backend)
+    // Location types (matching web app)
     private let locationTypes = [
-        "Exterior",
-        "Interior",
-        "Studio",
-        "Park",
-        "Beach",
-        "Urban",
-        "Rural",
-        "Commercial",
-        "Residential",
-        "Industrial",
-        "Natural",
-        "Historic",
-        "Modern",
-        "Other"
+        "BROLL",
+        "STORY",
+        "INTERVIEW",
+        "LIVE ANCHOR",
+        "REPORTER LIVE",
+        "STAKEOUT",
+        "DRONE",
+        "SCENE",
+        "EVENT",
+        "BATHROOM",
+        "OTHER"
+        // Note: Admin-only types (HQ, BUREAU, REMOTE STAFF, STORAGE) 
+        // should be added based on user role in future
     ]
     
     var body: some View {
