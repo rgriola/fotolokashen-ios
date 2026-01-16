@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import CoreLocation
 
 /// Main view for displaying a list of saved locations
 struct LocationListView: View {
@@ -7,6 +8,7 @@ struct LocationListView: View {
     @StateObject private var viewModel = LocationListViewModel()
     @State private var showingCamera = false
     @State private var showingLogoutConfirmation = false
+    @State private var capturedPhoto: PhotoCapture?
     
     var body: some View {
         NavigationStack {
@@ -42,7 +44,20 @@ struct LocationListView: View {
                 }
             }
             .sheet(isPresented: $showingCamera) {
-                CameraView()
+                CameraView { image, location in
+                    capturedPhoto = PhotoCapture(image: image, location: location)
+                }
+            }
+            .sheet(item: $capturedPhoto) { capture in
+                CreateLocationView(
+                    photo: capture.image,
+                    photoLocation: capture.location
+                ) { location in
+                    // Location created - refresh list
+                    Task {
+                        await viewModel.fetchLocations()
+                    }
+                }
             }
             .refreshable {
                 await viewModel.fetchLocations()
@@ -205,4 +220,12 @@ class LocationListViewModel: ObservableObject {
 
 #Preview {
     LocationListView()
+}
+
+// MARK: - Photo Capture
+
+struct PhotoCapture: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let location: CLLocation?
 }
