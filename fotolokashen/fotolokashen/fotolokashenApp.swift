@@ -6,10 +6,17 @@
 //
 
 import SwiftUI
+import GoogleMaps
 
 @main
 struct fotolokashenApp: App {
     @StateObject private var authService = AuthService()
+    
+    init() {
+        // Initialize Google Maps SDK
+        let config = ConfigLoader.shared
+        GMSServices.provideAPIKey(config.googleMapsAPIKey)
+    }
     
     var body: some Scene {
         WindowGroup {
