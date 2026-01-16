@@ -33,12 +33,35 @@ class AuthService: ObservableObject {
     
     /// Check if user is authenticated
     func checkAuthStatus() {
-        if keychainService.hasValidTokens() {
+        Task {
+            // Check if we have any tokens at all
+            guard keychainService.getRefreshToken() != nil else {
+                isAuthenticated = false
+                currentUser = nil
+                return
+            }
+            
+            // If token is expired or needs refresh, try to refresh it
+            if keychainService.isTokenExpired() || keychainService.needsRefresh() {
+                do {
+                    try await refreshToken()
+                    if config.enableDebugLogging {
+                        print("[AuthService] Token refreshed on app launch")
+                    }
+                } catch {
+                    if config.enableDebugLogging {
+                        print("[AuthService] Token refresh failed on launch: \(error)")
+                    }
+                    isAuthenticated = false
+                    currentUser = nil
+                    try? keychainService.clearTokens()
+                    return
+                }
+            }
+            
+            // Token is valid
             isAuthenticated = true
-            // TODO: Fetch current user from API
-        } else {
-            isAuthenticated = false
-            currentUser = nil
+            // TODO: Fetch current user from API if not cached
         }
     }
     
@@ -164,6 +187,66 @@ class AuthService: ObservableObject {
         codeChallenge = nil
     }
     
+    // MARK: - Token Refresh
+    
+    /// Refresh access token using refresh token
+    func refreshTokenIfNeeded() async throws {
+        // Check if refresh is needed
+        guard keychainService.needsRefresh() else {
+            if config.enableDebugLogging {
+                print("[AuthService] Token still valid, no refresh needed")
+            }
+            return
+        }
+        
+        if config.enableDebugLogging {
+            print("[AuthService] Token needs refresh, refreshing...")
+        }
+        
+        try await refreshToken()
+    }
+    
+    /// Force refresh the access token
+    private func refreshToken() async throws {
+        guard let refreshToken = keychainService.getRefreshToken() else {
+            throw AuthError.noRefreshToken
+        }
+        
+        // Get device information
+        let deviceName = await UIDevice.current.name
+        let systemVersion = await UIDevice.current.systemVersion
+        let model = await UIDevice.current.model
+        let userAgent = "fotolokashen-ios/1.0 (iOS \(systemVersion); \(model))"
+        
+        let refreshRequest = RefreshTokenRequest(
+            grantType: "refresh_token",
+            refreshToken: refreshToken,
+            clientId: config.oauthClientId,
+            deviceName: deviceName,
+            userAgent: userAgent,
+            ipAddress: nil,
+            country: Locale.current.region?.identifier
+        )
+        
+        let tokenResponse: TokenResponse = try await apiClient.post(
+            "/api/auth/oauth/token",
+            body: refreshRequest,
+            authenticated: false
+        )
+        
+        if config.enableDebugLogging {
+            print("[AuthService] Token refreshed successfully")
+        }
+        
+        // Save new tokens
+        let token = OAuthToken(from: tokenResponse)
+        try keychainService.saveToken(token)
+        
+        // Update user info
+        currentUser = tokenResponse.user
+        isAuthenticated = true
+    }
+    
     // MARK: - Logout
     
     /// Logout user
@@ -249,6 +332,26 @@ struct TokenRequest: Codable {
         case codeVerifier = "code_verifier"
         case clientId = "client_id"
         case redirectUri = "redirect_uri"
+        case deviceName = "device_name"
+        case userAgent = "user_agent"
+        case ipAddress = "ip_address"
+        case country
+    }
+}
+
+struct RefreshTokenRequest: Codable {
+    let grantType: String
+    let refreshToken: String
+    let clientId: String
+    let deviceName: String?
+    let userAgent: String?
+    let ipAddress: String?
+    let country: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case grantType = "grant_type"
+        case refreshToken = "refresh_token"
+        case clientId = "client_id"
         case deviceName = "device_name"
         case userAgent = "user_agent"
         case ipAddress = "ip_address"

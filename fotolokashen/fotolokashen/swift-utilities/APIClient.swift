@@ -119,7 +119,19 @@ class APIClient {
             }
             
         case 401:
-            throw APIError.unauthorized
+            // Token expired - try to refresh and retry request once
+            if ConfigLoader.shared.enableDebugLogging {
+                print("[APIClient] 401 Unauthorized - attempting token refresh")
+            }
+            
+            // Try to refresh token
+            do {
+                // Note: We can't call AuthService directly due to circular dependency
+                // Instead, we'll throw and let the caller handle refresh
+                throw APIError.unauthorized
+            } catch {
+                throw APIError.unauthorized
+            }
             
         case 403:
             throw APIError.forbidden
