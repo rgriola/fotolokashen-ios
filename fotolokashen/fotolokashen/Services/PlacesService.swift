@@ -1,125 +1,92 @@
 import Foundation
 import CoreLocation
-import GooglePlaces
 
-/// Service for interacting with Google Places API
+/// Service for reverse geocoding coordinates to addresses
 class PlacesService {
     static let shared = PlacesService()
-    private let placesClient: GMSPlacesClient
     private let config = ConfigLoader.shared
+    private let geocoder = CLGeocoder()
     
-    private init() {
-        placesClient = GMSPlacesClient.shared()
-    }
+    private init() {}
     
-    /// Reverse geocode coordinates to get Place ID and address
+    /// Reverse geocode coordinates to get address and place info
     func reverseGeocode(coordinate: CLLocationCoordinate2D) async throws -> PlaceResult {
         if config.enableDebugLogging {
             print("[PlacesService] Reverse geocoding: \(coordinate.latitude), \(coordinate.longitude)")
         }
         
-        return try await withCheckedThrowingContinuation { continuation in
-            // Use Places API to find nearby places
-            let fields: GMSPlaceField = [.placeID, .name, .formattedAddress, .coordinate]
-            
-            placesClient.findPlaceLikelihoodsFromCurrentLocation(withPlaceFields: fields) { [weak self] (placeLikelihoods, error) in
-                guard let self = self else {
-                    continuation.resume(throwing: PlacesError.unknown)
-                    return
-                }
-                
-                if let error = error {
-                    if self.config.enableDebugLogging {
-                        print("[PlacesService] Error: \(error.localizedDescription)")
-                    }
-                    continuation.resume(throwing: PlacesError.apiError(error.localizedDescription))
-                    return
-                }
-                
-                guard let placeLikelihoods = placeLikelihoods, !placeLikelihoods.isEmpty else {
-                    if self.config.enableDebugLogging {
-                        print("[PlacesService] No places found")
-                    }
-                    continuation.resume(throwing: PlacesError.noPlacesFound)
-                    return
-                }
-                
-                // Get the most likely place
-                if let place = placeLikelihoods.first?.place {
-                    let result = PlaceResult(
-                        placeId: place.placeID ?? "",
-                        name: place.name ?? "",
-                        address: place.formattedAddress ?? "",
-                        coordinate: place.coordinate
-                    )
-                    
-                    if self.config.enableDebugLogging {
-                        print("[PlacesService] Found place: \(result.name)")
-                        print("[PlacesService] Place ID: \(result.placeId)")
-                        print("[PlacesService] Address: \(result.address)")
-                    }
-                    
-                    continuation.resume(returning: result)
-                } else {
-                    continuation.resume(throwing: PlacesError.noPlacesFound)
-                }
-            }
-        }
-    }
-    
-    /// Alternative method using geocoder for fallback
-    func reverseGeocodeWithGeocoder(coordinate: CLLocationCoordinate2D) async throws -> PlaceResult {
-        if config.enableDebugLogging {
-            print("[PlacesService] Using CLGeocoder fallback")
-        }
-        
-        let geocoder = CLGeocoder()
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         
-        return try await withCheckedThrowingContinuation { continuation in
-            geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, error in
-                guard let self = self else {
-                    continuation.resume(throwing: PlacesError.unknown)
-                    return
+        do {
+            let placemarks = try await geocoder.reverseGeocodeLocation(location)
+            
+            guard let placemark = placemarks.first else {
+                if config.enableDebugLogging {
+                    print("[PlacesService] No placemarks found")
                 }
-                
-                if let error = error {
-                    if self.config.enableDebugLogging {
-                        print("[PlacesService] Geocoder error: \(error.localizedDescription)")
-                    }
-                    continuation.resume(throwing: PlacesError.apiError(error.localizedDescription))
-                    return
-                }
-                
-                guard let placemark = placemarks?.first else {
-                    continuation.resume(throwing: PlacesError.noPlacesFound)
-                    return
-                }
-                
-                // Build address from placemark
-                var addressComponents: [String] = []
-                if let street = placemark.thoroughfare { addressComponents.append(street) }
-                if let city = placemark.locality { addressComponents.append(city) }
-                if let state = placemark.administrativeArea { addressComponents.append(state) }
-                if let zip = placemark.postalCode { addressComponents.append(zip) }
-                
-                let address = addressComponents.isEmpty ? 
-                    "\(coordinate.latitude), \(coordinate.longitude)" : 
-                    addressComponents.joined(separator: ", ")
-                
-                let result = PlaceResult(
-                    placeId: "geocoded-\(Int(Date().timeIntervalSince1970))",
-                    name: placemark.name ?? "Unknown Location",
-                    address: address,
-                    coordinate: coordinate
-                )
-                
-                if self.config.enableDebugLogging {
-                    print("[PlacesService] Geocoded address: \(result.address)")
-                }
-                
-                continuation.resume(returning: result)
+                throw PlacesError.noPlacesFound
             }
+            
+            // Build formatted address
+            var addressComponents: [String] = []
+            
+            if let subThoroughfare = placemark.subThoroughfare {
+                addressComponents.append(subThoroughfare)
+            }
+            if let thoroughfare = placemark.thoroughfare {
+                addressComponents.append(thoroughfare)
+            }
+            if let locality = placemark.locality {
+                addressComponents.append(locality)
+            }
+            if let administrativeArea = placemark.administrativeArea {
+                addressComponents.append(administrativeArea)
+            }
+            if let postalCode = placemark.postalCode {
+                addressComponents.append(postalCode)
+            }
+            if let country = placemark.country {
+                addressComponents.append(country)
+            }
+            
+            let formattedAddress = addressComponents.isEmpty ? 
+                "\(coordinate.latitude), \(coordinate.longitude)" : 
+                addressComponents.joined(separator: ", ")
+            
+            // Generate a place ID (for now, use timestamp-based ID)
+            // TODO: Integrate Google Places API for real Place IDs
+            let placeId = "place-\(Int(Date().timeIntervalSince1970))"
+            
+            // Use name or build from address components
+            let name = placemark.name ?? 
+                       placemark.thoroughfare ?? 
+                       placemark.locality ?? 
+                       "Unknown Location"
+            
+            let result = PlaceResult(
+                placeId: placeId,
+                name: name,
+                address: formattedAddress,
+                coordinate: coordinate,
+                locality: placemark.locality,
+                administrativeArea: placemark.administrativeArea,
+                country: placemark.country
+            )
+            
+            if config.enableDebugLogging {
+                print("[PlacesService] ✅ Geocoded successfully")
+                print("[PlacesService] Name: \(result.name)")
+                print("[PlacesService] Address: \(result.address)")
+                print("[PlacesService] Place ID: \(result.placeId)")
+            }
+            
+            return result
+            
+        } catch {
+            if config.enableDebugLogging {
+                print("[PlacesService] ❌ Geocoding failed: \(error.localizedDescription)")
+            }
+            throw PlacesError.apiError(error.localizedDescription)
         }
     }
 }
@@ -131,6 +98,9 @@ struct PlaceResult {
     let name: String
     let address: String
     let coordinate: CLLocationCoordinate2D
+    let locality: String?
+    let administrativeArea: String?
+    let country: String?
 }
 
 enum PlacesError: LocalizedError {
@@ -141,9 +111,9 @@ enum PlacesError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noPlacesFound:
-            return "No places found at this location"
+            return "No address found for this location"
         case .apiError(let message):
-            return "Places API error: \(message)"
+            return "Geocoding error: \(message)"
         case .unknown:
             return "Unknown error occurred"
         }
