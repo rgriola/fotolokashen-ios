@@ -88,7 +88,7 @@ class PhotoUploadService: ObservableObject {
                 print("[PhotoUpload] Uploading to ImageKit...")
             }
             
-            try await uploadToImageKit(
+            let imagekitResponse = try await uploadToImageKit(
                 data: compressedData,
                 uploadParams: uploadResponse
             )
@@ -97,6 +97,8 @@ class PhotoUploadService: ObservableObject {
             
             if config.enableDebugLogging {
                 print("[PhotoUpload] Upload to ImageKit complete")
+                print("[PhotoUpload] ImageKit fileId: \(imagekitResponse.fileId)")
+                print("[PhotoUpload] ImageKit URL: \(imagekitResponse.url)")
             }
             
             // Step 4: Confirm upload with backend
@@ -105,8 +107,8 @@ class PhotoUploadService: ObservableObject {
             }
             
             let confirmRequest = ConfirmUploadRequest(
-                imagekitFileId: uploadResponse.fileName,
-                imagekitUrl: uploadResponse.uploadUrl
+                imagekitFileId: imagekitResponse.fileId,
+                imagekitUrl: imagekitResponse.url
             )
             
             let confirmResponse: ConfirmUploadResponse = try await apiClient.post(
@@ -157,7 +159,7 @@ class PhotoUploadService: ObservableObject {
     private func uploadToImageKit(
         data: Data,
         uploadParams: RequestUploadResponse
-    ) async throws {
+    ) async throws -> ImageKitUploadResponse {
         guard let url = uploadParams.url else {
             if config.enableDebugLogging {
                 print("[PhotoUpload] ERROR: No upload URL in response")
@@ -248,9 +250,14 @@ class PhotoUploadService: ObservableObject {
             throw PhotoUploadError.imagekitUploadFailed
         }
         
+        // Parse ImageKit response
+        let imagekitResponse = try JSONDecoder().decode(ImageKitUploadResponse.self, from: responseData)
+        
         if config.enableDebugLogging {
             print("[PhotoUpload] ImageKit upload successful!")
         }
+        
+        return imagekitResponse
     }
 }
 
