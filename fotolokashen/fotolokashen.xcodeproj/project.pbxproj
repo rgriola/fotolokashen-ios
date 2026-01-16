@@ -10,6 +10,7 @@
 		676F6BDB2F19744700CEBBE4 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BDA2F19744700CEBBE4 /* KeychainAccess */; };
 		676F6BDE2F19748D00CEBBE4 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BDD2F19748D00CEBBE4 /* GoogleMaps */; };
 		676F6BE12F1974D100CEBBE4 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BE02F1974D100CEBBE4 /* Kingfisher */; };
+		677061662F1AB10C00E97608 /* ImageKitIO in Frameworks */ = {isa = PBXBuildFile; productRef = 677061652F1AB10C00E97608 /* ImageKitIO */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +74,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				676F6BE12F1974D100CEBBE4 /* Kingfisher in Frameworks */,
+				677061662F1AB10C00E97608 /* ImageKitIO in Frameworks */,
 				676F6BDE2F19748D00CEBBE4 /* GoogleMaps in Frameworks */,
 				676F6BDB2F19744700CEBBE4 /* KeychainAccess in Frameworks */,
 			);
@@ -138,6 +140,7 @@
 				676F6BDA2F19744700CEBBE4 /* KeychainAccess */,
 				676F6BDD2F19748D00CEBBE4 /* GoogleMaps */,
 				676F6BE02F1974D100CEBBE4 /* Kingfisher */,
+				677061652F1AB10C00E97608 /* ImageKitIO */,
 			);
 			productName = fotolokashen;
 			productReference = 676F6B882F196B7600CEBBE4 /* fotolokashen.app */;
@@ -225,6 +228,7 @@
 				676F6BD92F19744700CEBBE4 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				676F6BDC2F19748D00CEBBE4 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */,
 				676F6BDF2F1974D100CEBBE4 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				677061642F1AB10C00E97608 /* XCRemoteSwiftPackageReference "imagekit-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 676F6B892F196B7600CEBBE4 /* Products */;
@@ -645,6 +649,14 @@
 				minimumVersion = 8.6.2;
 			};
 		};
+		677061642F1AB10C00E97608 /* XCRemoteSwiftPackageReference "imagekit-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/imagekit-developer/imagekit-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -662,6 +674,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 676F6BDF2F1974D100CEBBE4 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
+		};
+		677061652F1AB10C00E97608 /* ImageKitIO */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 677061642F1AB10C00E97608 /* XCRemoteSwiftPackageReference "imagekit-ios" */;
+			productName = ImageKitIO;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

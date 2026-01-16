@@ -128,10 +128,10 @@ struct ImageKitUploadResponse: Codable {
     let fileId: String
     let name: String
     let url: String
-    let thumbnailUrl: String
-    let width: Int
-    let height: Int
-    let size: Int
+    let thumbnailUrl: String?  // Make optional - sometimes missing
+    let width: Int?             // Make optional
+    let height: Int?            // Make optional
+    let size: Int?              // Make optional
 }
 
 // MARK: - Equatable

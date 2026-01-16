@@ -1,6 +1,15 @@
 {
-  "originHash" : "b0efdbe2e92944c97ab93655239f6d2a84322bad76c30929024ba885ae5f39c9",
+  "originHash" : "c48ffd6900c959c1c60859aa36ae1cc0390d4e3c0e112a9c3d13926b946cc753",
   "pins" : [
+    {
+      "identity" : "imagekit-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/imagekit-developer/imagekit-ios",
+      "state" : {
+        "revision" : "22c8b49ac2ef8b2feb88f08484e061f47cc25e3a",
+        "version" : "3.1.0"
+      }
+    },
     {
       "identity" : "ios-maps-sdk",
       "kind" : "remoteSourceControl",

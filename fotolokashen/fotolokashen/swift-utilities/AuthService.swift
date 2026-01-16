@@ -123,12 +123,22 @@ class AuthService: ObservableObject {
             throw AuthError.missingCodeVerifier
         }
         
+        // Get device information
+        let deviceName = await UIDevice.current.name
+        let systemVersion = await UIDevice.current.systemVersion
+        let model = await UIDevice.current.model
+        let userAgent = "fotolokashen-ios/1.0 (iOS \(systemVersion); \(model))"
+        
         let tokenRequest = TokenRequest(
             grantType: "authorization_code",
             code: code,
             codeVerifier: verifier,
             clientId: config.oauthClientId,
-            redirectUri: config.oauthRedirectUri
+            redirectUri: config.oauthRedirectUri,
+            deviceName: deviceName,
+            userAgent: userAgent,
+            ipAddress: nil, // Server will detect from headers
+            country: Locale.current.region?.identifier
         )
         
         let tokenResponse: TokenResponse = try await apiClient.post(
@@ -228,6 +238,10 @@ struct TokenRequest: Codable {
     let codeVerifier: String
     let clientId: String
     let redirectUri: String
+    let deviceName: String?
+    let userAgent: String?
+    let ipAddress: String?
+    let country: String?
     
     enum CodingKeys: String, CodingKey {
         case grantType = "grant_type"
@@ -235,6 +249,10 @@ struct TokenRequest: Codable {
         case codeVerifier = "code_verifier"
         case clientId = "client_id"
         case redirectUri = "redirect_uri"
+        case deviceName = "device_name"
+        case userAgent = "user_agent"
+        case ipAddress = "ip_address"
+        case country
     }
 }
 

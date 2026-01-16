@@ -30,9 +30,9 @@
 ### Phase 1: Project Setup (30 min)
 - [x] Create `.env.local` with all API keys
 - [x] Create `Config.plist` with production values
-- [ ] Create Xcode project structure
-- [ ] Set up Swift Package Manager dependencies
-- [ ] Configure Info.plist permissions
+- [x] Create Xcode project structure
+- [x] Set up Swift Package Manager dependencies
+- [x] Configure Info.plist permissions
 
 ### Phase 2: Core Utilities (45 min)
 - [ ] `PKCEGenerator.swift` - OAuth PKCE challenge generation

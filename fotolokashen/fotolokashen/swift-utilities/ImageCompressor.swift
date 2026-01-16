@@ -112,25 +112,36 @@ struct ImageCompressor {
     /// Resize image to fit within maximum dimension while maintaining aspect ratio
     /// - Parameters:
     ///   - image: The UIImage to resize
-    ///   - maxDimension: Maximum width or height
+    ///   - maxDimension: Maximum width or height IN PIXELS
     /// - Returns: Resized UIImage
     private static func resize(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
-        let size = image.size
+        // Get actual pixel size (not points)
+        // UIImage.size returns points, multiply by scale to get pixels
+        let scale = image.scale
+        let pixelWidth = image.size.width * scale
+        let pixelHeight = image.size.height * scale
         
         // If image is already smaller than max dimension, return original
-        guard max(size.width, size.height) > maxDimension else {
+        guard max(pixelWidth, pixelHeight) > maxDimension else {
             return image
         }
         
-        // Calculate new size maintaining aspect ratio
-        let ratio = maxDimension / max(size.width, size.height)
+        // Calculate new size maintaining aspect ratio (in pixels)
+        let ratio = maxDimension / max(pixelWidth, pixelHeight)
+        let newPixelWidth = pixelWidth * ratio
+        let newPixelHeight = pixelHeight * ratio
+        
+        // Convert back to points for rendering
         let newSize = CGSize(
-            width: size.width * ratio,
-            height: size.height * ratio
+            width: newPixelWidth / scale,
+            height: newPixelHeight / scale
         )
         
         // Use UIGraphicsImageRenderer for high-quality resizing
-        let renderer = UIGraphicsImageRenderer(size: newSize)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale  // Maintain original scale
+        
+        let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
         return renderer.image { _ in
             image.draw(in: CGRect(origin: .zero, size: newSize))
         }
