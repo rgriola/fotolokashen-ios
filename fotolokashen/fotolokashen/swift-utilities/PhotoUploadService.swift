@@ -184,8 +184,9 @@ class PhotoUploadService: ObservableObject {
         var body = Data()
         
         // Add authentication and metadata fields FIRST
-        // Note: fileName is NOT sent as a separate field - it's in the file Content-Disposition header
+        // Note: fileName is now sent as a separate field, in addition to being in the file Content-Disposition header
         let fields: [String: String] = [
+            "fileName": uploadParams.fileName,
             "signature": uploadParams.signature,
             "expire": String(uploadParams.expire),
             "token": uploadParams.uploadToken,
