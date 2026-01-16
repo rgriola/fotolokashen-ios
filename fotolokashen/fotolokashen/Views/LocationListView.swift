@@ -3,8 +3,10 @@ import Combine
 
 /// Main view for displaying a list of saved locations
 struct LocationListView: View {
+    @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel = LocationListViewModel()
     @State private var showingCamera = false
+    @State private var showingLogoutConfirmation = false
     
     var body: some View {
         NavigationStack {
@@ -22,6 +24,15 @@ struct LocationListView: View {
             }
             .navigationTitle("My Locations")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        showingLogoutConfirmation = true
+                    } label: {
+                        Image(systemName: "arrow.right.square")
+                            .foregroundColor(.red)
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showingCamera = true
@@ -40,6 +51,16 @@ struct LocationListView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(viewModel.errorMessage)
+            }
+            .alert("Logout", isPresented: $showingLogoutConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Logout", role: .destructive) {
+                    Task {
+                        await authService.logout()
+                    }
+                }
+            } message: {
+                Text("Are you sure you want to logout?")
             }
         }
         .task {
