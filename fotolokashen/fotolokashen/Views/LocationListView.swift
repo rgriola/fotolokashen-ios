@@ -221,11 +221,3 @@ class LocationListViewModel: ObservableObject {
 #Preview {
     LocationListView()
 }
-
-// MARK: - Photo Capture
-
-struct PhotoCapture: Identifiable {
-    let id = UUID()
-    let image: UIImage
-    let location: CLLocation?
-}
