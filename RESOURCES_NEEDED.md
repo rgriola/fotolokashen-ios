@@ -10,9 +10,14 @@
 
 - ✅ **Backend API**: Complete and ready
 - ⏳ **Deployment**: Needs staging deployment
+        Question: where do I create staging.fotolokashen.com? 
+
 - ⏳ **API Keys**: Needed for iOS app
+        Can I use the same keys from the backend? 
 - ⏳ **Test Credentials**: Needed for development
+        baseballczar@gmail.com / Dakota1973$$
 - ⏳ **Development Environment**: Verify Xcode setup
+        Xcod is already installed. The CLI is not. 
 
 ---
 
@@ -26,11 +31,13 @@
 #### Steps:
 ```bash
 # 1. Merge feature branch to main
+# Answer this was merged last night Jan 14. 
 git checkout main
 git merge feature/oauth2-implementation
 
 # 2. Deploy to Vercel (staging)
-vercel --prod
+# this is method has been deprecated. any Gitpush of the main branch deploys to Vercel Preview including prisma schema db changes. 
+   # Do not use. >>>  vercel --prod
 
 # 3. Verify deployment
 curl https://staging.fotolokashen.com/api/health
