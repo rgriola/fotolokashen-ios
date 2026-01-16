@@ -13,8 +13,7 @@ struct Location: Codable, Identifiable {
     let notes: String?
     let rating: Double?
     let createdAt: String
-    let photosCount: Int?
-    let thumbnailUrl: String?
+    let photos: [LocationPhoto]?
     
     /// Convenience initializer for creating locations with latitude/longitude
     init(id: Int, name: String, address: String, latitude: Double, longitude: Double, type: String, placeId: String, createdAt: String, photosCount: Int?, thumbnailUrl: String?) {
@@ -26,8 +25,7 @@ struct Location: Codable, Identifiable {
         self.type = type
         self.placeId = placeId
         self.createdAt = createdAt
-        self.photosCount = photosCount
-        self.thumbnailUrl = thumbnailUrl
+        self.photos = nil
         self.notes = nil
         self.rating = nil
     }
@@ -37,6 +35,18 @@ struct Location: Codable, Identifiable {
     
     /// Longitude (convenience property)
     var longitude: Double { lng }
+    
+    /// Photo count (computed from photos array)
+    var photosCount: Int? {
+        photos?.count
+    }
+    
+    /// Thumbnail URL (computed from first photo)
+    var thumbnailUrl: String? {
+        guard let firstPhoto = photos?.first else { return nil }
+        // Construct ImageKit URL from file path
+        return "https://ik.imagekit.io/rgriola\(firstPhoto.imagekitFilePath)"
+    }
     
     /// Coordinate for use with MapKit/Google Maps
     var coordinate: CLLocationCoordinate2D {
@@ -57,6 +67,15 @@ struct Location: Codable, Identifiable {
     var createdDate: Date? {
         ISO8601DateFormatter().date(from: createdAt)
     }
+}
+
+// MARK: - Location Photo
+
+/// Simplified photo model for location list
+struct LocationPhoto: Codable {
+    let id: Int
+    let imagekitFilePath: String
+    let isPrimary: Bool?
 }
 
 // MARK: - API Response Models
