@@ -9,14 +9,17 @@ struct LocationListView: View {
     @State private var showingCamera = false
     @State private var showingLogoutConfirmation = false
     @State private var capturedPhoto: PhotoCapture?
+    @State private var searchText = ""
+    @State private var selectedTypeFilter: String?
+    @State private var sortOption: SortOption = .dateNewest
     
     var body: some View {
         NavigationStack {
             Group {
                 if viewModel.isLoading && viewModel.locations.isEmpty {
-                    // Loading state
-                    ProgressView("Loading locations...")
-                } else if viewModel.locations.isEmpty {
+                    // Loading state with skeleton
+                    skeletonLoadingView
+                } else if filteredAndSortedLocations.isEmpty {
                     // Empty state
                     emptyStateView
                 } else {
@@ -25,6 +28,7 @@ struct LocationListView: View {
                 }
             }
             .navigationTitle("My Locations")
+            .searchable(text: $searchText, prompt: "Search locations")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
@@ -32,6 +36,23 @@ struct LocationListView: View {
                     } label: {
                         Image(systemName: "arrow.right.square")
                             .foregroundColor(.red)
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Picker("Sort By", selection: $sortOption) {
+                            Label("Newest First", systemImage: "calendar.badge.clock")
+                                .tag(SortOption.dateNewest)
+                            Label("Oldest First", systemImage: "calendar")
+                                .tag(SortOption.dateOldest)
+                            Label("Name A-Z", systemImage: "textformat.abc")
+                                .tag(SortOption.nameAZ)
+                            Label("Name Z-A", systemImage: "textformat.abc")
+                                .tag(SortOption.nameZA)
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
                     }
                 }
                 
@@ -83,11 +104,44 @@ struct LocationListView: View {
         }
     }
     
+    // MARK: - Filtered and Sorted Locations
+    
+    private var filteredAndSortedLocations: [Location] {
+        var locations = viewModel.locations
+        
+        // Apply search filter
+        if !searchText.isEmpty {
+            locations = locations.filter { location in
+                location.name.localizedCaseInsensitiveContains(searchText) ||
+                (location.address?.localizedCaseInsensitiveContains(searchText) ?? false)
+            }
+        }
+        
+        // Apply type filter
+        if let typeFilter = selectedTypeFilter {
+            locations = locations.filter { $0.type == typeFilter }
+        }
+        
+        // Apply sorting
+        switch sortOption {
+        case .dateNewest:
+            locations.sort { ($0.createdDate ?? Date.distantPast) > ($1.createdDate ?? Date.distantPast) }
+        case .dateOldest:
+            locations.sort { ($0.createdDate ?? Date.distantPast) < ($1.createdDate ?? Date.distantPast) }
+        case .nameAZ:
+            locations.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .nameZA:
+            locations.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedDescending }
+        }
+        
+        return locations
+    }
+    
     // MARK: - Location List
     
     private var locationList: some View {
         List {
-            ForEach(viewModel.locations) { location in
+            ForEach(filteredAndSortedLocations) { location in
                 NavigationLink {
                     LocationDetailView(location: location)
                 } label: {
@@ -120,34 +174,123 @@ struct LocationListView: View {
     
     private var emptyStateView: some View {
         VStack(spacing: 20) {
-            Image(systemName: "mappin.slash")
+            Image(systemName: searchText.isEmpty ? "mappin.slash" : "magnifyingglass")
                 .font(.system(size: 60))
                 .foregroundColor(.gray)
             
-            Text("No Locations Yet")
+            Text(searchText.isEmpty ? "No Locations Yet" : "No Results")
                 .font(.title2)
                 .fontWeight(.semibold)
             
-            Text("Start by capturing a photo with the camera")
+            Text(searchText.isEmpty ? "Start by capturing a photo with the camera" : "Try a different search term")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
-            Button {
-                showingCamera = true
-            } label: {
-                Label("Open Camera", systemImage: "camera.fill")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding()
-                    .background(Color.blue)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            if searchText.isEmpty {
+                Button {
+                    showingCamera = true
+                } label: {
+                    Label("Open Camera", systemImage: "camera.fill")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.blue)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .padding(.top)
             }
-            .padding(.top)
         }
         .padding()
     }
+    
+    // MARK: - Skeleton Loading
+    
+    private var skeletonLoadingView: some View {
+        List {
+            ForEach(0..<5, id: \.self) { _ in
+                SkeletonLocationRow()
+            }
+        }
+        .listStyle(.plain)
+    }
+}
+
+// MARK: - Skeleton Row
+
+struct SkeletonLocationRow: View {
+    @State private var isAnimating = false
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Skeleton thumbnail
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 80, height: 80)
+                .shimmer(isAnimating: isAnimating)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                // Skeleton name
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 150, height: 16)
+                    .shimmer(isAnimating: isAnimating)
+                
+                // Skeleton address
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 200, height: 14)
+                    .shimmer(isAnimating: isAnimating)
+                
+                // Skeleton badge
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 80, height: 24)
+                    .shimmer(isAnimating: isAnimating)
+            }
+            
+            Spacer()
+        }
+        .padding(.vertical, 8)
+        .onAppear {
+            isAnimating = true
+        }
+    }
+}
+
+// MARK: - Shimmer Effect
+
+extension View {
+    func shimmer(isAnimating: Bool) -> some View {
+        self.overlay(
+            LinearGradient(
+                colors: [
+                    .clear,
+                    .white.opacity(0.3),
+                    .clear
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .offset(x: isAnimating ? 200 : -200)
+            .animation(
+                .linear(duration: 1.5)
+                .repeatForever(autoreverses: false),
+                value: isAnimating
+            )
+        )
+        .clipped()
+    }
+}
+
+// MARK: - Sort Option
+
+enum SortOption: String, CaseIterable {
+    case dateNewest = "Newest First"
+    case dateOldest = "Oldest First"
+    case nameAZ = "Name A-Z"
+    case nameZA = "Name Z-A"
 }
 
 // MARK: - View Model
