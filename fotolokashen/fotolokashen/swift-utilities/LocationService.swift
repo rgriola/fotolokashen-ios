@@ -7,6 +7,10 @@ import Combine
 @MainActor
 class LocationService: ObservableObject {
     
+    // MARK: - Singleton
+    
+    static let shared = LocationService()
+    
     // MARK: - Published Properties
     
     @Published var isLoading = false
@@ -92,6 +96,52 @@ class LocationService: ObservableObject {
                 print("[LocationService] Create location failed: \(error)")
             }
             
+            throw error
+        }
+    }
+    
+    // MARK: - Fetch Locations
+    
+    /// Fetch all locations for the current user
+    func fetchLocations() async throws -> [Location] {
+        if config.enableDebugLogging {
+            print("[LocationService] Fetching locations...")
+        }
+        
+        do {
+            let response: LocationsResponse = try await apiClient.get("/api/locations")
+            
+            if config.enableDebugLogging {
+                print("[LocationService] Fetched \(response.locations.count) locations")
+            }
+            
+            return response.locations
+        } catch {
+            if config.enableDebugLogging {
+                print("[LocationService] Fetch locations failed: \(error)")
+            }
+            throw error
+        }
+    }
+    
+    // MARK: - Delete Location
+    
+    /// Delete a location by ID
+    func deleteLocation(id: Int) async throws {
+        if config.enableDebugLogging {
+            print("[LocationService] Deleting location: \(id)")
+        }
+        
+        do {
+            let _: EmptyResponse = try await apiClient.delete("/api/locations/\(id)")
+            
+            if config.enableDebugLogging {
+                print("[LocationService] Location deleted successfully")
+            }
+        } catch {
+            if config.enableDebugLogging {
+                print("[LocationService] Delete location failed: \(error)")
+            }
             throw error
         }
     }

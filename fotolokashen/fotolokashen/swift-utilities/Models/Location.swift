@@ -14,6 +14,29 @@ struct Location: Codable, Identifiable {
     let rating: Double?
     let createdAt: String
     let photosCount: Int?
+    let thumbnailUrl: String?
+    
+    /// Convenience initializer for creating locations with latitude/longitude
+    init(id: Int, name: String, address: String, latitude: Double, longitude: Double, type: String, placeId: String, createdAt: String, photosCount: Int?, thumbnailUrl: String?) {
+        self.id = id
+        self.name = name
+        self.address = address
+        self.lat = latitude
+        self.lng = longitude
+        self.type = type
+        self.placeId = placeId
+        self.createdAt = createdAt
+        self.photosCount = photosCount
+        self.thumbnailUrl = thumbnailUrl
+        self.notes = nil
+        self.rating = nil
+    }
+    
+    /// Latitude (convenience property)
+    var latitude: Double { lat }
+    
+    /// Longitude (convenience property)
+    var longitude: Double { lng }
     
     /// Coordinate for use with MapKit/Google Maps
     var coordinate: CLLocationCoordinate2D {
@@ -34,6 +57,18 @@ struct Location: Codable, Identifiable {
     var createdDate: Date? {
         ISO8601DateFormatter().date(from: createdAt)
     }
+}
+
+// MARK: - API Response Models
+
+/// Response for fetching multiple locations
+struct LocationsResponse: Codable {
+    let locations: [Location]
+}
+
+/// Empty response for delete operations
+struct EmptyResponse: Codable {
+    // Empty struct for endpoints that return no data
 }
 
 // MARK: - Location Type
@@ -136,6 +171,7 @@ struct UpdateLocationRequest: Codable {
    "notes": "Great for golden hour",
    "rating": 4.5,
    "createdAt": "2026-01-12T10:30:00Z",
-   "photosCount": 5
+   "photosCount": 5,
+   "thumbnailUrl": "https://..."
  }
  */

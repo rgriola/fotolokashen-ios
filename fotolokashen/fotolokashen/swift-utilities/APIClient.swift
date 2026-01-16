@@ -42,6 +42,22 @@ class APIClient {
         try await request(path: path, method: "POST", body: body, authenticated: authenticated)
     }
     
+    /// Make a GET request
+    func get<T: Decodable>(
+        _ path: String,
+        authenticated: Bool = true
+    ) async throws -> T {
+        try await request(path: path, method: "GET", body: nil as String?, authenticated: authenticated)
+    }
+    
+    /// Make a DELETE request
+    func delete<T: Decodable>(
+        _ path: String,
+        authenticated: Bool = true
+    ) async throws -> T {
+        try await request(path: path, method: "DELETE", body: nil as String?, authenticated: authenticated)
+    }
+    
     // MARK: - Core Request Method
     
     private func request<T: Decodable, B: Encodable>(
