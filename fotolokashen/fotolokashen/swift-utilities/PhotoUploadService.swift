@@ -191,7 +191,8 @@ class PhotoUploadService: ObservableObject {
             "expire": String(uploadParams.expire),
             "token": uploadParams.uploadToken,
             "publicKey": uploadParams.publicKey,
-            "folder": uploadParams.folder
+            "folder": uploadParams.folder,
+            "useUniqueFileName": "true"
         ]
         
         if config.enableDebugLogging {
