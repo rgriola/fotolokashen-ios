@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /// Main view for displaying a list of saved locations
 struct LocationListView: View {
