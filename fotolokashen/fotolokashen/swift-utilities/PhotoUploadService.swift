@@ -159,7 +159,18 @@ class PhotoUploadService: ObservableObject {
         uploadParams: RequestUploadResponse
     ) async throws {
         guard let url = uploadParams.url else {
+            if config.enableDebugLogging {
+                print("[PhotoUpload] ERROR: No upload URL in response")
+            }
             throw PhotoUploadError.imagekitUploadFailed
+        }
+        
+        if config.enableDebugLogging {
+            print("[PhotoUpload] ImageKit upload starting...")
+            print("[PhotoUpload] Upload URL: \(url)")
+            print("[PhotoUpload] Image data size: \(data.count) bytes")
+            print("[PhotoUpload] Folder: \(uploadParams.folder)")
+            print("[PhotoUpload] Filename: \(uploadParams.fileName)")
         }
         
         var request = URLRequest(url: url)
@@ -187,6 +198,17 @@ class PhotoUploadService: ObservableObject {
             "folder": uploadParams.folder
         ]
         
+        if config.enableDebugLogging {
+            print("[PhotoUpload] Form fields:")
+            for (key, value) in fields {
+                if key == "signature" || key == "token" {
+                    print("[PhotoUpload]   \(key): \(value.prefix(20))...")
+                } else {
+                    print("[PhotoUpload]   \(key): \(value)")
+                }
+            }
+        }
+        
         for (key, value) in fields {
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
@@ -197,11 +219,37 @@ class PhotoUploadService: ObservableObject {
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         request.httpBody = body
         
-        let (_, response) = try await URLSession.shared.data(for: request)
+        if config.enableDebugLogging {
+            print("[PhotoUpload] Total request body size: \(body.count) bytes")
+        }
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            if config.enableDebugLogging {
+                print("[PhotoUpload] ERROR: Invalid response type")
+            }
             throw PhotoUploadError.imagekitUploadFailed
+        }
+        
+        if config.enableDebugLogging {
+            print("[PhotoUpload] ImageKit response status: \(httpResponse.statusCode)")
+            
+            // Try to parse response as JSON for debugging
+            if let responseString = String(data: responseData, encoding: .utf8) {
+                print("[PhotoUpload] ImageKit response body: \(responseString)")
+            }
+        }
+        
+        guard (200...299).contains(httpResponse.statusCode) else {
+            if config.enableDebugLogging {
+                print("[PhotoUpload] ERROR: ImageKit upload failed with status \(httpResponse.statusCode)")
+            }
+            throw PhotoUploadError.imagekitUploadFailed
+        }
+        
+        if config.enableDebugLogging {
+            print("[PhotoUpload] ImageKit upload successful!")
         }
     }
 }
