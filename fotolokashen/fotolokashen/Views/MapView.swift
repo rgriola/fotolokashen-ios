@@ -1,6 +1,7 @@
 import SwiftUI
 import GoogleMaps
 import CoreLocation
+import Combine
 
 /// Map view showing all user locations as markers
 struct MapView: View {
@@ -69,7 +70,7 @@ struct GoogleMapView: UIViewRepresentable {
             longitude: -74.0060,
             zoom: 12.0
         )
-        let mapView = GMSMapView.map(withFrame: .zero, camera: camera)
+        let mapView = GMSMapView(frame: .zero, camera: camera)
         mapView.delegate = context.coordinator
         mapView.isMyLocationEnabled = true
         mapView.settings.myLocationButton = false // We have custom button
@@ -117,7 +118,7 @@ struct GoogleMapView: UIViewRepresentable {
     
     // MARK: - Marker Icons
     
-    private func markerIcon(for type: String) -> GMSMarker.MarkerImage {
+    private func markerIcon(for type: String) -> UIImage {
         let color: UIColor
         
         switch type.uppercased() {
