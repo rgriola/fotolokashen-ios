@@ -140,12 +140,12 @@ struct CameraView: View {
             cameraService.stopSession()
             locationManager.stopTracking()
         }
-        .onChange(of: cameraService.capturedImage) { oldValue, newValue in
+        .onChange(of: cameraService.capturedImage) { newValue in
             if let image = newValue {
                 handleCapturedPhoto(image)
             }
         }
-        .onChange(of: cameraService.errorMessage) { oldValue, newValue in
+        .onChange(of: cameraService.errorMessage) { newValue in
             if let error = newValue {
                 errorMessage = error
                 showingError = true
