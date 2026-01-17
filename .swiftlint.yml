@@ -1,0 +1,79 @@
+# SwiftLint Configuration for fotolokashen iOS
+# Documentation: https://github.com/realm/SwiftLint
+
+# Paths to exclude from linting
+excluded:
+  - Pods
+  - fotolokashen/fotolokashen.xcodeproj
+  - fotolokashen/fotolokashen.xcworkspace
+  - fotolokashen/fotolokashenTests
+  - fotolokashen/fotolokashenUITests
+  - .build
+  - DerivedData
+
+# Paths to include (if you want to be explicit)
+included:
+  - fotolokashen/fotolokashen
+
+# Disable specific rules
+disabled_rules:
+  - trailing_whitespace # Can be annoying during development
+  - todo # Allow TODO comments
+  - line_length # Will configure custom length below
+
+# Opt-in rules (not enabled by default)
+opt_in_rules:
+  - empty_count # Prefer checking .isEmpty over .count == 0
+  - explicit_init # Discourage calling .init()
+  - closure_spacing # Enforce spacing inside closures
+  - force_unwrapping # Warn on force unwrapping (!)
+  - multiline_parameters # Function params on separate lines
+  - sorted_imports # Keep imports alphabetically sorted
+
+# Configure specific rules
+line_length:
+  warning: 120
+  error: 150
+  ignores_comments: true
+  ignores_urls: true
+
+function_body_length:
+  warning: 50
+  error: 100
+
+file_length:
+  warning: 500
+  error: 1000
+  ignore_comment_only_lines: true
+
+type_body_length:
+  warning: 300
+  error: 500
+
+identifier_name:
+  min_length: 2
+  max_length:
+    warning: 50
+    error: 60
+  excluded:
+    - id # Common variable name
+    - at # Common preposition
+    - to # Common preposition
+
+# Custom rules
+custom_rules:
+  # Prefer print statements with tags
+  debug_print:
+    name: "Debug Print"
+    regex: '^\s*print\('
+    match_kinds:
+      - identifier
+    message: "Use debug logging with tags like print(\"[ServiceName] message\")"
+    severity: warning
+
+# Warnings to treat as errors (strict mode for CI)
+# Uncomment when ready for stricter enforcement
+# strict: true
+
+# Report format
+reporter: "xcode" # Use Xcode-compatible format

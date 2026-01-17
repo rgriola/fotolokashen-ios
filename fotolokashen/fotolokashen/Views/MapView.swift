@@ -186,7 +186,7 @@ struct ClusteredMapView: UIViewRepresentable {
         context.coordinator.customizeMarkers(in: mapView)
         
         // Only auto-fit on first load
-        if locations.count > 0 && !context.coordinator.hasPerformedInitialFit {
+        if !locations.isEmpty && !context.coordinator.hasPerformedInitialFit {
             print("[MapView] Performing initial fit to show all \(locations.count) markers")
             let update = GMSCameraUpdate.fit(bounds, withPadding: 50.0)
             mapView.animate(with: update)
@@ -201,7 +201,7 @@ struct ClusteredMapView: UIViewRepresentable {
             }
             
             context.coordinator.hasPerformedInitialFit = true
-        } else if locations.count > 0 {
+        } else if !locations.isEmpty {
             print("[MapView] Markers updated, keeping user's zoom level")
         } else {
             print("[MapView] No locations to display")

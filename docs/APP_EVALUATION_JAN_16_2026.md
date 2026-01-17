@@ -323,7 +323,7 @@ fotolokashenUITests/
 ## 🔧 Technical Debt
 
 ### Low Priority
-- [ ] Add SwiftLint for code consistency
+- [x] Add SwiftLint for code consistency
 - [ ] Remove debug print statements for release
 - [ ] Add more inline documentation
 
@@ -332,9 +332,11 @@ fotolokashenUITests/
 - [ ] Add image caching (Kingfisher/SDWebImage)
 - [ ] Create proper error types (not just strings)
 
+
 ### High Priority
-- [ ] Add unit tests for critical paths
-- [ ] Implement offline mode / local caching
+
+- [x] Add unit tests for critical paths ✅ (Jan 16, 2026)
+- [x] Implement offline mode / local caching ✅ (Jan 16, 2026)
 - [ ] Add crash reporting (Sentry/Crashlytics)
 
 ---

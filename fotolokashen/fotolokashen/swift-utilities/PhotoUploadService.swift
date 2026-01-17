@@ -168,48 +168,15 @@ class PhotoUploadService: ObservableObject {
             print("[PhotoUpload] Filename: \(uploadParams.fileName)")
         }
         
-        // Create multipart form data request
+        // Build multipart request
         let boundary = "Boundary-\(UUID().uuidString)"
-        var request = URLRequest(url: URL(string: "https://upload.imagekit.io/api/v1/files/upload")!)
-        request.httpMethod = "POST"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
-        var body = Data()
-        
-        // Clean folder path - ImageKit doesn't want leading slash
-        let cleanFolder = uploadParams.folder.hasPrefix("/") 
-            ? String(uploadParams.folder.dropFirst()) 
-            : uploadParams.folder
-        
-        // Add form fields
-        let fields: [String: String] = [
-            "publicKey": uploadParams.publicKey,
-            "signature": uploadParams.signature,
-            "expire": String(uploadParams.expire),
-            "token": uploadParams.uploadToken,
-            "fileName": uploadParams.fileName,
-            "folder": cleanFolder  // Use cleaned folder without leading slash
-        ]
-        
-        for (key, value) in fields {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(value)\r\n".data(using: .utf8)!)
-        }
-        
-        // Add file data
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(uploadParams.fileName)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-        body.append(data)
-        body.append("\r\n".data(using: .utf8)!)
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        
-        request.httpBody = body
+        let body = buildMultipartBody(imageData: data, params: uploadParams, boundary: boundary)
+        let request = createImageKitRequest(boundary: boundary, body: body)
         
         // Perform upload
         let (responseData, response) = try await URLSession.shared.data(for: request)
         
+        // Validate response
         guard let httpResponse = response as? HTTPURLResponse else {
             throw PhotoUploadError.imagekitUploadFailed
         }
@@ -218,27 +185,106 @@ class PhotoUploadService: ObservableObject {
             print("[PhotoUpload] ImageKit response status: \(httpResponse.statusCode)")
         }
         
-        guard httpResponse.statusCode == 200 else {
+        try validateImageKitResponse(statusCode: httpResponse.statusCode, data: responseData)
+        
+        // Parse and validate ImageKit response
+        return try parseImageKitResponse(responseData)
+    }
+    
+    // MARK: - ImageKit Upload Helpers
+    
+    /// Build multipart form data body
+    private func buildMultipartBody(
+        imageData: Data,
+        params: RequestUploadResponse,
+        boundary: String
+    ) -> Data {
+        var body = Data()
+        
+        // Clean folder path - ImageKit doesn't want leading slash
+        let cleanFolder = params.folder.hasPrefix("/")
+            ? String(params.folder.dropFirst())
+            : params.folder
+        
+        // Add form fields
+        let fields: [String: String] = [
+            "publicKey": params.publicKey,
+            "signature": params.signature,
+            "expire": String(params.expire),
+            "token": params.uploadToken,
+            "fileName": params.fileName,
+            "folder": cleanFolder
+        ]
+        
+        appendFormFields(to: &body, fields: fields, boundary: boundary)
+        appendFileData(to: &body, imageData: imageData, fileName: params.fileName, boundary: boundary)
+        
+        // Close boundary
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        return body
+    }
+    
+    /// Append form fields to multipart body
+    private func appendFormFields(
+        to body: inout Data,
+        fields: [String: String],
+        boundary: String
+    ) {
+        for (key, value) in fields {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(value)\r\n".data(using: .utf8)!)
+        }
+    }
+    
+    /// Append file data to multipart body
+    private func appendFileData(
+        to body: inout Data,
+        imageData: Data,
+        fileName: String,
+        boundary: String
+    ) {
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n".data(using: .utf8)!)
+    }
+    
+    /// Create ImageKit upload request
+    private func createImageKitRequest(boundary: String, body: Data) -> URLRequest {
+        var request = URLRequest(url: URL(string: "https://upload.imagekit.io/api/v1/files/upload")!)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        return request
+    }
+    
+    /// Validate ImageKit HTTP response
+    private func validateImageKitResponse(statusCode: Int, data: Data) throws {
+        guard statusCode == 200 else {
             if config.enableDebugLogging {
-                print("[PhotoUpload] ImageKit upload failed with status: \(httpResponse.statusCode)")
-                if let errorString = String(data: responseData, encoding: .utf8) {
+                print("[PhotoUpload] ImageKit upload failed with status: \(statusCode)")
+                if let errorString = String(data: data, encoding: .utf8) {
                     print("[PhotoUpload] Error response: \(errorString)")
                 }
             }
             throw PhotoUploadError.imagekitUploadFailed
         }
-        
-        // DEBUG: Log raw response to see actual field names
+    }
+    
+    /// Parse and validate ImageKit response
+    private func parseImageKitResponse(_ data: Data) throws -> ImageKitUploadResponse {
         if config.enableDebugLogging {
-            if let responseString = String(data: responseData, encoding: .utf8) {
+            if let responseString = String(data: data, encoding: .utf8) {
                 print("[PhotoUpload] ✅ ImageKit raw response: \(responseString)")
             }
         }
         
-        // Parse response
         let decoder = JSONDecoder()
         do {
-            let imagekitResponse = try decoder.decode(ImageKitUploadResponse.self, from: responseData)
+            let imagekitResponse = try decoder.decode(ImageKitUploadResponse.self, from: data)
             
             // Validate critical fields
             guard !imagekitResponse.fileId.isEmpty else {
@@ -269,18 +315,10 @@ class PhotoUploadService: ObservableObject {
                 print("[PhotoUpload] Context: \(context.debugDescription)")
             }
             throw PhotoUploadError.invalidImageKitResponse("Missing key: \(key.stringValue)")
-            
-        } catch let DecodingError.typeMismatch(type, context) {
-            if config.enableDebugLogging {
-                print("[PhotoUpload] ❌ ERROR: Type mismatch for '\(type)' in ImageKit response")
-                print("[PhotoUpload] Context: \(context.debugDescription)")
-            }
-            throw PhotoUploadError.invalidImageKitResponse("Type mismatch: \(type)")
-            
         } catch {
             if config.enableDebugLogging {
                 print("[PhotoUpload] ❌ ERROR: Failed to decode ImageKit response: \(error)")
-                if let responseString = String(data: responseData, encoding: .utf8) {
+                if let responseString = String(data: data, encoding: .utf8) {
                     print("[PhotoUpload] Raw response: \(responseString)")
                 }
             }

@@ -126,6 +126,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 676F6BA92F196B7700CEBBE4 /* Build configuration list for PBXNativeTarget "fotolokashen" */;
 			buildPhases = (
+				6770617A2F1B2C8D00E97608 /* SwiftLint */,
 				676F6B842F196B7600CEBBE4 /* Sources */,
 				676F6B852F196B7600CEBBE4 /* Frameworks */,
 				676F6B862F196B7600CEBBE4 /* Resources */,
@@ -218,7 +219,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 676F6B832F196B7600CEBBE4 /* Build configuration list for PBXProject "fotolokashen" */;
+			buildConfigurationList = 676F6B832F196B7600CEBBE4 /* Build configuration list for PBXProject "Fotolokashen" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -269,6 +270,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		6770617A2F1B2C8D00E97608 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if which swiftlint >/dev/null; then\n  swiftlint\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		676F6B842F196B7600CEBBE4 /* Sources */ = {
@@ -590,7 +612,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		676F6B832F196B7600CEBBE4 /* Build configuration list for PBXProject "fotolokashen" */ = {
+		676F6B832F196B7600CEBBE4 /* Build configuration list for PBXProject "Fotolokashen" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				676F6BA72F196B7700CEBBE4 /* Debug */,

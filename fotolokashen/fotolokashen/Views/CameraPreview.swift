@@ -29,14 +29,14 @@ class PreviewView: UIView {
     
     var session: AVCaptureSession? {
         didSet {
-            if let session = session {
-                previewLayer.session = session
+            if let session = session, let layer = previewLayer {
+                layer.session = session
             }
         }
     }
     
-    private var previewLayer: AVCaptureVideoPreviewLayer {
-        return layer as! AVCaptureVideoPreviewLayer
+    private var previewLayer: AVCaptureVideoPreviewLayer? {
+        return layer as? AVCaptureVideoPreviewLayer
     }
     
     override class var layerClass: AnyClass {
@@ -55,7 +55,7 @@ class PreviewView: UIView {
     
     private func setupLayer() {
         backgroundColor = .black
-        previewLayer.videoGravity = .resizeAspectFill
+        previewLayer?.videoGravity = .resizeAspectFill
     }
     
     override func layoutSubviews() {

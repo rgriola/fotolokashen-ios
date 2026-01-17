@@ -69,61 +69,99 @@ class APIClient {
         // Build URL
         let url = baseURL.appendingPathComponent(path)
         
-        // Create request
+        // Encode body if present
+        let bodyData: Data? = try body.map { try encoder.encode($0) }
+        
+        // Prepare request with headers and authentication
+        let request = try prepareRequest(
+            url: url,
+            method: method,
+            body: bodyData,
+            authenticated: authenticated
+        )
+        
+        // Make request
+        let (data, response) = try await session.data(for: request)
+        
+        // Validate response
+        let httpResponse = try validateResponse(response)
+        
+        // Handle status code and decode
+        return try handleStatusCode(httpResponse.statusCode, data: data)
+    }
+    
+    // MARK: - Private Helpers
+    
+    /// Prepare URLRequest with method and headers
+    private func prepareRequest(
+        url: URL,
+        method: String,
+        body: Data?,
+        authenticated: Bool
+    ) throws -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Add authentication if required
         if authenticated {
-            guard let accessToken = KeychainService.shared.getAccessToken() else {
-                if ConfigLoader.shared.enableDebugLogging {
-                    print("[APIClient] No access token found in Keychain")
-                }
-                throw APIError.unauthorized
-            }
-            if ConfigLoader.shared.enableDebugLogging {
-                print("[APIClient] Using access token: \(accessToken.prefix(20))...")
-            }
-            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+            try addAuthenticationHeader(to: &request)
         }
         
-        // Add body if present
         if let body = body {
-            request.httpBody = try encoder.encode(body)
+            request.httpBody = body
             
-            // Log request body for debugging
             if ConfigLoader.shared.enableDebugLogging {
-                if let jsonString = String(data: request.httpBody!, encoding: .utf8) {
+                if let jsonString = String(data: body, encoding: .utf8) {
                     print("[APIClient] Request body: \(jsonString)")
                 }
             }
         }
         
-        // Log request
         if ConfigLoader.shared.enableDebugLogging {
             print("[APIClient] \(method) \(url.absoluteString)")
         }
         
-        // Make request
-        let (data, response) = try await session.data(for: request)
+        return request
+    }
+    
+    /// Add Bearer token authentication header
+    private func addAuthenticationHeader(to request: inout URLRequest) throws {
+        guard let accessToken = KeychainService.shared.getAccessToken() else {
+            if ConfigLoader.shared.enableDebugLogging {
+                print("[APIClient] No access token found in Keychain")
+            }
+            throw APIError.unauthorized
+        }
         
-        // Check response
+        if ConfigLoader.shared.enableDebugLogging {
+            print("[APIClient] Using access token: \(accessToken.prefix(20))...")
+        }
+        
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+    }
+    
+    /// Validate and extract HTTPURLResponse
+    private func validateResponse(_ response: URLResponse) throws -> HTTPURLResponse {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
         
-        // Log response
         if ConfigLoader.shared.enableDebugLogging {
             print("[APIClient] Response: \(httpResponse.statusCode)")
         }
         
-        // Handle status codes
-        switch httpResponse.statusCode {
+        return httpResponse
+    }
+    
+    /// Handle HTTP status codes and decode response
+    private func handleStatusCode<T: Decodable>(
+        _ statusCode: Int,
+        data: Data
+    ) throws -> T {
+        switch statusCode {
         case 200...299:
             do {
-                let decoded = try decoder.decode(T.self, from: data)
-                return decoded
+                return try decoder.decode(T.self, from: data)
             } catch {
                 if ConfigLoader.shared.enableDebugLogging {
                     print("[APIClient] Decode error: \(error)")
@@ -135,19 +173,10 @@ class APIClient {
             }
             
         case 401:
-            // Token expired - try to refresh and retry request once
             if ConfigLoader.shared.enableDebugLogging {
                 print("[APIClient] 401 Unauthorized - attempting token refresh")
             }
-            
-            // Try to refresh token
-            do {
-                // Note: We can't call AuthService directly due to circular dependency
-                // Instead, we'll throw and let the caller handle refresh
-                throw APIError.unauthorized
-            } catch {
-                throw APIError.unauthorized
-            }
+            throw APIError.unauthorized
             
         case 403:
             throw APIError.forbidden
@@ -159,7 +188,7 @@ class APIClient {
             if let errorResponse = try? decoder.decode(ErrorResponse.self, from: data) {
                 throw APIError.apiError(errorResponse.error, errorResponse.code)
             }
-            throw APIError.unknownError(httpResponse.statusCode)
+            throw APIError.unknownError(statusCode)
         }
     }
 }
