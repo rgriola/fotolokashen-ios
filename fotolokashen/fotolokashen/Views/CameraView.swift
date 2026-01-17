@@ -17,9 +17,21 @@ struct CameraView: View {
     var body: some View {
         ZStack {
             // Camera preview (full screen)
-            if cameraService.isAuthorized {
+            if cameraService.isAuthorized && cameraService.isSessionReady {
                 CameraPreview(session: cameraService.getCaptureSession())
                     .ignoresSafeArea()
+            } else if cameraService.isAuthorized && !cameraService.isSessionReady {
+                // Loading state while camera initializes
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    
+                    Text("Starting Camera...")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black)
             } else {
                 // Permission denied view
                 VStack(spacing: 20) {

@@ -5,7 +5,7 @@ import CoreLocation
 /// Main view for displaying a list of saved locations
 struct LocationListView: View {
     @EnvironmentObject var authService: AuthService
-    @StateObject private var viewModel = LocationListViewModel()
+    @ObservedObject private var locationStore = LocationStore.shared
     @State private var showingCamera = false
     @State private var showingLogoutConfirmation = false
     @State private var capturedPhoto: PhotoCapture?
@@ -16,7 +16,7 @@ struct LocationListView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if viewModel.isLoading && viewModel.locations.isEmpty {
+                if locationStore.isLoading && locationStore.locations.isEmpty {
                     // Loading state with skeleton
                     skeletonLoadingView
                 } else if filteredAndSortedLocations.isEmpty {
@@ -74,24 +74,18 @@ struct LocationListView: View {
                     photo: capture.image,
                     photoLocation: capture.location
                 ) { location in
-                    // Location created - refresh list
-                    Task {
-                        await viewModel.fetchLocations()
-                    }
+                    // Location created - add to shared store (both views will update)
+                    locationStore.addLocation(location)
                 }
             }
             .refreshable {
-                await viewModel.fetchLocations()
-            }
-            .alert("Error", isPresented: $viewModel.showError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(viewModel.errorMessage)
+                await locationStore.refreshLocations()
             }
             .alert("Logout", isPresented: $showingLogoutConfirmation) {
                 Button("Cancel", role: .cancel) {}
                 Button("Logout", role: .destructive) {
                     Task {
+                        locationStore.clear()
                         await authService.logout()
                     }
                 }
@@ -100,14 +94,14 @@ struct LocationListView: View {
             }
         }
         .task {
-            await viewModel.fetchLocations()
+            await locationStore.fetchLocations()
         }
     }
     
     // MARK: - Filtered and Sorted Locations
     
     private var filteredAndSortedLocations: [Location] {
-        var locations = viewModel.locations
+        var locations = locationStore.locations
         
         // Apply search filter
         if !searchText.isEmpty {
@@ -150,7 +144,7 @@ struct LocationListView: View {
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .destructive) {
                         Task {
-                            await viewModel.deleteLocation(location)
+                            await locationStore.deleteLocation(location)
                         }
                     } label: {
                         Label("Delete", systemImage: "trash")
@@ -159,7 +153,7 @@ struct LocationListView: View {
             }
             
             // Loading more indicator
-            if viewModel.isLoadingMore {
+            if locationStore.isLoading {
                 HStack {
                     Spacer()
                     ProgressView()
@@ -291,72 +285,6 @@ enum SortOption: String, CaseIterable {
     case dateOldest = "Oldest First"
     case nameAZ = "Name A-Z"
     case nameZA = "Name Z-A"
-}
-
-// MARK: - View Model
-
-@MainActor
-class LocationListViewModel: ObservableObject {
-    @Published var locations: [Location] = []
-    @Published var isLoading = false
-    @Published var isLoadingMore = false
-    @Published var showError = false
-    @Published var errorMessage = ""
-    
-    private let locationService = LocationService.shared
-    private let config = ConfigLoader.shared
-    
-    /// Fetch all locations for the current user
-    func fetchLocations() async {
-        guard !isLoading else { return }
-        
-        isLoading = true
-        defer { isLoading = false }
-        
-        do {
-            if config.enableDebugLogging {
-                print("[LocationList] Fetching locations...")
-            }
-            
-            locations = try await locationService.fetchLocations()
-            
-            if config.enableDebugLogging {
-                print("[LocationList] Fetched \(locations.count) locations")
-            }
-        } catch {
-            if config.enableDebugLogging {
-                print("[LocationList] Error fetching locations: \(error)")
-            }
-            
-            errorMessage = "Failed to load locations: \(error.localizedDescription)"
-            showError = true
-        }
-    }
-    
-    /// Delete a location
-    func deleteLocation(_ location: Location) async {
-        do {
-            if config.enableDebugLogging {
-                print("[LocationList] Deleting location: \(location.id)")
-            }
-            
-            try await locationService.deleteLocation(id: location.id)
-            
-            // Remove from local array
-            locations.removeAll { $0.id == location.id }
-            
-            if config.enableDebugLogging {
-                print("[LocationList] Location deleted successfully")
-            }
-        } catch {
-            if config.enableDebugLogging {
-                print("[LocationList] Error deleting location: \(error)")
-            }
-            
-            errorMessage = "Failed to delete location: \(error.localizedDescription)"
-            showError = true
-        }
-    }
 }
 
 // MARK: - Preview

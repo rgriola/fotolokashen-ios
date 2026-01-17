@@ -11,6 +11,7 @@
 		676F6BDE2F19748D00CEBBE4 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BDD2F19748D00CEBBE4 /* GoogleMaps */; };
 		676F6BE12F1974D100CEBBE4 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BE02F1974D100CEBBE4 /* Kingfisher */; };
 		677061662F1AB10C00E97608 /* ImageKitIO in Frameworks */ = {isa = PBXBuildFile; productRef = 677061652F1AB10C00E97608 /* ImageKitIO */; };
+		677061772F1B0BE500E97608 /* GoogleMapsUtils in Frameworks */ = {isa = PBXBuildFile; productRef = 677061762F1B0BE500E97608 /* GoogleMapsUtils */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -77,6 +78,7 @@
 				677061662F1AB10C00E97608 /* ImageKitIO in Frameworks */,
 				676F6BDE2F19748D00CEBBE4 /* GoogleMaps in Frameworks */,
 				676F6BDB2F19744700CEBBE4 /* KeychainAccess in Frameworks */,
+				677061772F1B0BE500E97608 /* GoogleMapsUtils in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,6 +143,7 @@
 				676F6BDD2F19748D00CEBBE4 /* GoogleMaps */,
 				676F6BE02F1974D100CEBBE4 /* Kingfisher */,
 				677061652F1AB10C00E97608 /* ImageKitIO */,
+				677061762F1B0BE500E97608 /* GoogleMapsUtils */,
 			);
 			productName = fotolokashen;
 			productReference = 676F6B882F196B7600CEBBE4 /* fotolokashen.app */;
@@ -229,6 +232,7 @@
 				676F6BDC2F19748D00CEBBE4 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */,
 				676F6BDF2F1974D100CEBBE4 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				677061642F1AB10C00E97608 /* XCRemoteSwiftPackageReference "imagekit-ios" */,
+				677061752F1B0BE500E97608 /* XCRemoteSwiftPackageReference "google-maps-ios-utils" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 676F6B892F196B7600CEBBE4 /* Products */;
@@ -657,6 +661,14 @@
 				minimumVersion = 3.1.0;
 			};
 		};
+		677061752F1B0BE500E97608 /* XCRemoteSwiftPackageReference "google-maps-ios-utils" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googlemaps/google-maps-ios-utils";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -679,6 +691,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 677061642F1AB10C00E97608 /* XCRemoteSwiftPackageReference "imagekit-ios" */;
 			productName = ImageKitIO;
+		};
+		677061762F1B0BE500E97608 /* GoogleMapsUtils */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 677061752F1B0BE500E97608 /* XCRemoteSwiftPackageReference "google-maps-ios-utils" */;
+			productName = GoogleMapsUtils;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

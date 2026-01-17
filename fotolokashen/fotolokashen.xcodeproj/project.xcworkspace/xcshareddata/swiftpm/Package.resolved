@@ -1,6 +1,15 @@
 {
-  "originHash" : "c48ffd6900c959c1c60859aa36ae1cc0390d4e3c0e112a9c3d13926b946cc753",
+  "originHash" : "513ef1d724e5478954b1374b6b03bbe2c68891038f3173b80e4ee54ed446e8c7",
   "pins" : [
+    {
+      "identity" : "google-maps-ios-utils",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/googlemaps/google-maps-ios-utils",
+      "state" : {
+        "revision" : "55a2c5992a7b63d5dcb349f66b45f740f5c3d474",
+        "version" : "7.0.0"
+      }
+    },
     {
       "identity" : "imagekit-ios",
       "kind" : "remoteSourceControl",

@@ -94,11 +94,7 @@ class CameraService: NSObject, ObservableObject {
                     }
                     
                     captureSession.commitConfiguration()
-                    
-                    DispatchQueue.main.async {
-                        self.isSessionReady = true
-                        print("[CameraService] Session configured successfully")
-                    }
+                    print("[CameraService] Session configured successfully")
                     
                     continuation.resume()
                     
@@ -117,7 +113,13 @@ class CameraService: NSObject, ObservableObject {
         sessionQueue.async { [self] in
             if !captureSession.isRunning {
                 captureSession.startRunning()
-                print("[CameraService] Session started")
+                print("[CameraService] Session started, isRunning: \(captureSession.isRunning)")
+                
+                // Confirm session is running on main thread
+                DispatchQueue.main.async {
+                    self.isSessionReady = self.captureSession.isRunning
+                    print("[CameraService] isSessionReady set to: \(self.isSessionReady)")
+                }
             }
         }
     }
@@ -130,6 +132,10 @@ class CameraService: NSObject, ObservableObject {
             if captureSession.isRunning {
                 captureSession.stopRunning()
                 print("[CameraService] Session stopped")
+                
+                DispatchQueue.main.async {
+                    self.isSessionReady = false
+                }
             }
         }
     }

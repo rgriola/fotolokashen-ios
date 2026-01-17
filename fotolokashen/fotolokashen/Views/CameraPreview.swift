@@ -6,28 +6,14 @@ struct CameraPreview: UIViewRepresentable {
     
     let session: AVCaptureSession
     
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView(frame: .zero)
-        view.backgroundColor = .black
-        
-        let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-        previewLayer.videoGravity = .resizeAspectFill
-        previewLayer.frame = view.bounds
-        view.layer.addSublayer(previewLayer)
-        
-        // Store layer in context for updates
-        context.coordinator.previewLayer = previewLayer
-        
+    func makeUIView(context: Context) -> PreviewView {
+        let view = PreviewView()
+        view.session = session
         return view
     }
     
-    func updateUIView(_ uiView: UIView, context: Context) {
-        // Update layer frame when view size changes
-        if let previewLayer = context.coordinator.previewLayer {
-            DispatchQueue.main.async {
-                previewLayer.frame = uiView.bounds
-            }
-        }
+    func updateUIView(_ uiView: PreviewView, context: Context) {
+        // Session updates handled by PreviewView
     }
     
     func makeCoordinator() -> Coordinator {
@@ -35,6 +21,45 @@ struct CameraPreview: UIViewRepresentable {
     }
     
     class Coordinator {
-        var previewLayer: AVCaptureVideoPreviewLayer?
+    }
+}
+
+/// Custom UIView that properly handles AVCaptureVideoPreviewLayer layout
+class PreviewView: UIView {
+    
+    var session: AVCaptureSession? {
+        didSet {
+            if let session = session {
+                previewLayer.session = session
+            }
+        }
+    }
+    
+    private var previewLayer: AVCaptureVideoPreviewLayer {
+        return layer as! AVCaptureVideoPreviewLayer
+    }
+    
+    override class var layerClass: AnyClass {
+        return AVCaptureVideoPreviewLayer.self
+    }
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupLayer()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupLayer()
+    }
+    
+    private func setupLayer() {
+        backgroundColor = .black
+        previewLayer.videoGravity = .resizeAspectFill
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // Preview layer automatically matches view bounds since it IS the layer
     }
 }
