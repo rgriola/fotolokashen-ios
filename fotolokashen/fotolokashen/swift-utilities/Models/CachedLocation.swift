@@ -2,17 +2,19 @@ import Foundation
 import SwiftData
 
 /// SwiftData model for locally cached locations
+@available(iOS 17, *)
 @Model
 final class CachedLocation {
     @Attribute(.unique) var id: Int
+    var placeId: String
     var name: String
-    var locationTypeId: Int
-    var latitude: Double
-    var longitude: Double
-    var formattedAddress: String?
-    var userId: Int
+    var address: String?
+    var lat: Double
+    var lng: Double
+    var type: String?
+    var notes: String?
+    var rating: Double?
     var createdAt: String
-    var updatedAt: String?
     var lastSyncedAt: Date
     var isSynced: Bool
     
@@ -21,26 +23,28 @@ final class CachedLocation {
     
     init(
         id: Int,
+        placeId: String,
         name: String,
-        locationTypeId: Int,
-        latitude: Double,
-        longitude: Double,
-        formattedAddress: String?,
-        userId: Int,
+        address: String?,
+        lat: Double,
+        lng: Double,
+        type: String?,
+        notes: String? = nil,
+        rating: Double? = nil,
         createdAt: String,
-        updatedAt: String? = nil,
         lastSyncedAt: Date = Date(),
         isSynced: Bool = true
     ) {
         self.id = id
+        self.placeId = placeId
         self.name = name
-        self.locationTypeId = locationTypeId
-        self.latitude = latitude
-        self.longitude = longitude
-        self.formattedAddress = formattedAddress
-        self.userId = userId
+        self.address = address
+        self.lat = lat
+        self.lng = lng
+        self.type = type
+        self.notes = notes
+        self.rating = rating
         self.createdAt = createdAt
-        self.updatedAt = updatedAt
         self.lastSyncedAt = lastSyncedAt
         self.isSynced = isSynced
     }
@@ -50,13 +54,14 @@ final class CachedLocation {
         return Location(
             id: id,
             name: name,
-            locationTypeId: locationTypeId,
-            latitude: latitude,
-            longitude: longitude,
-            formattedAddress: formattedAddress,
-            userId: userId,
+            address: address ?? "",
+            latitude: lat,
+            longitude: lng,
+            type: type ?? "",
+            placeId: placeId,
             createdAt: createdAt,
-            updatedAt: updatedAt
+            photosCount: photos?.count,
+            thumbnailUrl: nil
         )
     }
     
@@ -64,14 +69,15 @@ final class CachedLocation {
     static func from(_ location: Location) -> CachedLocation {
         return CachedLocation(
             id: location.id,
+            placeId: location.placeId,
             name: location.name,
-            locationTypeId: location.locationTypeId,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            formattedAddress: location.formattedAddress,
-            userId: location.userId,
+            address: location.address,
+            lat: location.lat,
+            lng: location.lng,
+            type: location.type,
+            notes: location.notes,
+            rating: location.rating,
             createdAt: location.createdAt,
-            updatedAt: location.updatedAt,
             lastSyncedAt: Date(),
             isSynced: true
         )

@@ -13,8 +13,6 @@ import GoogleMaps
 struct FotolokashenApp: App {
     @StateObject private var authService = AuthService()
     @StateObject private var networkMonitor = NetworkMonitor.shared
-    @StateObject private var syncService = SyncService.shared
-    @StateObject private var dataManager = DataManager.shared
     
     init() {
         // Initialize Google Maps SDK
@@ -25,32 +23,13 @@ struct FotolokashenApp: App {
     var body: some Scene {
         WindowGroup {
             if #available(iOS 17.0, *) {
-                ContentView()
+                ContentViewiOS17()
                     .environmentObject(authService)
                     .environmentObject(networkMonitor)
-                    .environmentObject(syncService)
-                    .environmentObject(dataManager)
-                    .modelContainer(dataManager.modelContainer)
-                    .onOpenURL { url in
-                        // Handle OAuth callback
-                        if url.scheme == "fotolokashen" {
-                            Task {
-                                await authService.handleCallback(url: url)
-                            }
-                        }
-                    }
-                    .task {
-                        // Sync on app launch if online
-                        if networkMonitor.isConnected {
-                            await syncService.syncAll()
-                        }
-                    }
             } else {
                 ContentView()
                     .environmentObject(authService)
                     .environmentObject(networkMonitor)
-                    .environmentObject(syncService)
-                    .environmentObject(dataManager)
                     .onOpenURL { url in
                         // Handle OAuth callback
                         if url.scheme == "fotolokashen" {
@@ -59,13 +38,39 @@ struct FotolokashenApp: App {
                             }
                         }
                     }
-                    .task {
-                        // Sync on app launch if online
-                        if networkMonitor.isConnected {
-                            await syncService.syncAll()
-                        }
-                    }
             }
         }
+    }
+}
+
+// MARK: - iOS 17+ View with SwiftData
+
+@available(iOS 17.0, *)
+struct ContentViewiOS17: View {
+    @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var networkMonitor: NetworkMonitor
+    
+    private let syncService = SyncService.shared
+    private let dataManager = DataManager.shared
+    
+    var body: some View {
+        ContentView()
+            .environmentObject(syncService)
+            .environmentObject(dataManager)
+            .modelContainer(dataManager.modelContainer)
+            .onOpenURL { url in
+                // Handle OAuth callback
+                if url.scheme == "fotolokashen" {
+                    Task {
+                        await authService.handleCallback(url: url)
+                    }
+                }
+            }
+            .task {
+                // Sync on app launch if online
+                if networkMonitor.isConnected {
+                    await syncService.syncAll()
+                }
+            }
     }
 }

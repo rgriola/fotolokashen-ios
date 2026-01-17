@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 
 /// SwiftData model for locally cached photos
+@available(iOS 17, *)
 @Model
 final class CachedPhoto {
     @Attribute(.unique) var id: Int
@@ -15,8 +16,8 @@ final class CachedPhoto {
     var gpsLatitude: Double?
     var gpsLongitude: Double?
     var isPrimary: Bool
-    var fileSize: Int
-    var mimeType: String
+    var fileSize: Int?
+    var mimeType: String?
     var locationId: Int
     var lastSyncedAt: Date
     
@@ -32,8 +33,8 @@ final class CachedPhoto {
         gpsLatitude: Double? = nil,
         gpsLongitude: Double? = nil,
         isPrimary: Bool = false,
-        fileSize: Int,
-        mimeType: String,
+        fileSize: Int? = nil,
+        mimeType: String? = nil,
         locationId: Int,
         lastSyncedAt: Date = Date()
     ) {

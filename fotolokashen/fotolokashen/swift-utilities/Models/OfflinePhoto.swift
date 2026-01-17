@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 
 /// SwiftData model for photos queued for upload when offline
+@available(iOS 17, *)
 @Model
 final class OfflinePhoto {
     @Attribute(.unique) var clientId: UUID

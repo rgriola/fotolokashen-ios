@@ -59,10 +59,11 @@ class LocationService: ObservableObject {
                 body: createRequest
             )
             
-            let location = response.userSave.location
+            var location = response.userSave.location
+            let userSaveId = response.userSave.id  // Store UserSave ID for fetching later
             
             if config.enableDebugLogging {
-                print("[LocationService] Location created with ID: \(location.id)")
+                print("[LocationService] Location created with ID: \(location.id), UserSave ID: \(userSaveId)")
             }
             
             // Step 2: Upload photo to the location
@@ -76,6 +77,14 @@ class LocationService: ObservableObject {
                 
                 if config.enableDebugLogging {
                     print("[LocationService] Photo uploaded with ID: \(uploadedPhoto.id)")
+                }
+                
+                // Step 3: Fetch the updated location using UserSave ID to get the photo data
+                let updatedLocation = try await fetchLocation(userSaveId: userSaveId)
+                location = updatedLocation
+                
+                if config.enableDebugLogging {
+                    print("[LocationService] Fetched updated location with \(location.photos?.count ?? 0) photos")
                 }
             } catch {
                 // Photo upload failed, but location was created
@@ -101,6 +110,28 @@ class LocationService: ObservableObject {
     }
     
     // MARK: - Fetch Locations
+    
+    /// Fetch a single location by UserSave ID
+    func fetchLocation(userSaveId: Int) async throws -> Location {
+        if config.enableDebugLogging {
+            print("[LocationService] Fetching location with UserSave ID: \(userSaveId)")
+        }
+        
+        do {
+            let response: UserSaveDetailResponse = try await apiClient.get("/api/locations/\(userSaveId)")
+            
+            if config.enableDebugLogging {
+                print("[LocationService] Fetched location: \(response.userSave.location.name)")
+            }
+            
+            return response.userSave.location
+        } catch {
+            if config.enableDebugLogging {
+                print("[LocationService] Fetch location failed: \(error)")
+            }
+            throw error
+        }
+    }
     
     /// Fetch all locations for the current user
     func fetchLocations() async throws -> [Location] {

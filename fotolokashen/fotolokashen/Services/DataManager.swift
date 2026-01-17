@@ -1,7 +1,10 @@
 import Foundation
 import SwiftData
+import Combine
 
 /// Manages SwiftData persistence and caching
+@available(iOS 17, *)
+@MainActor
 class DataManager: ObservableObject {
     
     // MARK: - Singleton
@@ -73,11 +76,13 @@ class DataManager: ObservableObject {
         if let existing = existing {
             // Update existing
             existing.name = location.name
-            existing.locationTypeId = location.locationTypeId
-            existing.latitude = location.latitude
-            existing.longitude = location.longitude
-            existing.formattedAddress = location.formattedAddress
-            existing.updatedAt = location.updatedAt
+            existing.placeId = location.placeId
+            existing.lat = location.lat
+            existing.lng = location.lng
+            existing.address = location.address
+            existing.type = location.type
+            existing.notes = location.notes
+            existing.rating = location.rating
             existing.lastSyncedAt = Date()
             existing.isSynced = true
         } else {
@@ -142,7 +147,7 @@ class DataManager: ObservableObject {
     func queuePhoto(_ offlinePhoto: OfflinePhoto) throws {
         modelContext.insert(offlinePhoto)
         try modelContext.save()
-        await updatePendingCount()
+        Task { await updatePendingCount() }
         
         if ConfigLoader.shared.enableDebugLogging {
             print("[DataManager] Photo queued for upload. Queue size: \(pendingUploads)")
@@ -161,7 +166,7 @@ class DataManager: ObservableObject {
     func removeFromQueue(_ photo: OfflinePhoto) throws {
         modelContext.delete(photo)
         try modelContext.save()
-        await updatePendingCount()
+        Task { await updatePendingCount() }
         
         if ConfigLoader.shared.enableDebugLogging {
             print("[DataManager] Photo removed from queue. Remaining: \(pendingUploads)")
@@ -202,7 +207,7 @@ class DataManager: ObservableObject {
     func clearQueue() throws {
         try modelContext.delete(model: OfflinePhoto.self)
         try modelContext.save()
-        await updatePendingCount()
+        Task { await updatePendingCount() }
         
         if ConfigLoader.shared.enableDebugLogging {
             print("[DataManager] Upload queue cleared")

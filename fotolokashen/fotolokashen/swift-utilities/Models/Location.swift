@@ -80,6 +80,24 @@ struct LocationPhoto: Codable {
 
 // MARK: - API Response Models
 
+/// Response for fetching a single location (by UserSave ID)
+struct UserSaveDetailResponse: Codable {
+    let userSave: UserSaveWithLocation
+}
+
+/// UserSave with full location details including photos
+struct UserSaveWithLocation: Codable {
+    let id: Int
+    let userId: Int
+    let locationId: Int
+    let location: Location
+    let savedAt: String?
+    let color: String?
+    let isFavorite: Bool?
+    let personalRating: Double?
+    let caption: String?
+}
+
 /// Response for fetching multiple locations
 struct LocationsResponse: Codable {
     let locations: [UserSaveWrapper]

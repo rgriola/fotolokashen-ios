@@ -1,8 +1,11 @@
 import Foundation
 import SwiftUI
 import CoreLocation
+import Combine
 
 /// Manages synchronization between local cache and backend API
+@available(iOS 17, *)
+@MainActor
 class SyncService: ObservableObject {
     
     // MARK: - Singleton
@@ -68,25 +71,18 @@ class SyncService: ObservableObject {
             print("[Sync] Starting full sync...")
         }
         
-        do {
-            // Step 1: Download locations from API
-            await syncLocationsFromAPI()
-            progress = 0.5
-            
-            // Step 2: Upload queued photos
-            await syncPhotosToAPI()
-            progress = 1.0
-            
-            lastSyncDate = Date()
-            
-            if config.enableDebugLogging {
-                print("[Sync] Full sync complete")
-            }
-            
-        } catch {
-            if config.enableDebugLogging {
-                print("[Sync] Sync error: \(error)")
-            }
+        // Step 1: Download locations from API
+        await syncLocationsFromAPI()
+        progress = 0.5
+        
+        // Step 2: Upload queued photos
+        await syncPhotosToAPI()
+        progress = 1.0
+        
+        lastSyncDate = Date()
+        
+        if config.enableDebugLogging {
+            print("[Sync] Full sync complete")
         }
         
         isSyncing = false
@@ -102,14 +98,14 @@ class SyncService: ObservableObject {
             }
             
             // Fetch from API
-            let response: LocationsResponse = try await locationService.fetchLocations()
+            let locations = try await locationService.fetchLocations()
             
             if config.enableDebugLogging {
-                print("[Sync] Fetched \(response.locations.count) locations")
+                print("[Sync] Fetched \(locations.count) locations")
             }
             
             // Save to local cache
-            try dataManager.saveLocations(response.locations)
+            try dataManager.saveLocations(locations)
             
             if config.enableDebugLogging {
                 print("[Sync] Locations saved to cache")
@@ -119,7 +115,7 @@ class SyncService: ObservableObject {
             if config.enableDebugLogging {
                 print("[Sync] Location sync error: \(error)")
             }
-            throw error
+            // Error already logged, don't rethrow
         }
     }
     
@@ -204,7 +200,7 @@ class SyncService: ObservableObject {
             if config.enableDebugLogging {
                 print("[Sync] Photo sync error: \(error)")
             }
-            throw error
+            // Error already logged, don't rethrow
         }
     }
     
@@ -212,10 +208,4 @@ class SyncService: ObservableObject {
     func refreshLocations() async {
         await syncLocationsFromAPI()
     }
-}
-
-// MARK: - Response Models
-
-struct LocationsResponse: Codable {
-    let locations: [Location]
 }
