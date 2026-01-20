@@ -143,6 +143,7 @@ struct ClusteredMapView: UIViewRepresentable {
         
         // Clear existing items
         clusterManager.clearItems()
+        context.coordinator.locationItems.removeAll()
         
         // Add location items to cluster manager
         var bounds = GMSCoordinateBounds()
@@ -152,14 +153,12 @@ struct ClusteredMapView: UIViewRepresentable {
             
             let item = LocationClusterItem(location: location)
             clusterManager.add(item)
+            context.coordinator.locationItems.append(item)
             bounds = bounds.includingCoordinate(item.position)
         }
         
         // Cluster the items
         clusterManager.cluster()
-        
-        // Customize markers after clustering
-        context.coordinator.customizeMarkers(in: mapView)
         
         // Only auto-fit on first load
         if !locations.isEmpty && !context.coordinator.hasPerformedInitialFit {
@@ -195,6 +194,7 @@ struct ClusteredMapView: UIViewRepresentable {
         var hasPerformedInitialFit = false
         var clusterManager: GMUClusterManager?
         var gmsMapView: GMSMapView?
+        var locationItems: [LocationClusterItem] = []
         
         init(_ parent: ClusteredMapView) {
             self.parent = parent
@@ -202,19 +202,21 @@ struct ClusteredMapView: UIViewRepresentable {
         
         // Handle marker tap
         func mapView(_ mapView: GMSMapView, didTap marker: GMSMarker) -> Bool {
-            // Check if it's a location marker (not a cluster)
+            // Check if it's a cluster item (set by LocationClusterRenderer)
+            if let clusterItem = marker.userData as? LocationClusterItem {
+                parent.selectedLocation = clusterItem.location
+                parent.onMarkerTap(clusterItem.location)
+                return true
+            }
+            
+            // Check if it's already converted to a Location
             if let location = marker.userData as? Location {
-                // Customize marker icon on tap
-                marker.icon = markerIcon(for: location.type ?? "")
-                marker.title = location.name
-                marker.snippet = location.address
-                
                 parent.selectedLocation = location
                 parent.onMarkerTap(location)
                 return true
             }
             
-            // If it's a cluster, let the cluster manager handle it
+            // If it's a cluster, let the cluster manager handle it (return false)
             return false
         }
         
@@ -233,37 +235,14 @@ struct ClusteredMapView: UIViewRepresentable {
             return true
         }
         
-        // Customize all visible markers after clustering
-        func customizeMarkers(in mapView: GMSMapView) {
-            // Markers will be customized when tapped or info window is shown
-        }
-        
-        // Helper to create colored marker icons
-        func markerIcon(for type: String) -> UIImage {
-            let color: UIColor
-            
-            switch type.uppercased() {
-            case "BROLL":
-                color = .systemBlue
-            case "STORY":
-                color = .systemPurple
-            case "INTERVIEW":
-                color = .systemOrange
-            case "ESTABLISHING":
-                color = .systemGreen
-            case "DETAIL":
-                color = .systemPink
-            case "WIDE":
-                color = .systemCyan
-            case "MEDIUM":
-                color = .systemIndigo
-            case "CLOSE":
-                color = .systemRed
-            default:
-                color = .systemGray
+        // GMUClusterManagerDelegate - called when individual cluster item is tapped
+        func clusterManager(_ manager: GMUClusterManager, didTap clusterItem: GMUClusterItem) -> Bool {
+            if let locationItem = clusterItem as? LocationClusterItem {
+                parent.selectedLocation = locationItem.location
+                parent.onMarkerTap(locationItem.location)
+                return true
             }
-            
-            return GMSMarker.markerImage(with: color)
+            return false
         }
     }
 }
