@@ -66,13 +66,23 @@ class LocationStore: ObservableObject {
     }
     
     /// Delete a location from the server and remove from local store
-    func deleteLocation(_ location: Location) async {
+    /// Returns true if successful, false if failed
+    @discardableResult
+    func deleteLocation(_ location: Location) async -> Bool {
+        guard let userSaveId = location.userSaveId else {
+            if config.enableDebugLogging {
+                print("[LocationStore] Error: Location has no userSaveId, cannot delete")
+            }
+            errorMessage = "Cannot delete location: missing identifier"
+            return false
+        }
+        
         do {
             if config.enableDebugLogging {
-                print("[LocationStore] Deleting location: \(location.id)")
+                print("[LocationStore] Deleting location with UserSave ID: \(userSaveId)")
             }
             
-            try await locationService.deleteLocation(id: location.id)
+            try await locationService.deleteLocation(userSaveId: userSaveId)
             
             // Remove from local array
             locations.removeAll { $0.id == location.id }
@@ -80,11 +90,14 @@ class LocationStore: ObservableObject {
             if config.enableDebugLogging {
                 print("[LocationStore] Location deleted successfully, now have \(locations.count) locations")
             }
+            
+            return true
         } catch {
             if config.enableDebugLogging {
                 print("[LocationStore] Error deleting location: \(error)")
             }
             errorMessage = "Failed to delete location: \(error.localizedDescription)"
+            return false
         }
     }
     

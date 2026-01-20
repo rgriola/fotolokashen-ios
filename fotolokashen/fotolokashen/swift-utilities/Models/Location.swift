@@ -15,8 +15,11 @@ struct Location: Codable, Identifiable {
     let createdAt: String
     let photos: [LocationPhoto]?
     
+    /// UserSave ID - used for delete operations (different from location id)
+    var userSaveId: Int?
+    
     /// Convenience initializer for creating locations with latitude/longitude
-    init(id: Int, name: String, address: String, latitude: Double, longitude: Double, type: String, placeId: String, createdAt: String, photosCount: Int?, thumbnailUrl: String?) {
+    init(id: Int, name: String, address: String, latitude: Double, longitude: Double, type: String, placeId: String, createdAt: String, photosCount: Int?, thumbnailUrl: String?, userSaveId: Int? = nil) {
         self.id = id
         self.name = name
         self.address = address
@@ -28,6 +31,7 @@ struct Location: Codable, Identifiable {
         self.photos = nil
         self.notes = nil
         self.rating = nil
+        self.userSaveId = userSaveId
     }
     
     /// Latitude (convenience property)
@@ -102,9 +106,13 @@ struct UserSaveWithLocation: Codable {
 struct LocationsResponse: Codable {
     let locations: [UserSaveWrapper]
     
-    /// Unwrap the locations from UserSave objects
+    /// Unwrap the locations from UserSave objects, preserving userSaveId
     var unwrappedLocations: [Location] {
-        locations.map { $0.location }
+        locations.map { wrapper in
+            var location = wrapper.location
+            location.userSaveId = wrapper.id  // Preserve the UserSave ID for delete operations
+            return location
+        }
     }
 }
 

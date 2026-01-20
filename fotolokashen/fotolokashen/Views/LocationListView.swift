@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import CoreLocation
+import UIKit
 
 /// Main view for displaying a list of saved locations
 struct LocationListView: View {
@@ -12,6 +13,13 @@ struct LocationListView: View {
     @State private var searchText = ""
     @State private var selectedTypeFilter: String?
     @State private var sortOption: SortOption = .dateNewest
+    
+    // Delete confirmation state
+    @State private var showingDeleteConfirmation = false
+    @State private var locationToDelete: Location?
+    @State private var isDeleting = false
+    @State private var showingDeleteError = false
+    @State private var deleteErrorMessage = ""
     
     var body: some View {
         NavigationStack {
@@ -143,12 +151,12 @@ struct LocationListView: View {
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .destructive) {
-                        Task {
-                            await locationStore.deleteLocation(location)
-                        }
+                        locationToDelete = location
+                        showingDeleteConfirmation = true
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
+                    .disabled(isDeleting)
                 }
             }
             
@@ -162,6 +170,55 @@ struct LocationListView: View {
             }
         }
         .listStyle(.plain)
+        .alert("Delete Location", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                locationToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let location = locationToDelete {
+                    deleteLocation(location)
+                }
+            }
+        } message: {
+            if let location = locationToDelete {
+                Text("Are you sure you want to delete \"\(location.name)\"? This action cannot be undone.")
+            }
+        }
+        .alert("Delete Failed", isPresented: $showingDeleteError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteErrorMessage)
+        }
+    }
+    
+    // MARK: - Delete Location
+    
+    private func deleteLocation(_ location: Location) {
+        isDeleting = true
+        
+        Task {
+            let success = await locationStore.deleteLocation(location)
+            
+            await MainActor.run {
+                isDeleting = false
+                locationToDelete = nil
+                
+                if success {
+                    // Success haptic feedback
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.success)
+                } else {
+                    // Error haptic feedback
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.error)
+                    
+                    deleteErrorMessage = locationStore.errorMessage.isEmpty 
+                        ? "Unable to delete location. Please try again."
+                        : locationStore.errorMessage
+                    showingDeleteError = true
+                }
+            }
+        }
     }
     
     // MARK: - Empty State

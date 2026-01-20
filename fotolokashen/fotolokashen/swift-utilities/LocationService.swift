@@ -61,6 +61,7 @@ class LocationService: ObservableObject {
             
             var location = response.userSave.location
             let userSaveId = response.userSave.id  // Store UserSave ID for fetching later
+            location.userSaveId = userSaveId  // Set userSaveId for delete operations
             
             if config.enableDebugLogging {
                 print("[LocationService] Location created with ID: \(location.id), UserSave ID: \(userSaveId)")
@@ -80,7 +81,8 @@ class LocationService: ObservableObject {
                 }
                 
                 // Step 3: Fetch the updated location using UserSave ID to get the photo data
-                let updatedLocation = try await fetchLocation(userSaveId: userSaveId)
+                var updatedLocation = try await fetchLocation(userSaveId: userSaveId)
+                updatedLocation.userSaveId = userSaveId  // Preserve userSaveId
                 location = updatedLocation
                 
                 if config.enableDebugLogging {
@@ -160,14 +162,14 @@ class LocationService: ObservableObject {
     
     // MARK: - Delete Location
     
-    /// Delete a location by ID
-    func deleteLocation(id: Int) async throws {
+    /// Delete a location by UserSave ID
+    func deleteLocation(userSaveId: Int) async throws {
         if config.enableDebugLogging {
-            print("[LocationService] Deleting location: \(id)")
+            print("[LocationService] Deleting location with UserSave ID: \(userSaveId)")
         }
         
         do {
-            let _: EmptyResponse = try await apiClient.delete("/api/locations/\(id)")
+            let _: EmptyResponse = try await apiClient.delete("/api/locations/\(userSaveId)")
             
             if config.enableDebugLogging {
                 print("[LocationService] Location deleted successfully")
