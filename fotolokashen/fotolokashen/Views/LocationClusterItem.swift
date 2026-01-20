@@ -15,7 +15,9 @@ class LocationClusterItem: NSObject, GMUClusterItem {
             longitude: location.longitude
         )
         // Pre-generate the custom camera icon
-        self.markerIcon = MarkerIconGenerator.cameraMarker(for: location.type ?? "")
+        let locationType = location.type ?? ""
+        print("[LocationClusterItem] Creating marker for '\(location.name)' with type: '\(locationType)'")
+        self.markerIcon = MarkerIconGenerator.cameraMarker(for: locationType)
         super.init()
     }
 }
