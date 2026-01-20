@@ -17,6 +17,7 @@ struct CreateLocationView: View {
     @State private var isLoadingAddress = true
     @State private var showingSuccess = false
     @State private var createdLocation: Location?
+    @State private var geocodedAddressData: GeocodedAddress?
     
     // Location types (matching web app)
     private let locationTypes = [
@@ -223,37 +224,81 @@ struct CreateLocationView: View {
     // MARK: - Methods
     
     private func loadAddress() async {
+        print("📍 [CreateLocationView.loadAddress] ========== START ==========")
         guard let location = photoLocation else {
+            print("❌ [CreateLocationView.loadAddress] No photoLocation available!")
             address = "No GPS data"
             isLoadingAddress = false
             return
         }
         
+        print("📍 [CreateLocationView.loadAddress] Photo location: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+        
         do {
-            address = try await locationService.getAddress(
+            // Get full geocoded address data including placeId, street, city, state, zipcode
+            print("📍 [CreateLocationView.loadAddress] Calling getGeocodedAddress...")
+            let geocoded = try await locationService.getGeocodedAddress(
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude
             )
+            geocodedAddressData = geocoded
+            address = geocoded.formattedAddress
             isLoadingAddress = false
+            
+            print("✅ [CreateLocationView.loadAddress] Geocoding successful!")
+            print("   placeId: \(geocoded.placeId)")
+            print("   formattedAddress: \(geocoded.formattedAddress)")
+            print("   fullStreet: \(geocoded.fullStreet ?? "nil")")
+            print("   city: \(geocoded.city ?? "nil")")
+            print("   state: \(geocoded.state ?? "nil")")
+            print("   zipcode: \(geocoded.zipcode ?? "nil")")
+            print("📍 [CreateLocationView.loadAddress] ========== END ==========")
         } catch {
+            print("❌ [CreateLocationView.loadAddress] Geocoding FAILED!")
+            print("   Error: \(error)")
+            print("   Error description: \(error.localizedDescription)")
             address = "Address unavailable"
             isLoadingAddress = false
         }
     }
     
     private func saveLocation() async {
-        guard let location = photoLocation else { return }
-        
-        // Ensure we have a valid address - use coordinates as fallback
-        let finalAddress: String
-        if address == "Loading address..." || address == "Address unavailable" || address == "No GPS data" {
-            // Use coordinates as fallback address
-            finalAddress = String(format: "%.6f, %.6f", 
-                                location.coordinate.latitude,
-                                location.coordinate.longitude)
-        } else {
-            finalAddress = address
+        print("💾 [CreateLocationView.saveLocation] ========== START ==========")
+        guard let location = photoLocation else {
+            print("❌ [CreateLocationView.saveLocation] No photoLocation!")
+            return
         }
+        
+        print("💾 [CreateLocationView.saveLocation] Location name: \(locationName)")
+        print("💾 [CreateLocationView.saveLocation] Location type: \(locationType)")
+        print("💾 [CreateLocationView.saveLocation] Coordinates: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+        print("💾 [CreateLocationView.saveLocation] Has geocodedAddressData: \(geocodedAddressData != nil)")
+        
+        // Create fallback geocoded address using coordinates if geocoding failed
+        let geocodedAddress: GeocodedAddress
+        if let existingGeocodedData = geocodedAddressData {
+            print("✅ [CreateLocationView.saveLocation] Using existing geocoded data")
+            geocodedAddress = existingGeocodedData
+        } else {
+            // Create fallback with coordinates as address and a generated placeId
+            print("⚠️ [CreateLocationView.saveLocation] WARNING: Creating fallback geocoded address!")
+            let coordinateString = String(format: "%.6f, %.6f", 
+                                        location.coordinate.latitude,
+                                        location.coordinate.longitude)
+            geocodedAddress = GeocodedAddress(
+                placeId: "photo-\(Date().timeIntervalSince1970)",
+                formattedAddress: coordinateString,
+                streetNumber: nil,
+                street: nil,
+                city: nil,
+                state: nil,
+                zipcode: nil
+            )
+            print("⚠️ [CreateLocationView.saveLocation] Fallback placeId: \(geocodedAddress.placeId)")
+            print("⚠️ [CreateLocationView.saveLocation] Fallback address: \(geocodedAddress.formattedAddress)")
+        }
+        
+        print("💾 [CreateLocationView.saveLocation] Calling locationService.createLocation...")
         
         do {
             let createdLoc = try await locationService.createLocation(
@@ -261,15 +306,23 @@ struct CreateLocationView: View {
                 type: locationType,
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
-                address: finalAddress,
+                geocodedAddress: geocodedAddress,
                 photo: photo,
                 photoLocation: location
             )
+            
+            print("✅ [CreateLocationView.saveLocation] Location created successfully!")
+            print("   Location ID: \(createdLoc.id)")
+            print("   Location name: \(createdLoc.name)")
+            print("💾 [CreateLocationView.saveLocation] ========== END ==========")
             
             createdLocation = createdLoc
             showingSuccess = true
             
         } catch {
+            print("❌ [CreateLocationView.saveLocation] FAILED!")
+            print("   Error: \(error)")
+            print("   Error description: \(error.localizedDescription)")
             // Error is already set in locationService.errorMessage
         }
     }

@@ -17,52 +17,56 @@ class LocationStore: ObservableObject {
     
     /// Fetch locations only if we don't have any (initial load)
     func fetchLocations() async {
-        guard !isLoading else { return }
+        print("[LocationStore] 📡 fetchLocations() called, isLoading: \(isLoading), count: \(locations.count)")
         
-        // Only fetch if we don't have locations yet
-        guard locations.isEmpty else {
-            if config.enableDebugLogging {
-                print("[LocationStore] Already have \(locations.count) locations, skipping fetch")
-            }
+        guard !isLoading else {
+            print("[LocationStore] ⏳ Already loading, skipping")
             return
         }
         
+        // Only fetch if we don't have locations yet
+        guard locations.isEmpty else {
+            print("[LocationStore] ℹ️ Already have \(locations.count) locations, skipping fetch")
+            return
+        }
+        
+        print("[LocationStore] 🔄 Locations empty, calling refreshLocations()...")
         await refreshLocations()
     }
     
     /// Force refresh locations (for pull-to-refresh or after creating new location)
     func refreshLocations() async {
-        guard !isLoading else { return }
+        print("[LocationStore] 🔄 refreshLocations() called")
+        
+        guard !isLoading else {
+            print("[LocationStore] ⏳ Already loading, skipping refresh")
+            return
+        }
         
         isLoading = true
         defer { isLoading = false }
         
         do {
-            if config.enableDebugLogging {
-                print("[LocationStore] Refreshing locations...")
-            }
+            print("[LocationStore] 📡 Fetching from API...")
             
             locations = try await locationService.fetchLocations()
             
-            if config.enableDebugLogging {
-                print("[LocationStore] Refreshed \(locations.count) locations")
-            }
+            print("[LocationStore] ✅ Refreshed \(locations.count) locations")
         } catch {
-            if config.enableDebugLogging {
-                print("[LocationStore] Error refreshing locations: \(error)")
-            }
+            print("[LocationStore] ❌ Error refreshing locations: \(error)")
             errorMessage = error.localizedDescription
         }
     }
     
     /// Add a newly created location to the store without refetching
     func addLocation(_ location: Location) {
+        print("[LocationStore] 📍 Adding new location: \(location.name)")
+        print("[LocationStore] 📍 Current count BEFORE add: \(locations.count)")
+        
         // Insert at beginning (newest first)
         locations.insert(location, at: 0)
         
-        if config.enableDebugLogging {
-            print("[LocationStore] Added location locally, now have \(locations.count) locations")
-        }
+        print("[LocationStore] ✅ Added location, now have \(locations.count) locations")
     }
     
     /// Delete a location from the server and remove from local store

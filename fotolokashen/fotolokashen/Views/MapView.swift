@@ -9,7 +9,6 @@ struct MapView: View {
     @EnvironmentObject var authService: AuthService
     @ObservedObject private var locationStore = LocationStore.shared
     @State private var selectedLocation: Location?
-    @State private var showingLocationDetail = false
     @State private var centerOnUserLocation = false
     
     var body: some View {
@@ -22,7 +21,6 @@ struct MapView: View {
                     centerOnUserLocation: $centerOnUserLocation,
                     onMarkerTap: { location in
                         selectedLocation = location
-                        showingLocationDetail = true
                     }
                 )
                 .ignoresSafeArea()
@@ -49,10 +47,8 @@ struct MapView: View {
             }
             .navigationTitle("Map")
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showingLocationDetail) {
-                if let location = selectedLocation {
-                    LocationDetailView(location: location)
-                }
+            .sheet(item: $selectedLocation) { location in
+                LocationDetailView(location: location)
             }
         }
         .task {

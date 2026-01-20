@@ -27,19 +27,38 @@ struct FotolokashenApp: App {
                     .environmentObject(authService)
                     .environmentObject(networkMonitor)
             } else {
-                ContentView()
+                ContentViewLegacy()
                     .environmentObject(authService)
                     .environmentObject(networkMonitor)
-                    .onOpenURL { url in
-                        // Handle OAuth callback
-                        if url.scheme == "fotolokashen" {
-                            Task {
-                                await authService.handleCallback(url: url)
-                            }
-                        }
-                    }
             }
         }
+    }
+}
+
+// MARK: - Legacy iOS View (pre-iOS 17)
+
+struct ContentViewLegacy: View {
+    @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var networkMonitor: NetworkMonitor
+    @Environment(\.scenePhase) private var scenePhase
+    
+    var body: some View {
+        ContentView()
+            .onOpenURL { url in
+                // Handle OAuth callback
+                if url.scheme == "fotolokashen" {
+                    Task {
+                        await authService.handleCallback(url: url)
+                    }
+                }
+            }
+            .onChange(of: scenePhase) { newPhase in
+                if newPhase == .active {
+                    // Re-check auth status when app becomes active
+                    print("[App] Scene became active - checking auth status")
+                    authService.checkAuthStatus()
+                }
+            }
     }
 }
 
@@ -49,6 +68,7 @@ struct FotolokashenApp: App {
 struct ContentViewiOS17: View {
     @EnvironmentObject var authService: AuthService
     @EnvironmentObject var networkMonitor: NetworkMonitor
+    @Environment(\.scenePhase) private var scenePhase
     
     private let syncService = SyncService.shared
     private let dataManager = DataManager.shared
@@ -70,6 +90,14 @@ struct ContentViewiOS17: View {
                 // Sync on app launch if online
                 if networkMonitor.isConnected {
                     await syncService.syncAll()
+                }
+            }
+            .onChange(of: scenePhase) { oldPhase, newPhase in
+                if newPhase == .active {
+                    // Re-check auth status when app becomes active
+                    // This will detect if the token was invalidated on another device
+                    print("[App] Scene became active - checking auth status")
+                    authService.checkAuthStatus()
                 }
             }
     }

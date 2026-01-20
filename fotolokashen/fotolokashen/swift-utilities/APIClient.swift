@@ -1,5 +1,12 @@
 import Foundation
 
+// MARK: - Notification Names
+
+extension Notification.Name {
+    /// Posted when the API returns 401, indicating the auth session is invalid
+    static let authSessionInvalidated = Notification.Name("authSessionInvalidated")
+}
+
 /// Network client for making API requests to fotolokashen backend
 class APIClient {
     
@@ -182,7 +189,11 @@ class APIClient {
             
         case 401:
             if ConfigLoader.shared.enableDebugLogging {
-                print("[APIClient] 401 Unauthorized - attempting token refresh")
+                print("[APIClient] 401 Unauthorized - token is invalid or expired")
+            }
+            // Post notification so AuthService can handle logout
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .authSessionInvalidated, object: nil)
             }
             throw APIError.unauthorized
             

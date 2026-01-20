@@ -111,6 +111,13 @@ class SyncService: ObservableObject {
                 print("[Sync] Locations saved to cache")
             }
             
+            // Update the shared LocationStore so all views stay in sync
+            LocationStore.shared.locations = locations
+            
+            if config.enableDebugLogging {
+                print("[Sync] LocationStore updated with \(locations.count) locations")
+            }
+            
         } catch {
             if config.enableDebugLogging {
                 print("[Sync] Location sync error: \(error)")

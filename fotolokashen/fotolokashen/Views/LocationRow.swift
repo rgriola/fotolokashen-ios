@@ -89,49 +89,11 @@ struct LocationRow: View {
     // MARK: - Helper Functions
     
     private func typeIcon(for type: String) -> String {
-        switch type.uppercased() {
-        case "BROLL":
-            return "video.fill"
-        case "STORY":
-            return "book.fill"
-        case "INTERVIEW":
-            return "mic.fill"
-        case "ESTABLISHING":
-            return "building.2.fill"
-        case "DETAIL":
-            return "magnifyingglass"
-        case "WIDE":
-            return "arrow.up.left.and.arrow.down.right"
-        case "MEDIUM":
-            return "rectangle.fill"
-        case "CLOSE":
-            return "circle.fill"
-        default:
-            return "mappin.circle.fill"
-        }
+        return LocationTypeColors.icon(for: type)
     }
     
     private func typeColor(for type: String) -> Color {
-        switch type.uppercased() {
-        case "BROLL":
-            return .blue
-        case "STORY":
-            return .purple
-        case "INTERVIEW":
-            return .orange
-        case "ESTABLISHING":
-            return .green
-        case "DETAIL":
-            return .pink
-        case "WIDE":
-            return .cyan
-        case "MEDIUM":
-            return .indigo
-        case "CLOSE":
-            return .red
-        default:
-            return .gray
-        }
+        return LocationTypeColors.color(for: type)
     }
 }
 

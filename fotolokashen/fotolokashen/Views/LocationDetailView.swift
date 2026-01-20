@@ -455,27 +455,11 @@ struct LocationDetailView: View {
     // MARK: - Helper Functions
     
     private func typeIcon(for type: String) -> String {
-        switch type.lowercased() {
-        case "outdoor": return "sun.max"
-        case "indoor": return "house"
-        case "studio": return "camera.fill"
-        case "urban": return "building.2"
-        case "nature": return "leaf"
-        case "architectural": return "building.columns"
-        default: return "mappin.circle.fill"
-        }
+        return LocationTypeColors.icon(for: type)
     }
     
     private func typeColor(for type: String) -> Color {
-        switch type.lowercased() {
-        case "outdoor": return .orange
-        case "indoor": return .blue
-        case "studio": return .purple
-        case "urban": return .gray
-        case "nature": return .green
-        case "architectural": return .brown
-        default: return .gray
-        }
+        return LocationTypeColors.color(for: type)
     }
     
     private func formatDate(_ isoString: String) -> String {

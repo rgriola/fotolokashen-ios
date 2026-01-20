@@ -197,6 +197,11 @@ struct CreateLocationRequest: Codable {
     let type: String?
     let notes: String?
     let rating: Double?
+    // Address components for database
+    let street: String?
+    let city: String?
+    let state: String?
+    let zipcode: String?
 }
 
 // MARK: - Create Location Response

@@ -27,6 +27,40 @@ class AuthService: ObservableObject {
     
     init() {
         checkAuthStatus()
+        setupSessionInvalidationObserver()
+    }
+    
+    // MARK: - Session Invalidation Observer
+    
+    /// Listen for 401 errors from API and auto-logout
+    private func setupSessionInvalidationObserver() {
+        NotificationCenter.default.addObserver(
+            forName: .authSessionInvalidated,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self = self else { return }
+                
+                // Only handle if we think we're authenticated
+                guard self.isAuthenticated else { return }
+                
+                if self.config.enableDebugLogging {
+                    print("[AuthService] ⚠️ Session invalidated (401 received) - logging out")
+                }
+                
+                // Clear tokens and reset state
+                self.isAuthenticated = false
+                self.currentUser = nil
+                try? self.keychainService.clearTokens()
+                
+                // Clear location store
+                LocationStore.shared.clear()
+                
+                // Set error message so user knows what happened
+                self.errorMessage = "Your session has expired. Please log in again."
+            }
+        }
     }
     
     // MARK: - Auth Status
