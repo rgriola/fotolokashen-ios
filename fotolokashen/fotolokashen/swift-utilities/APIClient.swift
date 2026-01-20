@@ -58,6 +58,14 @@ class APIClient {
         try await request(path: path, method: "DELETE", body: nil as String?, authenticated: authenticated)
     }
     
+    // MARK: - User API
+    
+    /// Get the current authenticated user
+    func getCurrentUser() async throws -> User {
+        let response: MeResponse = try await get("/api/auth/me", authenticated: true)
+        return response.user
+    }
+    
     // MARK: - Core Request Method
     
     private func request<T: Decodable, B: Encodable>(
@@ -198,6 +206,12 @@ class APIClient {
 struct ErrorResponse: Codable {
     let error: String
     let code: String?
+}
+
+// MARK: - Me Response
+
+struct MeResponse: Codable {
+    let user: User
 }
 
 // MARK: - API Errors

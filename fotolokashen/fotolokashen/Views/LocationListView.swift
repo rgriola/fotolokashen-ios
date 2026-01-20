@@ -7,9 +7,6 @@ import UIKit
 struct LocationListView: View {
     @EnvironmentObject var authService: AuthService
     @ObservedObject private var locationStore = LocationStore.shared
-    @State private var showingCamera = false
-    @State private var showingLogoutConfirmation = false
-    @State private var capturedPhoto: PhotoCapture?
     @State private var searchText = ""
     @State private var selectedTypeFilter: String?
     @State private var sortOption: SortOption = .dateNewest
@@ -38,15 +35,6 @@ struct LocationListView: View {
             .navigationTitle("My Locations")
             .searchable(text: $searchText, prompt: "Search locations")
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        showingLogoutConfirmation = true
-                    } label: {
-                        Image(systemName: "arrow.right.square")
-                            .foregroundColor(.red)
-                    }
-                }
-                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Picker("Sort By", selection: $sortOption) {
@@ -63,42 +51,9 @@ struct LocationListView: View {
                         Image(systemName: "arrow.up.arrow.down")
                     }
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingCamera = true
-                    } label: {
-                        Image(systemName: "camera.fill")
-                    }
-                }
-            }
-            .sheet(isPresented: $showingCamera) {
-                CameraView { image, location in
-                    capturedPhoto = PhotoCapture(image: image, location: location)
-                }
-            }
-            .sheet(item: $capturedPhoto) { capture in
-                CreateLocationView(
-                    photo: capture.image,
-                    photoLocation: capture.location
-                ) { location in
-                    // Location created - add to shared store (both views will update)
-                    locationStore.addLocation(location)
-                }
             }
             .refreshable {
                 await locationStore.refreshLocations()
-            }
-            .alert("Logout", isPresented: $showingLogoutConfirmation) {
-                Button("Cancel", role: .cancel) {}
-                Button("Logout", role: .destructive) {
-                    Task {
-                        locationStore.clear()
-                        await authService.logout()
-                    }
-                }
-            } message: {
-                Text("Are you sure you want to logout?")
             }
         }
         .task {
@@ -233,23 +188,19 @@ struct LocationListView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
             
-            Text(searchText.isEmpty ? "Start by capturing a photo with the camera" : "Try a different search term")
+            Text(searchText.isEmpty ? "Go to the Capture tab to add your first location" : "Try a different search term")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
             if searchText.isEmpty {
-                Button {
-                    showingCamera = true
-                } label: {
-                    Label("Open Camera", systemImage: "camera.fill")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.blue)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                HStack {
+                    Image(systemName: "camera.fill")
+                    Text("Use the Capture tab below")
                 }
+                .font(.headline)
+                .foregroundColor(.blue)
                 .padding(.top)
             }
         }

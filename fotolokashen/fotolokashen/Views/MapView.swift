@@ -10,9 +10,7 @@ struct MapView: View {
     @ObservedObject private var locationStore = LocationStore.shared
     @State private var selectedLocation: Location?
     @State private var showingLocationDetail = false
-    @State private var showingCamera = false
-    @State private var showingLogoutConfirmation = false
-    @State private var capturedPhoto: PhotoCapture?
+    @State private var centerOnUserLocation = false
     
     var body: some View {
         NavigationStack {
@@ -21,6 +19,7 @@ struct MapView: View {
                 ClusteredMapView(
                     locations: locationStore.locations,
                     selectedLocation: $selectedLocation,
+                    centerOnUserLocation: $centerOnUserLocation,
                     onMarkerTap: { location in
                         selectedLocation = location
                         showingLocationDetail = true
@@ -34,7 +33,7 @@ struct MapView: View {
                     HStack {
                         Spacer()
                         Button {
-                            // TODO: Implement center on current location
+                            centerOnUserLocation = true
                         } label: {
                             Image(systemName: "location.fill")
                                 .font(.title2)
@@ -50,53 +49,10 @@ struct MapView: View {
             }
             .navigationTitle("Map")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        showingLogoutConfirmation = true
-                    } label: {
-                        Image(systemName: "arrow.right.square")
-                            .foregroundColor(.red)
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingCamera = true
-                    } label: {
-                        Image(systemName: "camera.fill")
-                    }
-                }
-            }
-            .sheet(isPresented: $showingCamera) {
-                CameraView { image, location in
-                    capturedPhoto = PhotoCapture(image: image, location: location)
-                }
-            }
-            .sheet(item: $capturedPhoto) { capture in
-                CreateLocationView(
-                    photo: capture.image,
-                    photoLocation: capture.location
-                ) { location in
-                    // Location created - add to shared store
-                    locationStore.addLocation(location)
-                }
-            }
             .sheet(isPresented: $showingLocationDetail) {
                 if let location = selectedLocation {
                     LocationDetailView(location: location)
                 }
-            }
-            .alert("Logout", isPresented: $showingLogoutConfirmation) {
-                Button("Cancel", role: .cancel) {}
-                Button("Logout", role: .destructive) {
-                    Task {
-                        locationStore.clear()
-                        await authService.logout()
-                    }
-                }
-            } message: {
-                Text("Are you sure you want to logout?")
             }
         }
         .task {
@@ -110,6 +66,7 @@ struct MapView: View {
 struct ClusteredMapView: UIViewRepresentable {
     let locations: [Location]
     @Binding var selectedLocation: Location?
+    @Binding var centerOnUserLocation: Bool
     let onMarkerTap: (Location) -> Void
     
     func makeUIView(context: Context) -> GMSMapView {
@@ -159,6 +116,25 @@ struct ClusteredMapView: UIViewRepresentable {
     
     func updateUIView(_ mapView: GMSMapView, context: Context) {
         print("[MapView] updateUIView called with \(locations.count) locations")
+        
+        // Handle center on user location request
+        if centerOnUserLocation {
+            if let userLocation = mapView.myLocation {
+                let camera = GMSCameraPosition.camera(
+                    withLatitude: userLocation.coordinate.latitude,
+                    longitude: userLocation.coordinate.longitude,
+                    zoom: 15.0
+                )
+                mapView.animate(to: camera)
+                print("[MapView] Centered on user location: \(userLocation.coordinate)")
+            } else {
+                print("[MapView] User location not available yet")
+            }
+            // Reset the flag
+            DispatchQueue.main.async {
+                self.centerOnUserLocation = false
+            }
+        }
         
         guard let clusterManager = context.coordinator.clusterManager else {
             print("[MapView] No cluster manager")

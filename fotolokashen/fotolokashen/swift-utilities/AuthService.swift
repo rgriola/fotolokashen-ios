@@ -61,7 +61,23 @@ class AuthService: ObservableObject {
             
             // Token is valid
             isAuthenticated = true
-            // TODO: Fetch current user from API if not cached
+            // Fetch current user from API
+            await fetchCurrentUser()
+        }
+    }
+    
+    /// Fetch the current user from the API
+    func fetchCurrentUser() async {
+        do {
+            let user = try await apiClient.getCurrentUser()
+            self.currentUser = user
+            if config.enableDebugLogging {
+                print("[AuthService] Fetched current user: \(user.username)")
+            }
+        } catch {
+            if config.enableDebugLogging {
+                print("[AuthService] Failed to fetch current user: \(error)")
+            }
         }
     }
     
