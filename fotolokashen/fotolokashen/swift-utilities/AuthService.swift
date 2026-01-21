@@ -39,9 +39,8 @@ class AuthService: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self else { return }
-                
+            guard let self = self else { return }
+            Task { @MainActor [self] in
                 // Only handle if we think we're authenticated
                 guard self.isAuthenticated else { return }
                 
