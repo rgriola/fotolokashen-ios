@@ -395,13 +395,12 @@ struct LocationDetailView: View {
     // MARK: - Data Loading
     
     private func loadPhotos() async {
-        guard let userSaveId = location.userSaveId else {
-            isLoadingPhotos = false
-            return
-        }
+        // Use location.id (Location table ID), not userSaveId
+        // The /api/locations/[id]/photos endpoint expects the Location ID
+        let locationId = location.id
         
         do {
-            let response: PhotosResponse = try await APIClient.shared.get("/api/locations/\(userSaveId)/photos")
+            let response: PhotosResponse = try await APIClient.shared.get("/api/locations/\(locationId)/photos")
             await MainActor.run {
                 self.photos = response.photos
                 self.isLoadingPhotos = false
