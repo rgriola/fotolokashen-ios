@@ -1,6 +1,12 @@
 import SwiftUI
 import CoreLocation
 
+// MARK: - Brand Colors
+extension Color {
+    static let brandPurple = Color(red: 0.36, green: 0.30, blue: 1.0)  // #5B4CFF
+    static let brandPurpleDark = Color(red: 0.30, green: 0.25, blue: 0.90)
+}
+
 struct ContentView: View {
     @EnvironmentObject var authService: AuthService
     
@@ -21,70 +27,82 @@ struct LoginView: View {
     @EnvironmentObject var authService: AuthService
     
     var body: some View {
-        VStack(spacing: 30) {
-            Image(systemName: "camera.fill")
-                .font(.system(size: 80))
-                .foregroundColor(.blue)
+        ZStack {
+            // Brand purple background
+            Color.brandPurple
+                .ignoresSafeArea()
             
-            Text("fotolokashen")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            Text("iOS Companion App")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
-            Spacer()
-            
-            VStack(spacing: 15) {
-                Button(action: {
-                    authService.startLogin()
-                }) {
-                    HStack {
-                        if authService.isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        } else {
-                            Image(systemName: "person.circle.fill")
-                            Text("Login with Safari")
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
+            VStack(spacing: 30) {
+                Spacer()
+                
+                // Logo
+                Image("FLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                
+                Text("fotolokashen")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
                     .foregroundColor(.white)
-                    .cornerRadius(12)
+                
+                Text("Location Scouting Made Simple")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.8))
+                
+                Spacer()
+                
+                VStack(spacing: 15) {
+                    Button(action: {
+                        authService.startLogin()
+                    }) {
+                        HStack {
+                            if authService.isLoading {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .brandPurple))
+                            } else {
+                                Image(systemName: "person.circle.fill")
+                                Text("Login with Safari")
+                            }
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .foregroundColor(.brandPurple)
+                        .cornerRadius(12)
+                    }
+                    .disabled(authService.isLoading)
+                    
+                    Text("Opens Safari for secure login")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
                 }
-                .disabled(authService.isLoading)
+                .padding(.horizontal, 40)
                 
-                Text("Opens Safari for secure login")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.horizontal)
-            
-            if let error = authService.errorMessage {
-                Text(error)
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .multilineTextAlignment(.center)
-                    .padding()
-            }
-            
-            Spacer()
-            
-            VStack(spacing: 8) {
-                Text("Backend: \(ConfigLoader.shared.backendBaseURL)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                if let error = authService.errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                        .background(Color.red.opacity(0.3))
+                        .cornerRadius(8)
+                        .padding(.horizontal)
+                }
                 
-                Text("OAuth Client: \(ConfigLoader.shared.oauthClientId)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                Spacer()
+                
+                VStack(spacing: 4) {
+                    Text("Backend: \(ConfigLoader.shared.backendBaseURL)")
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.5))
+                }
+                .padding(.bottom)
             }
-            .padding(.bottom)
+            .padding()
         }
-        .padding()
+        .navigationBarHidden(true)
     }
 }
 
@@ -126,85 +144,63 @@ struct BrandTabView: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                // User info at top in grey
-                if let user = authService.currentUser {
-                    Text(user.username)
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                        .padding(.top, 8)
-                }
+            ZStack {
+                // Brand purple background
+                Color.brandPurple
+                    .ignoresSafeArea()
                 
-                Spacer()
-                
-                // App Icon - using the app's actual icon
-                if let appIcon = UIImage(named: "AppIcon") {
-                    Image(uiImage: appIcon)
+                VStack(spacing: 20) {
+                    Spacer()
+                    
+                    // Logo
+                    Image("FLogo")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 120, height: 120)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-                } else {
-                    // Fallback icon if AppIcon not found
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.blue)
-                        .frame(width: 120, height: 120)
-                        .background(Color(.systemGray5))
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-                }
-                
-                Text("fotolokashen")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                
-                Text("Capture • Save • Explore")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                // Quick stats
-                VStack(spacing: 12) {
-                    HStack {
-                        Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(.blue)
-                        Text("Save production locations with photos")
-                            .font(.subheadline)
-                    }
+                        .frame(width: 100, height: 100)
                     
-                    HStack {
-                        Image(systemName: "camera.fill")
-                            .foregroundColor(.blue)
-                        Text("Capture geo-tagged location photos")
-                            .font(.subheadline)
-                    }
+                    Text("fotolokashen")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
                     
-                    HStack {
-                        Image(systemName: "map.fill")
-                            .foregroundColor(.blue)
-                        Text("View all locations on a map")
-                            .font(.subheadline)
+                    Text("Capture • Save • Explore")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.8))
+                    
+                    Spacer()
+                    
+                    // Feature cards
+                    VStack(spacing: 12) {
+                        FeatureRow(icon: "mappin.circle.fill", text: "Save production locations with photos")
+                        FeatureRow(icon: "camera.fill", text: "Capture geo-tagged location photos")
+                        FeatureRow(icon: "map.fill", text: "View all locations on a map")
+                    }
+                    .padding()
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal)
+                    
+                    Spacer()
+                    
+                    // User info
+                    if let user = authService.currentUser {
+                        Text("Logged in as \(user.username)")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.7))
+                            .padding(.bottom, 8)
                     }
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal)
-                
-                Spacer()
             }
-            .navigationTitle("Home")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
                         showingLogoutConfirmation = true
                     } label: {
-                        Image(systemName: "arrow.right.square")
-                            .foregroundColor(.red)
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .foregroundColor(.white)
                     }
                 }
             }
@@ -223,6 +219,25 @@ struct BrandTabView: View {
     }
 }
 
+// MARK: - Feature Row
+
+struct FeatureRow: View {
+    let icon: String
+    let text: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(.white)
+                .frame(width: 24)
+            Text(text)
+                .font(.subheadline)
+                .foregroundColor(.white)
+            Spacer()
+        }
+    }
+}
+
 // MARK: - Capture Tab View (Camera Center Tab)
 
 struct CaptureTabView: View {
@@ -232,47 +247,84 @@ struct CaptureTabView: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 30) {
-                Spacer()
+            ZStack {
+                // Brand purple background
+                Color.brandPurple
+                    .ignoresSafeArea()
                 
-                // Camera icon
-                Image(systemName: "camera.circle.fill")
-                    .font(.system(size: 100))
-                    .foregroundColor(.blue)
-                
-                Text("Capture Location")
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                Text("Take a photo to save a new production location")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                
-                Spacer()
-                
-                // Capture button
-                Button {
-                    showingCamera = true
-                } label: {
-                    HStack {
+                VStack(spacing: 30) {
+                    Spacer()
+                    
+                    // Camera icon with crosshair style
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white, lineWidth: 3)
+                            .frame(width: 120, height: 120)
+                        
                         Image(systemName: "camera.fill")
-                        Text("Open Camera")
+                            .font(.system(size: 50))
+                            .foregroundColor(.white)
+                        
+                        // Crosshair marks
+                        VStack {
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 3, height: 20)
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 3, height: 20)
+                        }
+                        .frame(height: 160)
+                        
+                        HStack {
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 20, height: 3)
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 20, height: 3)
+                        }
+                        .frame(width: 160)
                     }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .frame(width: 160, height: 160)
+                    
+                    Text("Capture Location")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    
+                    Text("Take a photo to save a new\nproduction location")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                    
+                    Spacer()
+                    
+                    // Capture button
+                    Button {
+                        showingCamera = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "camera.fill")
+                            Text("Open Camera")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.brandPurple)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .padding(.horizontal, 40)
+                    
+                    Spacer()
                 }
-                .padding(.horizontal, 40)
-                
-                Spacer()
             }
-            .navigationTitle("Capture")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .sheet(isPresented: $showingCamera) {
                 CameraView { image, location in
                     capturedPhoto = PhotoCapture(image: image, location: location)
