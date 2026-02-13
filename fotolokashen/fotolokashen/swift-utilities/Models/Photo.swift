@@ -122,7 +122,7 @@ struct PhotoConfirmation: Codable {
     let uploadedAt: String
 }
 
-// MARK: - ImageKit Upload Response
+// MARK: - ImageKit Upload Response (Legacy - Direct CDN Upload)
 
 struct ImageKitUploadResponse: Codable {
     let fileId: String
@@ -132,6 +132,52 @@ struct ImageKitUploadResponse: Codable {
     let width: Int?             // Make optional
     let height: Int?            // Make optional
     let size: Int?              // Make optional
+}
+
+// MARK: - Secure Upload Response (Server-Mediated)
+
+/// Response from /api/photos/upload
+/// Server performs virus scanning, format validation, and compression
+struct SecureUploadResponse: Codable {
+    let upload: SecureUploadDetails
+    let file: SecureFileDetails
+    let metadata: SecurePhotoMetadata?
+}
+
+struct SecureUploadDetails: Codable {
+    let fileId: String
+    let filePath: String
+    let url: String
+    let thumbnailUrl: String?
+    let width: Int?
+    let height: Int?
+}
+
+struct SecureFileDetails: Codable {
+    let originalFilename: String
+    let size: Int
+    let mimeType: String
+}
+
+struct SecurePhotoMetadata: Codable {
+    let hasGPS: Bool?
+    let gpsLatitude: Double?
+    let gpsLongitude: Double?
+    let gpsAltitude: Double?
+    let cameraMake: String?
+    let cameraModel: String?
+    let lensMake: String?
+    let lensModel: String?
+    let dateTaken: String?
+    let iso: Int?
+    let focalLength: String?
+    let aperture: String?
+    let exposureTime: String?
+    let exposureMode: String?
+    let whiteBalance: String?
+    let flash: String?
+    let colorSpace: String?
+    let orientation: Int?
 }
 
 // MARK: - Equatable
