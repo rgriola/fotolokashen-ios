@@ -29,8 +29,10 @@ The fotolokashen iOS app allows users to quickly capture photos with GPS coordin
 
 ### Photo Upload
 - 📤 **Smart Compression** - Optimizes images before upload
-- ☁️ **ImageKit Integration** - Direct cloud upload
-- 📸 **EXIF Preservation** - Maintains camera metadata
+- 🔒 **Secure Server Upload** - Virus scanning and format validation
+- ☁️ **ImageKit Integration** - Server-mediated cloud storage
+- 📸 **EXIF Preservation** - Maintains camera metadata (sanitized)
+- 🛡️ **Security Features** - HEIC/TIFF conversion, XSS prevention
 
 ## Tech Stack
 
@@ -169,6 +171,7 @@ The app supports 15 location types with consistent colors across iOS and web:
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
+| `/api/photos/upload` | POST | Secure photo upload with virus scanning |
 | `/api/auth/me` | GET | Get current user |
 | `/api/auth/oauth/token` | POST | Exchange auth code for tokens |
 | `/api/auth/oauth/revoke` | POST | Revoke tokens on logout |
@@ -176,19 +179,35 @@ The app supports 15 location types with consistent colors across iOS and web:
 | `/api/locations` | POST | Create new location |
 | `/api/locations/{id}` | GET | Get location details |
 | `/api/locations/{id}` | DELETE | Delete location |
-| `/api/locations/{id}/photos/request-upload` | POST | Get ImageKit upload URL |
-| `/api/locations/{id}/photos/{photoId}/confirm` | POST | Confirm upload |
+| `/api/locations/{id}/photos` | POST | Associate uploaded photo with location |
+| `/api/locations/{id}/photos/request-upload` | POST | ⚠️ Legacy: Get ImageKit upload URL |
+| `/api/locations/{id}/photos/{photoId}/confirm` | POST | ⚠️ Legacy: Confirm upload |
 
-### Photo Upload Flow
+### Photo Upload Flow (v1.1+)
 
 ```
 1. Capture photo with GPS
-2. Compress image (~1.3MB)
-3. Request signed upload URL from backend
-4. Upload directly to ImageKit
-5. Confirm upload with backend
+2. Compress image locally (~1.3MB)
+3. Upload to /api/photos/upload
+   - Server performs virus scan (ClamAV)
+   - Format validation (MIME + extension)
+   - HEIC/TIFF → JPEG conversion
+   - Additional compression if needed
+   - EXIF metadata sanitization
+4. Server uploads to ImageKit CDN
+5. Associate photo with location via /api/locations/{id}/photos
 6. Location saved with photo reference
 ```
+
+#### Security Features
+
+| Feature | Description |
+|---------|-------------|
+| **Virus Scanning** | All uploads scanned by ClamAV before reaching CDN |
+| **Format Validation** | Server validates MIME type and file extension |
+| **Format Conversion** | HEIC/TIFF automatically converted to JPEG |
+| **Metadata Sanitization** | EXIF strings sanitized to prevent XSS attacks |
+| **Orphan Prevention** | Photos only created in DB after successful upload |
 
 ## Troubleshooting
 
@@ -237,6 +256,13 @@ View logs in Xcode console with prefixes:
 
 ## Version History
 
+### v1.1 (February 2026)
+- 🔒 **Secure Photo Upload** - Server-mediated upload with virus scanning
+- 🛡️ **Format Validation** - Server-side MIME type and extension checks
+- 🔄 **HEIC/TIFF Support** - Automatic conversion to JPEG
+- 🧹 **EXIF Sanitization** - XSS prevention for metadata fields
+- 📋 **Upload Security Documentation** - See `docs/IOS_PHOTO_UPLOAD_SECURITY_REVIEW.md`
+
 ### v1.0 (January 2026)
 - ✅ OAuth2 authentication with PKCE
 - ✅ Camera capture with GPS tracking
@@ -261,6 +287,6 @@ Proprietary - All rights reserved
 
 ---
 
-**Version**: 1.0  
-**Last Updated**: January 20, 2026  
-**Status**: ✅ Production Ready
+**Version**: 1.1  
+**Last Updated**: February 13, 2026  
+**Status**: ✅ Production Ready (Secure Upload)

@@ -2,6 +2,38 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
+## [1.1.0] - 2026-02-13
+
+### 🔒 Security Enhancement - Secure Photo Upload
+
+#### Changed
+- **Photo Upload Flow**: Replaced direct-to-CDN uploads with server-mediated secure endpoint
+  - All uploads now route through `/api/photos/upload` for security validation
+  - Photos are associated with locations via `/api/locations/{id}/photos` endpoint
+  - Removed legacy request-upload + confirm flow
+
+#### Security Features Added
+- ✅ **Virus Scanning**: ClamAV scans all uploads before reaching CDN
+- ✅ **Server-Side Format Validation**: MIME type and file extension validated server-side
+- ✅ **HEIC/TIFF Conversion**: Automatic conversion to web-compatible JPEG format
+- ✅ **EXIF Metadata Sanitization**: All metadata strings sanitized to prevent XSS attacks
+- ✅ **Orphan File Prevention**: Photos only created in database after successful upload
+
+#### Technical Changes
+- Updated `PhotoUploadService.swift` to use `/api/photos/upload` endpoint
+- Added new response models: `SecureUploadResponse`, `SecureUploadDetails`, `SecureFileDetails`, `SecurePhotoMetadata`
+- Added `AssociatePhotoRequest` for linking uploaded photos to locations
+- Retained legacy `ImageKitUploadResponse` for backwards compatibility
+
+#### Documentation
+- Added `IOS_PHOTO_UPLOAD_SECURITY_REVIEW.md` with implementation details
+- Updated upload flow diagrams in README
+
+### Breaking Changes
+- None - backwards compatible with existing functionality
+
+---
+
 ## [1.0.0] - 2025-01-16
 
 ### 🎉 Initial Release
