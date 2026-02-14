@@ -13,6 +13,8 @@ struct CreateLocationView: View {
     
     @State private var locationName = ""
     @State private var locationType = "BROLL"
+    @State private var productionDate: Date?  // Optional production date
+    @State private var hasProductionDate = false  // Toggle for setting date
     @State private var address = "Loading address..."
     @State private var isLoadingAddress = true
     @State private var showingSuccess = false
@@ -74,6 +76,35 @@ struct CreateLocationView: View {
                             .pickerStyle(.menu)
                             .tint(.blue)
                         }
+                        
+                        // Production Date (Optional)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Production Date")
+                                .font(.headline)
+                            
+                            Toggle("Set Production Date", isOn: $hasProductionDate)
+                                .tint(.blue)
+                                .onChange(of: hasProductionDate) { oldValue, newValue in
+                                    if !newValue {
+                                        productionDate = nil
+                                    } else if productionDate == nil {
+                                        productionDate = Date()
+                                    }
+                                }
+                            
+                            if hasProductionDate {
+                                DatePicker(
+                                    "Date",
+                                    selection: Binding(
+                                        get: { productionDate ?? Date() },
+                                        set: { productionDate = $0 }
+                                    ),
+                                    displayedComponents: [.date]
+                                )
+                                .datePickerStyle(.compact)
+                            }
+                        }
+                        .padding(.vertical, 8)
                         
                         Divider()
                         
@@ -308,7 +339,8 @@ struct CreateLocationView: View {
                 longitude: location.coordinate.longitude,
                 geocodedAddress: geocodedAddress,
                 photo: photo,
-                photoLocation: location
+                photoLocation: location,
+                productionDate: productionDate  // Pass production date
             )
             
             print("✅ [CreateLocationView.saveLocation] Location created successfully!")

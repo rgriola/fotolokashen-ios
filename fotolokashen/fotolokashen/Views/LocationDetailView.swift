@@ -270,6 +270,28 @@ struct LocationDetailView: View {
                 DetailRow(label: "Rating", value: "N/A")
             }
             
+            // Production Date
+            if let productionDate = location.productionDate {
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar")
+                        .foregroundColor(.blue)
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Production Date")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text(formatProductionDate(productionDate))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(8)
+            }
+            
             DetailRow(label: "Created At", value: formatDate(location.createdAt))
             DetailRow(label: "Photos Count", value: "\(location.photosCount ?? 0)")
         }
@@ -482,6 +504,13 @@ struct LocationDetailView: View {
         }
         
         return isoString
+    }
+    
+    private func formatProductionDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long  // "December 31, 2025"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)  // Force UTC to match backend
+        return formatter.string(from: date)
     }
     
     private func formatFileSize(_ bytes: Int) -> String {

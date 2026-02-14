@@ -32,7 +32,8 @@ class LocationService: ObservableObject {
         longitude: Double,
         geocodedAddress: GeocodedAddress,
         photo: UIImage,
-        photoLocation: CLLocation?
+        photoLocation: CLLocation?,
+        productionDate: Date? = nil  // Optional production/filming date
     ) async throws -> Location {
         isLoading = true
         errorMessage = nil
@@ -52,6 +53,15 @@ class LocationService: ObservableObject {
             print("   state: \(geocodedAddress.state ?? "nil")")
             print("   zipcode: \(geocodedAddress.zipcode ?? "nil")")
             
+            // Convert production date to ISO string if provided
+            var productionDateString: String? = nil
+            if let date = productionDate {
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withFullDate]  // YYYY-MM-DD only
+                productionDateString = formatter.string(from: date)
+                print("   productionDate: \(productionDateString ?? "nil")")
+            }
+            
             // Step 1: Create location with full address data
             let createRequest = CreateLocationRequest(
                 placeId: geocodedAddress.placeId,
@@ -62,6 +72,7 @@ class LocationService: ObservableObject {
                 type: type,  // Keep original case (uppercase) to match web app
                 notes: nil,
                 rating: nil,
+                productionDate: productionDateString,
                 street: geocodedAddress.fullStreet,
                 city: geocodedAddress.city,
                 state: geocodedAddress.state,

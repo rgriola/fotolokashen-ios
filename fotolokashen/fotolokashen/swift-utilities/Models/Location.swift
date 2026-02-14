@@ -12,6 +12,7 @@ struct Location: Codable, Identifiable {
     let type: String?
     let notes: String?
     let rating: Double?
+    let productionDate: Date?  // Production/filming date (optional)
     let createdAt: String
     let photos: [LocationPhoto]?
     
@@ -19,7 +20,7 @@ struct Location: Codable, Identifiable {
     var userSaveId: Int?
     
     /// Convenience initializer for creating locations with latitude/longitude
-    init(id: Int, name: String, address: String, latitude: Double, longitude: Double, type: String, placeId: String, createdAt: String, photosCount: Int?, thumbnailUrl: String?, userSaveId: Int? = nil) {
+    init(id: Int, name: String, address: String, latitude: Double, longitude: Double, type: String, placeId: String, createdAt: String, photosCount: Int?, thumbnailUrl: String?, userSaveId: Int? = nil, productionDate: Date? = nil) {
         self.id = id
         self.name = name
         self.address = address
@@ -31,6 +32,7 @@ struct Location: Codable, Identifiable {
         self.photos = nil
         self.notes = nil
         self.rating = nil
+        self.productionDate = productionDate
         self.userSaveId = userSaveId
     }
     
@@ -197,6 +199,7 @@ struct CreateLocationRequest: Codable {
     let type: String?
     let notes: String?
     let rating: Double?
+    let productionDate: String?  // ISO date string (YYYY-MM-DD)
     // Address components for database
     let street: String?
     let city: String?
@@ -224,6 +227,7 @@ struct UpdateLocationRequest: Codable {
     let notes: String?
     let rating: Double?
     let type: String?
+    let productionDate: String?  // ISO date string (YYYY-MM-DD), null to remove
 }
 
 // MARK: - Example JSON Response
