@@ -45,7 +45,9 @@ class AuthService: ObservableObject {
                 guard self.isAuthenticated else { return }
                 
                 if self.config.enableDebugLogging {
+                    #if DEBUG
                     print("[AuthService] ⚠️ Session invalidated (401 received) - logging out")
+                    #endif
                 }
                 
                 // Clear tokens and reset state
@@ -78,13 +80,17 @@ class AuthService: ObservableObject {
             if keychainService.isTokenExpired() || keychainService.needsRefresh() {
                 do {
                     try await refreshToken()
+                    #if DEBUG
                     if config.enableDebugLogging {
                         print("[AuthService] Token refreshed on app launch")
                     }
+                    #endif
                 } catch {
+                    #if DEBUG
                     if config.enableDebugLogging {
                         print("[AuthService] Token refresh failed on launch: \(error)")
                     }
+                    #endif
                     isAuthenticated = false
                     currentUser = nil
                     try? keychainService.clearTokens()
@@ -104,13 +110,17 @@ class AuthService: ObservableObject {
         do {
             let user = try await apiClient.getCurrentUser()
             self.currentUser = user
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[AuthService] Fetched current user: \(user.username)")
             }
+            #endif
         } catch {
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[AuthService] Failed to fetch current user: \(error)")
             }
+            #endif
         }
     }
     
@@ -123,10 +133,12 @@ class AuthService: ObservableObject {
         self.codeVerifier = verifier
         self.codeChallenge = challenge
         
+        #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Starting OAuth flow")
             print("[AuthService] Code challenge: \(challenge)")
         }
+        #endif
         
         // Build login URL with OAuth parameters
         var components = URLComponents(url: config.backendURL, resolvingAgainstBaseURL: false)!
@@ -145,9 +157,11 @@ class AuthService: ObservableObject {
             return
         }
         
+        #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Opening Safari: \(loginURL.absoluteString)")
         }
+        #endif
         
         // Open Safari for login
         UIApplication.shared.open(loginURL)
@@ -158,9 +172,11 @@ class AuthService: ObservableObject {
         isLoading = true
         errorMessage = nil
         
+        #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Handling callback: \(url.absoluteString)")
         }
+        #endif
         
         // Parse authorization code from URL
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
@@ -170,17 +186,21 @@ class AuthService: ObservableObject {
             return
         }
         
+        #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Authorization code received: \(code)")
         }
+        #endif
         
         do {
             // Exchange code for tokens
             try await exchangeCodeForTokens(code: code)
         } catch {
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[AuthService] Token exchange error: \(error)")
             }
+            #endif
             errorMessage = error.localizedDescription
         }
         
@@ -219,9 +239,11 @@ class AuthService: ObservableObject {
             authenticated: false
         )
         
+        #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Tokens received for user: \(tokenResponse.user.email)")
         }
+        #endif
         
         // Save tokens
         let token = OAuthToken(from: tokenResponse)
@@ -242,15 +264,19 @@ class AuthService: ObservableObject {
     func refreshTokenIfNeeded() async throws {
         // Check if refresh is needed
         guard keychainService.needsRefresh() else {
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[AuthService] Token still valid, no refresh needed")
             }
+            #endif
             return
         }
         
+        #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Token needs refresh, refreshing...")
         }
+        #endif
         
         try await refreshToken()
     }
@@ -283,9 +309,11 @@ class AuthService: ObservableObject {
             authenticated: false
         )
         
+        #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Token refreshed successfully")
         }
+        #endif
         
         // Save new tokens
         let token = OAuthToken(from: tokenResponse)
@@ -316,9 +344,11 @@ class AuthService: ObservableObject {
                     authenticated: false
                 )
                 
+                #if DEBUG
                 if config.enableDebugLogging {
                     print("[AuthService] Token revoked on server")
                 }
+                #endif
             }
             
             // Clear local tokens
@@ -329,9 +359,11 @@ class AuthService: ObservableObject {
             currentUser = nil
             
         } catch {
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[AuthService] Logout error: \(error)")
             }
+            #endif
             // Clear tokens anyway
             try? keychainService.clearTokens()
             isAuthenticated = false

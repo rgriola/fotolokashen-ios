@@ -161,8 +161,9 @@ class ConfigLoader {
 // MARK: - Convenience Extensions
 
 extension ConfigLoader {
-    /// Print all configuration values (for debugging)
+    /// Print all configuration values (for debugging only)
     func printConfiguration() {
+        #if DEBUG
         print("=== fotolokashen Configuration ===")
         print("Backend URL: \(backendBaseURL)")
         print("OAuth Client ID: \(oauthClientId)")
@@ -174,6 +175,7 @@ extension ConfigLoader {
         print("Offline Mode: \(enableOfflineMode ? "Enabled" : "Disabled")")
         print("Debug Logging: \(enableDebugLogging ? "Enabled" : "Disabled")")
         print("================================")
+        #endif
     }
 }
 

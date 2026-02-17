@@ -2,6 +2,61 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
+## [1.1.1] - 2026-02-17
+
+### 🔒 Security Hardening & Codebase Cleanup
+
+#### Security Fixes
+- **Debug logging gated behind `#if DEBUG`**: All `print()` statements in `APIClient.swift`, `AuthService.swift`, `PhotoUploadService.swift`, and `ConfigLoader.swift` are now wrapped in `#if DEBUG` compiler flags to prevent any logging in release builds
+- **Token logging removed**: `APIClient.swift` no longer logs token prefixes — uses `[REDACTED]` placeholder instead
+- **API key removed from Info.plist**: Hardcoded Google Maps API key replaced with build configuration variable `$(GOOGLE_MAPS_API_KEY)` — key should be set via `.xcconfig` file
+- **Config.plist remains gitignored**: Verified `.gitignore` properly excludes `Config.plist` and `**/Config.plist`
+
+#### Codebase Cleanup
+- **Removed duplicate model files**: Deleted stale `fotolokashen/swift-utilities/Models/` directory (contained outdated copies of `User.swift`, `Location.swift`, `Photo.swift`, `OAuthToken.swift` with incorrect non-optional types). Single source of truth now at `fotolokashen/fotolokashen/swift-utilities/Models/`
+- **Fixed `.github` directory**: Renamed `.gitbhub/` → `.github/` (typo fix)
+- **Updated copilot-instructions.md**: Comprehensive rewrite with full architecture documentation, security checklist, API reference, development patterns, and phased roadmap
+
+#### Dependency Notes
+- **Kingfisher** and **ImageKit iOS SDK** are SPM dependencies but unused in code — to be removed via Xcode Package Dependencies UI
+
+#### Documentation
+- Updated `CHANGELOG.md` with security fixes and phased roadmap
+- Updated `README.md` with current features and corrected setup instructions
+- Rewrote `.github/copilot-instructions.md` with comprehensive project documentation
+
+### Planned Phases (Feature Parity with Web App)
+
+#### Phase 1: User Profile & Settings
+- Profile editing (bio, city, country, language, timezone)
+- Avatar/banner upload via secure pipeline
+- Privacy controls
+- Switch to richer `/api/v1/users/me` endpoint
+
+#### Phase 2: Location Editing & Enrichment
+- Edit existing locations (production notes, entry point, parking, access, indoor/outdoor)
+- Favorites, tags, personal ratings, color, visibility
+- Photo deletion from locations
+- Type-based filtering on location list
+
+#### Phase 3: Social Features
+- Follow/unfollow users
+- Public user profiles
+- Followers/following lists
+- Public & friends' locations on map
+
+#### Phase 4: Search & Onboarding
+- People search with typeahead suggestions
+- Terms of Service acceptance (blocking modal)
+- Onboarding walkthrough
+
+#### Phase 5: AI & Support
+- AI description improvement
+- AI tag suggestions
+- In-app member support form
+
+---
+
 ## [1.1.0] - 2026-02-13
 
 ### 🔒 Security Enhancement - Secure Photo Upload

@@ -125,16 +125,20 @@ class APIClient {
         if let body = body {
             request.httpBody = body
             
+            #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
                 if let jsonString = String(data: body, encoding: .utf8) {
                     print("[APIClient] Request body: \(jsonString)")
                 }
             }
+            #endif
         }
         
+        #if DEBUG
         if ConfigLoader.shared.enableDebugLogging {
             print("[APIClient] \(method) \(url.absoluteString)")
         }
+        #endif
         
         return request
     }
@@ -142,15 +146,19 @@ class APIClient {
     /// Add Bearer token authentication header
     private func addAuthenticationHeader(to request: inout URLRequest) throws {
         guard let accessToken = KeychainService.shared.getAccessToken() else {
+            #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
                 print("[APIClient] No access token found in Keychain")
             }
+            #endif
             throw APIError.unauthorized
         }
         
+        #if DEBUG
         if ConfigLoader.shared.enableDebugLogging {
-            print("[APIClient] Using access token: \(accessToken.prefix(20))...")
+            print("[APIClient] Using access token: [REDACTED]")
         }
+        #endif
         
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
     }
@@ -161,9 +169,11 @@ class APIClient {
             throw APIError.invalidResponse
         }
         
+        #if DEBUG
         if ConfigLoader.shared.enableDebugLogging {
             print("[APIClient] Response: \(httpResponse.statusCode)")
         }
+        #endif
         
         return httpResponse
     }
@@ -178,19 +188,23 @@ class APIClient {
             do {
                 return try decoder.decode(T.self, from: data)
             } catch {
+                #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
                     print("[APIClient] Decode error: \(error)")
                     if let jsonString = String(data: data, encoding: .utf8) {
                         print("[APIClient] Response data: \(jsonString)")
                     }
                 }
+                #endif
                 throw APIError.decodingFailed(error)
             }
             
         case 401:
+            #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
                 print("[APIClient] 401 Unauthorized - token is invalid or expired")
             }
+            #endif
             // Post notification so AuthService can handle logout
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .authSessionInvalidated, object: nil)

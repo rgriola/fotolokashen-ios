@@ -1,4 +1,4 @@
-# fotolokashen iOS v1.0
+# fotolokashen iOS v1.1.1
 
 iOS companion app for fotolokashen - A camera-first location scouting app for photographers and film crews.
 
@@ -101,11 +101,18 @@ fotolokashen-ios/
 
 2. **Configure API Keys**
    ```bash
-   cp Config.example.plist fotolokashen/fotolokashen/Config.plist
+   cp Config.example.plist Config.plist
    ```
    Edit `Config.plist` and add:
-   - `GoogleMapsAPIKey` - Your Google Maps API key
-   - `BackendURL` - Backend URL (default: `https://fotolokashen.com`)
+   - `googleMapsAPIKey` - Your Google Maps API key
+   - `backendBaseURL` - Backend URL (default: `https://fotolokashen.com`)
+
+   **Important**: The Google Maps key in `Info.plist` reads from `$(GOOGLE_MAPS_API_KEY)`. 
+   Set this in your Xcode build settings or create a `.xcconfig` file:
+   ```
+   // Debug.xcconfig
+   GOOGLE_MAPS_API_KEY = YOUR_KEY_HERE
+   ```
 
 3. **Open in Xcode**
    ```bash
@@ -180,8 +187,6 @@ The app supports 15 location types with consistent colors across iOS and web:
 | `/api/locations/{id}` | GET | Get location details |
 | `/api/locations/{id}` | DELETE | Delete location |
 | `/api/locations/{id}/photos` | POST | Associate uploaded photo with location |
-| `/api/locations/{id}/photos/request-upload` | POST | ⚠️ Legacy: Get ImageKit upload URL |
-| `/api/locations/{id}/photos/{photoId}/confirm` | POST | ⚠️ Legacy: Confirm upload |
 
 ### Photo Upload Flow (v1.1+)
 
@@ -256,6 +261,12 @@ View logs in Xcode console with prefixes:
 
 ## Version History
 
+### v1.1.1 (February 2026)
+- 🔒 **Security Hardening** — All debug logging gated behind `#if DEBUG` compiler flags
+- 🔑 **API Key Protection** — Hardcoded key removed from Info.plist, uses build config variable
+- 🧹 **Codebase Cleanup** — Removed duplicate model files, fixed `.github` directory typo
+- 📋 **Documentation** — Comprehensive rewrite of copilot-instructions.md with phased roadmap
+
 ### v1.1 (February 2026)
 - 🔒 **Secure Photo Upload** - Server-mediated upload with virus scanning
 - 🛡️ **Format Validation** - Server-side MIME type and extension checks
@@ -287,6 +298,6 @@ Proprietary - All rights reserved
 
 ---
 
-**Version**: 1.1  
-**Last Updated**: February 13, 2026  
-**Status**: ✅ Production Ready (Secure Upload)
+**Version**: 1.1.1  
+**Last Updated**: February 17, 2026  
+**Status**: ✅ Production Ready (Security Hardened)

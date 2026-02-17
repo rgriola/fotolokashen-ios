@@ -37,9 +37,11 @@ class PhotoUploadService: ObservableObject {
         
         do {
             // Step 1: Compress image locally (reduces upload time)
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[PhotoUpload] Compressing image locally...")
             }
+            #endif
             
             guard let compressedData = ImageCompressor.compress(image) else {
                 throw PhotoUploadError.compressionFailed
@@ -47,9 +49,11 @@ class PhotoUploadService: ObservableObject {
             
             uploadProgress = 0.2
             
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[PhotoUpload] Compressed to \(compressedData.count / 1024)KB")
             }
+            #endif
             
             // Step 2: Build metadata for GPS/EXIF data
             let metadata = buildUploadMetadata(location: location)
@@ -58,9 +62,11 @@ class PhotoUploadService: ObservableObject {
             
             // Step 3: Upload via secure server endpoint
             // Server performs: virus scan, format validation, additional compression
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[PhotoUpload] Uploading via secure endpoint...")
             }
+            #endif
             
             let secureResponse = try await uploadSecurely(
                 data: compressedData,
@@ -71,16 +77,20 @@ class PhotoUploadService: ObservableObject {
             
             uploadProgress = 0.9
             
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[PhotoUpload] ✅ Secure upload complete")
                 print("[PhotoUpload] File ID: \(secureResponse.upload.fileId)")
                 print("[PhotoUpload] URL: \(secureResponse.upload.url)")
             }
+            #endif
             
             // Step 4: Associate photo with location
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[PhotoUpload] Associating photo with location \(locationId)...")
             }
+            #endif
             
             let associateRequest = AssociatePhotoRequest(
                 fileId: secureResponse.upload.fileId,
@@ -102,9 +112,11 @@ class PhotoUploadService: ObservableObject {
             
             uploadProgress = 1.0
             
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[PhotoUpload] ✅ Photo associated! ID: \(photo.id)")
             }
+            #endif
             
             isUploading = false
             return photo
@@ -113,9 +125,11 @@ class PhotoUploadService: ObservableObject {
             isUploading = false
             errorMessage = error.localizedDescription
             
+            #if DEBUG
             if config.enableDebugLogging {
                 print("[PhotoUpload] ❌ Upload failed: \(error)")
             }
+            #endif
             
             throw error
         }
@@ -179,10 +193,12 @@ class PhotoUploadService: ObservableObject {
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.httpBody = body
         
+        #if DEBUG
         if config.enableDebugLogging {
             print("[PhotoUpload] POST \(uploadURL.absoluteString)")
             print("[PhotoUpload] Body size: \(body.count / 1024)KB")
         }
+        #endif
         
         // Send request
         let (responseData, response) = try await URLSession.shared.data(for: request)
@@ -192,12 +208,14 @@ class PhotoUploadService: ObservableObject {
             throw PhotoUploadError.invalidResponse
         }
         
+        #if DEBUG
         if config.enableDebugLogging {
             print("[PhotoUpload] Response status: \(httpResponse.statusCode)")
             if let responseString = String(data: responseData, encoding: .utf8) {
                 print("[PhotoUpload] Response: \(responseString.prefix(500))")
             }
         }
+        #endif
         
         // Handle status codes
         switch httpResponse.statusCode {
