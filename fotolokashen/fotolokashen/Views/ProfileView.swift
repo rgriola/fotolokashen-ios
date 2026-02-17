@@ -82,12 +82,12 @@ struct ProfileView: View {
             .sheet(isPresented: $showingBannerPicker) {
                 ImagePicker(image: $selectedBannerImage)
             }
-            .onChange(of: selectedAvatarImage) { newValue in
+            .onChange(of: selectedAvatarImage) { _, newValue in
                 if let image = newValue {
                     Task { await uploadAvatar(image) }
                 }
             }
-            .onChange(of: selectedBannerImage) { newValue in
+            .onChange(of: selectedBannerImage) { _, newValue in
                 if let image = newValue {
                     Task { await uploadBanner(image) }
                 }
@@ -336,9 +336,9 @@ struct ProfileView: View {
             FormField(label: "Last Name", text: $lastName, placeholder: "Last name")
             FormField(label: "Bio", text: $bio, placeholder: "Tell others about yourself...", isMultiline: true)
         }
-        .onChange(of: firstName) { _ in checkForChanges() }
-        .onChange(of: lastName) { _ in checkForChanges() }
-        .onChange(of: bio) { _ in checkForChanges() }
+        .onChange(of: firstName) { _, _ in checkForChanges() }
+        .onChange(of: lastName) { _, _ in checkForChanges() }
+        .onChange(of: bio) { _, _ in checkForChanges() }
     }
 
     private var locationSection: some View {
@@ -348,8 +348,8 @@ struct ProfileView: View {
             FormField(label: "City", text: $city, placeholder: "City")
             FormField(label: "Country", text: $country, placeholder: "Country")
         }
-        .onChange(of: city) { _ in checkForChanges() }
-        .onChange(of: country) { _ in checkForChanges() }
+        .onChange(of: city) { _, _ in checkForChanges() }
+        .onChange(of: country) { _, _ in checkForChanges() }
     }
 
     private var preferencesSection: some View {
@@ -363,9 +363,9 @@ struct ProfileView: View {
                 .tint(.brandPurple)
                 .padding(.horizontal, 4)
         }
-        .onChange(of: language) { _ in checkForChanges() }
-        .onChange(of: timezone) { _ in checkForChanges() }
-        .onChange(of: emailNotifications) { _ in checkForChanges() }
+        .onChange(of: language) { _, _ in checkForChanges() }
+        .onChange(of: timezone) { _, _ in checkForChanges() }
+        .onChange(of: emailNotifications) { _, _ in checkForChanges() }
     }
 
     // MARK: - Upload indicator

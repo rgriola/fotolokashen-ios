@@ -120,11 +120,11 @@ struct SettingsView: View {
             Text("Control who can see your profile, locations, and send follow requests.")
                 .font(.caption)
         }
-        .onChange(of: profileVisibility) { _ in checkForChanges() }
-        .onChange(of: showInSearch) { _ in checkForChanges() }
-        .onChange(of: showLocation) { _ in checkForChanges() }
-        .onChange(of: showSavedLocations) { _ in checkForChanges() }
-        .onChange(of: allowFollowRequests) { _ in checkForChanges() }
+        .onChange(of: profileVisibility) { _, _ in checkForChanges() }
+        .onChange(of: showInSearch) { _, _ in checkForChanges() }
+        .onChange(of: showLocation) { _, _ in checkForChanges() }
+        .onChange(of: showSavedLocations) { _, _ in checkForChanges() }
+        .onChange(of: allowFollowRequests) { _, _ in checkForChanges() }
     }
 
     private var appInfoSection: some View {

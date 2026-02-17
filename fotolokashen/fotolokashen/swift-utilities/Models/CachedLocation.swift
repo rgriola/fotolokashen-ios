@@ -2,7 +2,6 @@ import Foundation
 import SwiftData
 
 /// SwiftData model for locally cached locations
-@available(iOS 17, *)
 @Model
 final class CachedLocation {
     @Attribute(.unique) var id: Int

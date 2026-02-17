@@ -58,7 +58,7 @@ private struct DiscoverTab: View {
                     .textFieldStyle(.plain)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
-                    .onChange(of: searchText) { newValue in
+                    .onChange(of: searchText) { _, newValue in
                         // Debounced search
                         searchTask?.cancel()
                         searchTask = Task {

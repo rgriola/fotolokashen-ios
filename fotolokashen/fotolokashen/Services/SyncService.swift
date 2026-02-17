@@ -4,7 +4,6 @@ import CoreLocation
 import Combine
 
 /// Manages synchronization between local cache and backend API
-@available(iOS 17, *)
 @MainActor
 class SyncService: ObservableObject {
     

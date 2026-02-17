@@ -13,12 +13,21 @@ class CameraService: NSObject, ObservableObject {
     @Published var capturedImage: UIImage?
     @Published var errorMessage: String?
     @Published var isSessionReady = false
+    @Published var currentZoom: CGFloat = 1.0
     
     // MARK: - Properties
     
     private let captureSession = AVCaptureSession()
     private var photoOutput = AVCapturePhotoOutput()
     private let sessionQueue = DispatchQueue(label: "camera.session.queue")
+    private var videoDeviceInput: AVCaptureDeviceInput?
+    
+    /// Min/max zoom range
+    var minZoom: CGFloat { 1.0 }
+    var maxZoom: CGFloat {
+        guard let device = videoDeviceInput?.device else { return 5.0 }
+        return min(device.activeFormat.videoMaxZoomFactor, 10.0)
+    }
     
     // Check if running on simulator
     private var isSimulator: Bool {
@@ -76,6 +85,7 @@ class CameraService: NSObject, ObservableObject {
                 
                 do {
                     let input = try AVCaptureDeviceInput(device: camera)
+                    self.videoDeviceInput = input
                     
                     if captureSession.canAddInput(input) {
                         captureSession.addInput(input)
@@ -143,6 +153,43 @@ class CameraService: NSObject, ObservableObject {
     /// Get capture session for preview
     func getCaptureSession() -> AVCaptureSession {
         return captureSession
+    }
+    
+    // MARK: - Zoom
+    
+    /// Set zoom factor (clamped to valid range)
+    func setZoom(_ factor: CGFloat) {
+        guard let device = videoDeviceInput?.device else { return }
+        let clamped = min(max(factor, minZoom), maxZoom)
+        sessionQueue.async {
+            do {
+                try device.lockForConfiguration()
+                device.videoZoomFactor = clamped
+                device.unlockForConfiguration()
+                DispatchQueue.main.async {
+                    self.currentZoom = clamped
+                }
+            } catch {
+                #if DEBUG
+                print("[CameraService] Zoom error: \(error)")
+                #endif
+            }
+        }
+    }
+    
+    /// Zoom in by a step
+    func zoomIn() {
+        setZoom(currentZoom * 1.5)
+    }
+    
+    /// Zoom out by a step
+    func zoomOut() {
+        setZoom(currentZoom / 1.5)
+    }
+    
+    /// Handle pinch gesture scale
+    func handlePinchZoom(scale: CGFloat, initialZoom: CGFloat) {
+        setZoom(initialZoom * scale)
     }
     
     // MARK: - Photo Capture

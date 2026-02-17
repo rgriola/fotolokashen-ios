@@ -109,142 +109,70 @@ struct LoginView: View {
 // MARK: - Logged In View
 
 struct LoggedInView: View {
+    @ObservedObject private var locationStore = LocationStore.shared
+    @State private var selectedTab = 0
+    @State private var previousTab = 0
+    @State private var showingCamera = false
+    @State private var capturedPhoto: PhotoCapture?
+
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             // Locations list
             LocationListView()
                 .tabItem {
                     Label("Locations", systemImage: "list.bullet")
                 }
+                .tag(0)
 
             // Map
             MapView()
                 .tabItem {
                     Label("Map", systemImage: "map")
                 }
+                .tag(1)
 
-            // Center camera tab - capture new locations
-            CaptureTabView()
+            // Center camera tab - placeholder that triggers camera
+            Color.clear
                 .tabItem {
                     Label("Capture", systemImage: "camera.fill")
                 }
+                .tag(2)
 
             // People search & social
             PeopleSearchView()
                 .tabItem {
                     Label("People", systemImage: "person.2")
                 }
+                .tag(3)
 
             // Profile
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.circle")
                 }
+                .tag(4)
         }
         .tint(.brandPurple)
-    }
-}
-
-// MARK: - Capture Tab View (Camera Center Tab)
-
-struct CaptureTabView: View {
-    @ObservedObject private var locationStore = LocationStore.shared
-    @State private var showingCamera = false
-    @State private var capturedPhoto: PhotoCapture?
-    
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                // Brand purple background
-                Color.brandPurple
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 30) {
-                    Spacer()
-                    
-                    // Camera icon with crosshair style
-                    ZStack {
-                        Circle()
-                            .stroke(Color.white, lineWidth: 3)
-                            .frame(width: 120, height: 120)
-                        
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 50))
-                            .foregroundColor(.white)
-                        
-                        // Crosshair marks
-                        VStack {
-                            Rectangle()
-                                .fill(Color.white)
-                                .frame(width: 3, height: 20)
-                            Spacer()
-                            Rectangle()
-                                .fill(Color.white)
-                                .frame(width: 3, height: 20)
-                        }
-                        .frame(height: 160)
-                        
-                        HStack {
-                            Rectangle()
-                                .fill(Color.white)
-                                .frame(width: 20, height: 3)
-                            Spacer()
-                            Rectangle()
-                                .fill(Color.white)
-                                .frame(width: 20, height: 3)
-                        }
-                        .frame(width: 160)
-                    }
-                    .frame(width: 160, height: 160)
-                    
-                    Text("Capture Location")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                    
-                    Text("Take a photo to save a new\nproduction location")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                    
-                    Spacer()
-                    
-                    // Capture button
-                    Button {
-                        showingCamera = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "camera.fill")
-                            Text("Open Camera")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.brandPurple)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .padding(.horizontal, 40)
-                    
-                    Spacer()
-                }
+        .onChange(of: selectedTab) { _, newTab in
+            if newTab == 2 {
+                // Capture tab tapped — open camera and bounce back
+                showingCamera = true
+                selectedTab = previousTab
+            } else {
+                previousTab = newTab
             }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showingCamera) {
-                CameraView { image, location in
-                    capturedPhoto = PhotoCapture(image: image, location: location)
-                }
+        }
+        .fullScreenCover(isPresented: $showingCamera) {
+            CameraView { image, location in
+                capturedPhoto = PhotoCapture(image: image, location: location)
             }
-            .sheet(item: $capturedPhoto) { capture in
-                CreateLocationView(
-                    photo: capture.image,
-                    photoLocation: capture.location
-                ) { location in
-                    // Location created - add to shared store
-                    locationStore.addLocation(location)
-                }
+        }
+        .sheet(item: $capturedPhoto) { capture in
+            CreateLocationView(
+                photo: capture.image,
+                photoLocation: capture.location
+            ) { location in
+                locationStore.addLocation(location)
             }
         }
     }

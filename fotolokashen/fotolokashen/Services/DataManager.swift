@@ -3,7 +3,6 @@ import SwiftData
 import Combine
 
 /// Manages SwiftData persistence and caching
-@available(iOS 17, *)
 @MainActor
 class DataManager: ObservableObject {
     

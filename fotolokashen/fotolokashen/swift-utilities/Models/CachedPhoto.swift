@@ -2,7 +2,6 @@ import Foundation
 import SwiftData
 
 /// SwiftData model for locally cached photos
-@available(iOS 17, *)
 @Model
 final class CachedPhoto {
     @Attribute(.unique) var id: Int
