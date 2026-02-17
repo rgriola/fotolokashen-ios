@@ -2,6 +2,32 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
+## [1.3.0] - 2026-02-17
+
+### ✨ Phase 2: Location Editing & Enrichment
+
+#### New Features
+- **Edit Location**: Full edit form accessible via pencil button on location detail view
+- **Production details**: Edit production notes, entry point, parking, access, indoor/outdoor, permanent status
+- **Personal fields**: Favorite toggle, personal rating (1-5 stars), tags (comma-separated), personal caption
+- **Photo management**: Mark photos for deletion with undo support; photos deleted on save
+- **Type filter**: Horizontal scrollable filter chips on location list (All, Favorites, per-type)
+- **Location type update**: Replaced outdated 6-type enum with actual 15 types matching web app
+
+#### Architecture Changes
+- **`Location` model expanded**: Added `productionNotes`, `entryPoint`, `parking`, `access`, `indoorOutdoor`, `isPermanent`, `number` (street number), and UserSave fields (`color`, `isFavorite`, `personalRating`, `caption`, `tags`, `visibility`) directly on the model
+- **`UpdateLocationRequest` expanded**: Now includes all PATCH-able fields (Location + UserSave) in a single request
+- **`UpdateLocationResponse` model**: New response model matching `PATCH /api/locations/{id}` response shape
+- **`LocationType` enum rewritten**: 15 real types (BROLL, STORY, INTERVIEW, etc.) replacing outdated generic types
+- **`LocationService.updateLocation()`**: New method calling `PATCH /api/locations/{id}` for both Location and UserSave fields
+- **`LocationService.deletePhoto()`**: New method calling `DELETE /api/photos/{id}`
+- **`LocationStore.updateLocation()`**: Wraps service call and updates local array in-place
+- **`LocationStore.deletePhoto()`**: Delete photo and refresh location data
+- **`LocationsResponse.unwrappedLocations`**: Now carries UserSave fields (color, isFavorite, personalRating, caption, tags, visibility) onto Location objects
+- **New `EditLocationView`**: Comprehensive edit form with all fields, tag chips, star rating, photo deletion
+- **New `FilterChip` component**: Reusable chip button for type/favorite filtering
+- **`LocationDetailView` updated**: Added edit button, uses `currentLocation` state for live updates after editing
+
 ## [1.2.0] - 2026-02-17
 
 ### ✨ Phase 1: User Profile & Settings

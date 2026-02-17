@@ -1,4 +1,4 @@
-# fotolokashen iOS v1.1.1
+# fotolokashen iOS v1.2.0
 
 iOS companion app for fotolokashen - A camera-first location scouting app for photographers and film crews.
 
@@ -6,28 +6,37 @@ iOS companion app for fotolokashen - A camera-first location scouting app for ph
 
 The fotolokashen iOS app allows users to quickly capture photos with GPS coordinates, automatically geocode addresses, and upload locations to the fotolokashen platform. Designed for field use by photographers, videographers, and location scouts.
 
-## ✅ v1.0 Features
+## Features
 
-### Camera & Capture
+### v1.2 — Profile & Settings
+- 👤 **Profile Editing** - Bio, city, country, language, timezone, email notifications
+- 🖼️ **Avatar & Banner Upload** - Pick from library, auto-compress, secure server upload
+- 🔒 **Privacy Controls** - Profile visibility, search visibility, location sharing, follow requests
+- ⚙️ **Settings Tab** - Account info, app version, logout
+- 📐 **5-Tab Layout** - Locations | Map | Capture | Profile | Settings
+
+### v1.0 — Core Features
+
+#### Camera & Capture
 - 📷 **Camera-First Workflow** - Quick capture with automatic GPS tagging
 - 📍 **Live GPS Tracking** - Real-time location accuracy display
 - 🗺️ **Auto Geocoding** - Address lookup via Apple CLGeocoder (with Google Maps fallback)
 - 📊 **Full Address Parsing** - Captures street, city, state, zipcode
 
-### Map & Locations
+#### Map & Locations
 - 🗺️ **Interactive Map** - Google Maps SDK with custom markers
 - 📍 **Custom Camera Markers** - Color-coded by location type (15 types)
 - 🔍 **Marker Clustering** - Groups nearby locations at low zoom
 - 📋 **Location List** - Searchable, sortable list view
 - 🎨 **Consistent Type Colors** - Matches web app color scheme
 
-### Authentication & Sync
+#### Authentication & Sync
 - 🔐 **OAuth2 with PKCE** - Secure Safari-based login
 - 🔄 **Auto Sync** - Locations sync on app launch
 - 📱 **Multi-Device Support** - Auto-logout on session invalidation
 - 🔑 **Secure Storage** - Tokens stored in iOS Keychain
 
-### Photo Upload
+#### Photo Upload
 - 📤 **Smart Compression** - Optimizes images before upload
 - 🔒 **Secure Server Upload** - Virus scanning and format validation
 - ☁️ **ImageKit Integration** - Server-mediated cloud storage
@@ -53,31 +62,35 @@ fotolokashen-ios/
 ├── fotolokashen/
 │   └── fotolokashen/
 │       ├── fotolokashenApp.swift      # App entry point
-│       ├── ContentView.swift          # Main tab view
+│       ├── ContentView.swift          # 5-tab layout
 │       ├── Views/
 │       │   ├── CameraView.swift       # Camera capture
 │       │   ├── CreateLocationView.swift
 │       │   ├── MapView.swift          # Google Maps
 │       │   ├── LocationListView.swift
 │       │   ├── LocationDetailView.swift
-│       │   └── LocationRow.swift
+│       │   ├── LocationRow.swift
+│       │   ├── ProfileView.swift      # Profile editing + avatar/banner
+│       │   └── SettingsView.swift     # Privacy controls + logout
 │       ├── Services/
 │       │   ├── LocationStore.swift    # Shared state
 │       │   ├── LocationTypeColors.swift # Centralized colors
 │       │   ├── MarkerIconGenerator.swift # Custom markers
+│       │   ├── UserService.swift      # Profile CRUD + avatar/banner upload
 │       │   ├── SyncService.swift
 │       │   └── DataManager.swift
 │       └── swift-utilities/
 │           ├── Models/
-│           │   └── Location.swift
-│           ├── APIClient.swift
+│           │   ├── Location.swift
+│           │   └── User.swift         # User + profile/privacy request types
+│           ├── APIClient.swift        # GET/POST/PATCH/PUT/DELETE
 │           ├── AuthService.swift
 │           ├── LocationService.swift
 │           ├── PhotoUploadService.swift
 │           ├── CameraService.swift
 │           ├── LocationManager.swift
 │           └── KeychainService.swift
-├── Config.plist                       # API configuration
+├── Config.plist                       # API configuration (gitignored)
 └── docs/                              # Documentation archive
 ```
 
@@ -179,7 +192,12 @@ The app supports 15 location types with consistent colors across iOS and web:
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/photos/upload` | POST | Secure photo upload with virus scanning |
-| `/api/auth/me` | GET | Get current user |
+| `/api/v1/users/me` | GET | Get current user (rich profile) |
+| `/api/v1/users/me` | PATCH | Update profile & privacy settings |
+| `/api/auth/avatar` | POST | Upload avatar (FormData) |
+| `/api/auth/avatar` | DELETE | Remove avatar |
+| `/api/auth/banner` | POST | Upload banner (FormData) |
+| `/api/auth/banner` | DELETE | Remove banner |
 | `/api/auth/oauth/token` | POST | Exchange auth code for tokens |
 | `/api/auth/oauth/revoke` | POST | Revoke tokens on logout |
 | `/api/locations` | GET | Fetch user's locations |
@@ -261,6 +279,13 @@ View logs in Xcode console with prefixes:
 
 ## Version History
 
+### v1.2.0 (February 2026)
+- ✨ **Profile & Settings** — Full profile editing with avatar/banner upload and privacy controls
+- 📐 **5-Tab Layout** — Locations | Map | Capture | Profile | Settings
+- 🔌 **Rich User Data** — Switched to `/api/v1/users/me` for bio, privacy settings, onboarding state
+- 🔧 **APIClient PATCH/PUT** — New HTTP methods for profile and privacy updates
+- 🔒 **Privacy Controls** — Profile visibility, search, location sharing, follow requests
+
 ### v1.1.1 (February 2026)
 - 🔒 **Security Hardening** — All debug logging gated behind `#if DEBUG` compiler flags
 - 🔑 **API Key Protection** — Hardcoded key removed from Info.plist, uses build config variable
@@ -298,6 +323,6 @@ Proprietary - All rights reserved
 
 ---
 
-**Version**: 1.1.1  
+**Version**: 1.2.0  
 **Last Updated**: February 17, 2026  
-**Status**: ✅ Production Ready (Security Hardened)
+**Status**: ✅ Production Ready

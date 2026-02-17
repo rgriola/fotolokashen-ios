@@ -20,16 +20,21 @@ struct LocationListView: View {
     
     var body: some View {
         NavigationStack {
-            Group {
-                if locationStore.isLoading && locationStore.locations.isEmpty {
-                    // Loading state with skeleton
-                    skeletonLoadingView
-                } else if filteredAndSortedLocations.isEmpty {
-                    // Empty state
-                    emptyStateView
-                } else {
-                    // Location list
-                    locationList
+            VStack(spacing: 0) {
+                // Type filter chips
+                typeFilterBar
+
+                Group {
+                    if locationStore.isLoading && locationStore.locations.isEmpty {
+                        // Loading state with skeleton
+                        skeletonLoadingView
+                    } else if filteredAndSortedLocations.isEmpty {
+                        // Empty state
+                        emptyStateView
+                    } else {
+                        // Location list
+                        locationList
+                    }
                 }
             }
             .navigationTitle("My Locations")
@@ -60,6 +65,57 @@ struct LocationListView: View {
             await locationStore.fetchLocations()
         }
     }
+
+    // MARK: - Type Filter Bar
+
+    /// Horizontal scrollable type filter chips
+    private var typeFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                // "All" chip
+                FilterChip(
+                    label: "All",
+                    icon: "mappin.circle",
+                    isSelected: selectedTypeFilter == nil,
+                    color: .gray
+                ) {
+                    selectedTypeFilter = nil
+                }
+
+                // Favorites chip
+                FilterChip(
+                    label: "Favorites",
+                    icon: "star.fill",
+                    isSelected: selectedTypeFilter == "__FAVORITES__",
+                    color: .yellow
+                ) {
+                    selectedTypeFilter = selectedTypeFilter == "__FAVORITES__" ? nil : "__FAVORITES__"
+                }
+
+                // Type chips from available types in user's locations
+                ForEach(availableTypeFilters, id: \.self) { type in
+                    FilterChip(
+                        label: type,
+                        icon: LocationTypeColors.icon(for: type),
+                        isSelected: selectedTypeFilter == type,
+                        color: LocationTypeColors.color(for: type)
+                    ) {
+                        selectedTypeFilter = selectedTypeFilter == type ? nil : type
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+        .background(Color(.systemBackground))
+    }
+
+    /// Types that actually exist in the user's locations
+    private var availableTypeFilters: [String] {
+        let types = Set(locationStore.locations.compactMap { $0.type })
+        // Return in the order defined by LocationTypeColors
+        return LocationTypeColors.allTypes.filter { types.contains($0) }
+    }
     
     // MARK: - Filtered and Sorted Locations
     
@@ -76,7 +132,11 @@ struct LocationListView: View {
         
         // Apply type filter
         if let typeFilter = selectedTypeFilter {
-            locations = locations.filter { $0.type == typeFilter }
+            if typeFilter == "__FAVORITES__" {
+                locations = locations.filter { $0.isFavorite == true }
+            } else {
+                locations = locations.filter { $0.type == typeFilter }
+            }
         }
         
         // Apply sorting
@@ -299,4 +359,36 @@ enum SortOption: String, CaseIterable {
 
 #Preview {
     LocationListView()
+}
+
+// MARK: - Filter Chip Component
+
+struct FilterChip: View {
+    let label: String
+    let icon: String
+    let isSelected: Bool
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.caption2)
+                Text(label)
+                    .font(.caption)
+                    .fontWeight(.medium)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(isSelected ? color.opacity(0.25) : Color(.systemGray6))
+            .foregroundColor(isSelected ? color : .secondary)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .strokeBorder(isSelected ? color.opacity(0.5) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
 }

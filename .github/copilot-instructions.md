@@ -85,10 +85,11 @@ fotolokashen-ios/
 │   │   │   ├── LocationRow.swift        # List row component
 │   │   │   ├── LocationClusterItem.swift # GMUClusterItem + renderer
 │   │   │   ├── MapView.swift            # Google Maps with clustering
+│   │   │   ├── EditLocationView.swift   # Full location edit form
 │   │   │   ├── ProfileView.swift        # Profile editing with avatar/banner upload
 │   │   │   └── SettingsView.swift       # Privacy controls, account info, logout
 │   │   ├── Services/
-│   │   │   ├── LocationStore.swift      # Singleton shared state (@MainActor)
+│   │   │   ├── LocationStore.swift      # Singleton shared state (@MainActor), update/delete
 │   │   │   ├── LocationTypeColors.swift # 15 type→color/icon mappings
 │   │   │   ├── MarkerIconGenerator.swift # Custom camera-icon markers
 │   │   │   ├── NetworkMonitor.swift     # NWPathMonitor connectivity
@@ -104,7 +105,7 @@ fotolokashen-ios/
 │   │       ├── ImageCompressor.swift    # JPEG resize + quality reduction
 │   │       ├── KeychainService.swift    # Token storage via KeychainAccess
 │   │       ├── LocationManager.swift    # CLLocationManager wrapper
-│   │       ├── LocationService.swift    # CRUD + dual geocoding
+│   │       ├── LocationService.swift    # CRUD + update + dual geocoding
 │   │       ├── PKCEGenerator.swift      # RFC 7636 PKCE with CryptoKit
 │   │       ├── PhotoUploadService.swift # Secure multipart upload
 │   │       └── Models/
@@ -249,9 +250,11 @@ let maxPhotos = config.maxPhotosPerLocation // Int (20)
 | `/api/locations` | GET | LocationService | Fetch all user locations |
 | `/api/locations` | POST | LocationService | Create new location |
 | `/api/locations/{id}` | GET | LocationService | Fetch single location |
+| `/api/locations/{id}` | PATCH | LocationService | Update location + UserSave fields |
 | `/api/locations/{id}` | DELETE | LocationStore | Delete location |
 | `/api/locations/{id}/photos` | GET | LocationDetailView | Fetch location photos |
 | `/api/locations/{id}/photos` | POST | PhotoUploadService | Associate photo with location |
+| `/api/photos/{id}` | DELETE | LocationService | Delete a photo |
 | `/api/photos/upload` | POST | PhotoUploadService | Secure multipart upload |
 
 ## Dependencies (SPM)
@@ -341,11 +344,13 @@ When adding new features, verify:
 - ✅ Switch from `/api/auth/me` to `/api/v1/users/me` for richer user data
 - ✅ New 5-tab layout: Locations | Map | Capture | Profile | Settings
 
-### Phase 2: Location Editing & Enrichment
-- Edit existing locations (all fields: production notes, entry point, parking, access, indoor/outdoor)
-- Favorites, tags, personal ratings, color, visibility
-- Photo deletion from locations
-- Type-based filtering on location list
+### Phase 2: Location Editing & Enrichment ✅ (v1.3.0)
+- ✅ Edit existing locations (all fields: production notes, entry point, parking, access, indoor/outdoor)
+- ✅ Favorites, tags, personal ratings via EditLocationView
+- ✅ Photo deletion from locations (mark + delete on save)
+- ✅ Type-based filtering on location list (horizontal filter chips)
+- ✅ LocationType enum updated to match 15 real types from web app
+- ✅ Location model expanded with UserSave fields (color, isFavorite, tags, etc.)
 
 ### Phase 3: Social Features
 - Follow/unfollow users

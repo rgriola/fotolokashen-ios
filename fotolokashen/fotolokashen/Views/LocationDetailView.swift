@@ -9,7 +9,14 @@ struct LocationDetailView: View {
     @State private var showingFullScreenGallery = false
     @State private var userSaveDetails: UserSaveWithLocation?
     @State private var isLoadingDetails = true
+    @State private var showingEditView = false
+    @State private var currentLocation: Location
     @EnvironmentObject var networkMonitor: NetworkMonitor
+
+    init(location: Location) {
+        self.location = location
+        self._currentLocation = State(initialValue: location)
+    }
     
     var body: some View {
         ScrollView {
@@ -52,7 +59,26 @@ struct LocationDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .navigationTitle(location.name)
+        .navigationTitle(currentLocation.name)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showingEditView = true
+                } label: {
+                    Image(systemName: "pencil.circle")
+                }
+            }
+        }
+        .sheet(isPresented: $showingEditView) {
+            EditLocationView(location: currentLocation) { updated in
+                currentLocation = updated
+                // Reload photos and user save details after edit
+                Task {
+                    await loadPhotos()
+                    await loadUserSaveDetails()
+                }
+            }
+        }
         .task {
             await loadPhotos()
             await loadUserSaveDetails()
@@ -132,7 +158,7 @@ struct LocationDetailView: View {
             .padding(.bottom, 10)
         } else if networkMonitor.isConnected {
             // No photos - show Google Maps static image
-            googleMapsStaticImage
+            googleMapsStaticImageSection
         } else {
             // Offline - show placeholder
             offlinePlaceholder
@@ -141,9 +167,9 @@ struct LocationDetailView: View {
     
     // MARK: - Google Maps Static Image
     
-    private var googleMapsStaticImage: some View {
+    private var googleMapsStaticImageSection: some View {
         let apiKey = ConfigLoader.shared.googleMapsAPIKey
-        let mapUrl = "https://maps.googleapis.com/maps/api/staticmap?center=\(location.latitude),\(location.longitude)&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C\(location.latitude),\(location.longitude)&key=\(apiKey)"
+        let mapUrl = "https://maps.googleapis.com/maps/api/staticmap?center=\(currentLocation.latitude),\(currentLocation.longitude)&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C\(currentLocation.latitude),\(currentLocation.longitude)&key=\(apiKey)"
         
         return AsyncImage(url: URL(string: mapUrl)) { phase in
             switch phase {
@@ -211,11 +237,11 @@ struct LocationDetailView: View {
     
     private var addressSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(location.name)
+            Text(currentLocation.name)
                 .font(.title2)
                 .fontWeight(.bold)
             
-            if let address = location.address {
+            if let address = currentLocation.address {
                 HStack(alignment: .top) {
                     Image(systemName: "mappin.circle.fill")
                         .foregroundColor(.red)
@@ -235,16 +261,16 @@ struct LocationDetailView: View {
                 .font(.headline)
             
             HStack(spacing: 4) {
-                Image(systemName: typeIcon(for: location.type ?? ""))
+                Image(systemName: typeIcon(for: currentLocation.type ?? ""))
                     .font(.subheadline)
-                Text(location.type ?? "Unknown")
+                Text(currentLocation.type ?? "Unknown")
                     .font(.subheadline)
                     .fontWeight(.medium)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(typeColor(for: location.type ?? "").opacity(0.2))
-            .foregroundColor(typeColor(for: location.type ?? ""))
+            .background(typeColor(for: currentLocation.type ?? "").opacity(0.2))
+            .foregroundColor(typeColor(for: currentLocation.type ?? ""))
             .clipShape(Capsule())
         }
     }
@@ -255,23 +281,23 @@ struct LocationDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Location Data", icon: "mappin.and.ellipse")
             
-            DetailRow(label: "Location ID", value: "\(location.id)")
-            DetailRow(label: "Place ID", value: location.placeId)
-            DetailRow(label: "Name", value: location.name)
-            DetailRow(label: "Address", value: location.address ?? "N/A")
-            DetailRow(label: "Latitude", value: String(format: "%.6f", location.latitude))
-            DetailRow(label: "Longitude", value: String(format: "%.6f", location.longitude))
-            DetailRow(label: "Type", value: location.type ?? "N/A")
-            DetailRow(label: "Notes", value: location.notes ?? "N/A")
+            DetailRow(label: "Location ID", value: "\(currentLocation.id)")
+            DetailRow(label: "Place ID", value: currentLocation.placeId)
+            DetailRow(label: "Name", value: currentLocation.name)
+            DetailRow(label: "Address", value: currentLocation.address ?? "N/A")
+            DetailRow(label: "Latitude", value: String(format: "%.6f", currentLocation.latitude))
+            DetailRow(label: "Longitude", value: String(format: "%.6f", currentLocation.longitude))
+            DetailRow(label: "Type", value: currentLocation.type ?? "N/A")
+            DetailRow(label: "Notes", value: currentLocation.notes ?? "N/A")
             
-            if let rating = location.rating {
+            if let rating = currentLocation.rating {
                 DetailRow(label: "Rating", value: String(format: "%.1f", rating))
             } else {
                 DetailRow(label: "Rating", value: "N/A")
             }
             
             // Production Date
-            if let productionDate = location.productionDate {
+            if let productionDate = currentLocation.productionDate {
                 HStack(spacing: 8) {
                     Image(systemName: "calendar")
                         .foregroundColor(.blue)
@@ -292,8 +318,8 @@ struct LocationDetailView: View {
                 .cornerRadius(8)
             }
             
-            DetailRow(label: "Created At", value: formatDate(location.createdAt))
-            DetailRow(label: "Photos Count", value: "\(location.photosCount ?? 0)")
+            DetailRow(label: "Created At", value: formatDate(currentLocation.createdAt))
+            DetailRow(label: "Photos Count", value: "\(currentLocation.photosCount ?? 0)")
         }
     }
     
@@ -325,7 +351,7 @@ struct LocationDetailView: View {
                 
                 DetailRow(label: "Caption", value: userSave.caption ?? "N/A")
             } else {
-                DetailRow(label: "UserSave ID", value: "\(location.userSaveId ?? 0)")
+                DetailRow(label: "UserSave ID", value: "\(currentLocation.userSaveId ?? 0)")
                 Text("Could not load user save details")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -391,13 +417,13 @@ struct LocationDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Coordinates", icon: "location.circle")
             
-            DetailRow(label: "Latitude", value: String(format: "%.8f", location.latitude))
-            DetailRow(label: "Longitude", value: String(format: "%.8f", location.longitude))
-            DetailRow(label: "Coordinate String", value: "\(location.latitude), \(location.longitude)")
+            DetailRow(label: "Latitude", value: String(format: "%.8f", currentLocation.latitude))
+            DetailRow(label: "Longitude", value: String(format: "%.8f", currentLocation.longitude))
+            DetailRow(label: "Coordinate String", value: "\(currentLocation.latitude), \(currentLocation.longitude)")
             
             // Copy coordinates button
             Button {
-                UIPasteboard.general.string = "\(location.latitude), \(location.longitude)"
+                UIPasteboard.general.string = "\(currentLocation.latitude), \(currentLocation.longitude)"
             } label: {
                 HStack {
                     Image(systemName: "doc.on.doc")
@@ -417,9 +443,9 @@ struct LocationDetailView: View {
     // MARK: - Data Loading
     
     private func loadPhotos() async {
-        // Use location.id (Location table ID), not userSaveId
+        // Use currentLocation.id (Location table ID), not userSaveId
         // The /api/locations/[id]/photos endpoint expects the Location ID
-        let locationId = location.id
+        let locationId = currentLocation.id
         
         do {
             let response: PhotosResponse = try await APIClient.shared.get("/api/locations/\(locationId)/photos")
@@ -431,7 +457,7 @@ struct LocationDetailView: View {
             print("[LocationDetailView] Failed to load photos: \(error)")
             await MainActor.run {
                 // Use embedded photos as fallback
-                self.photos = (location.photos ?? []).map { photo in
+                self.photos = (currentLocation.photos ?? []).map { photo in
                     DetailPhoto(
                         id: photo.id,
                         imagekitFilePath: photo.imagekitFilePath,
@@ -454,7 +480,7 @@ struct LocationDetailView: View {
     }
     
     private func loadUserSaveDetails() async {
-        guard let userSaveId = location.userSaveId else {
+        guard let userSaveId = currentLocation.userSaveId else {
             isLoadingDetails = false
             return
         }
@@ -669,7 +695,7 @@ struct PhotoGalleryFullScreen: View {
             address: "123 Main St, New York, NY 10001",
             latitude: 40.7128,
             longitude: -74.0060,
-            type: "outdoor",
+            type: "BROLL",
             placeId: "place-123",
             createdAt: "2026-01-20T10:00:00Z",
             photosCount: 3,

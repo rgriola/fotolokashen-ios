@@ -222,7 +222,85 @@ class LocationService: ObservableObject {
             throw error
         }
     }
-    
+
+    // MARK: - Update Location
+
+    /// Update a location via PATCH /api/locations/{locationId}
+    /// Uses the Location ID (not UserSave ID). Handles both Location and UserSave fields.
+    func updateLocation(locationId: Int, request: UpdateLocationRequest) async throws -> Location {
+        #if DEBUG
+        if config.enableDebugLogging {
+            print("[LocationService] Updating location ID: \(locationId)")
+        }
+        #endif
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let response: UpdateLocationResponse = try await apiClient.patch(
+                "/api/locations/\(locationId)",
+                body: request
+            )
+
+            var location = response.location
+            // Carry UserSave fields onto the location
+            if let userSave = response.userSave {
+                location.userSaveId = userSave.id
+                location.color = userSave.color
+                location.isFavorite = userSave.isFavorite
+                location.personalRating = userSave.personalRating
+                location.caption = userSave.caption
+                location.tags = userSave.tags
+                location.visibility = userSave.visibility
+            }
+
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[LocationService] Location updated successfully: \(location.name)")
+            }
+            #endif
+
+            return location
+        } catch {
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[LocationService] Update location failed: \(error)")
+            }
+            #endif
+            errorMessage = error.localizedDescription
+            throw error
+        }
+    }
+
+    // MARK: - Delete Photo
+
+    /// Delete a photo by its ID via DELETE /api/photos/{photoId}
+    func deletePhoto(photoId: Int) async throws {
+        #if DEBUG
+        if config.enableDebugLogging {
+            print("[LocationService] Deleting photo ID: \(photoId)")
+        }
+        #endif
+
+        do {
+            let _: EmptyResponse = try await apiClient.delete("/api/photos/\(photoId)")
+
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[LocationService] Photo deleted successfully")
+            }
+            #endif
+        } catch {
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[LocationService] Delete photo failed: \(error)")
+            }
+            #endif
+            throw error
+        }
+    }
+
     // MARK: - Geocoding
     
     /// Get address from coordinates using Google Maps Geocoding API
