@@ -111,130 +111,37 @@ struct LoginView: View {
 struct LoggedInView: View {
     var body: some View {
         TabView {
-            // Brand tab (left) - shows app info
-            BrandTabView()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
-            
+            // Locations list
             LocationListView()
                 .tabItem {
                     Label("Locations", systemImage: "list.bullet")
                 }
-            
+
+            // Map
+            MapView()
+                .tabItem {
+                    Label("Map", systemImage: "map")
+                }
+
             // Center camera tab - capture new locations
             CaptureTabView()
                 .tabItem {
                     Label("Capture", systemImage: "camera.fill")
                 }
-            
-            MapView()
+
+            // Profile
+            ProfileView()
                 .tabItem {
-                    Label("Map", systemImage: "map")
+                    Label("Profile", systemImage: "person.circle")
+                }
+
+            // Settings
+            SettingsView()
+                .tabItem {
+                    Label("Settings", systemImage: "gearshape")
                 }
         }
-    }
-}
-
-// MARK: - Brand Tab View (App Icon Left Tab)
-
-struct BrandTabView: View {
-    @EnvironmentObject var authService: AuthService
-    @State private var showingLogoutConfirmation = false
-    
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                // Brand purple background
-                Color.brandPurple
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 20) {
-                    Spacer()
-                    
-                    // Logo
-                    Image("FLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 100, height: 100)
-                    
-                    Text("fotolokashen")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                    
-                    Text("Capture • Save • Explore")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.8))
-                    
-                    Spacer()
-                    
-                    // Feature cards
-                    VStack(spacing: 12) {
-                        FeatureRow(icon: "mappin.circle.fill", text: "Save production locations with photos")
-                        FeatureRow(icon: "camera.fill", text: "Capture geo-tagged location photos")
-                        FeatureRow(icon: "map.fill", text: "View all locations on a map")
-                    }
-                    .padding()
-                    .background(Color.white.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .padding(.horizontal)
-                    
-                    Spacer()
-                    
-                    // User info
-                    if let user = authService.currentUser {
-                        Text("Logged in as \(user.username)")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.7))
-                            .padding(.bottom, 8)
-                    }
-                }
-            }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        showingLogoutConfirmation = true
-                    } label: {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .foregroundColor(.white)
-                    }
-                }
-            }
-            .alert("Logout", isPresented: $showingLogoutConfirmation) {
-                Button("Cancel", role: .cancel) {}
-                Button("Logout", role: .destructive) {
-                    Task {
-                        LocationStore.shared.clear()
-                        await authService.logout()
-                    }
-                }
-            } message: {
-                Text("Are you sure you want to logout?")
-            }
-        }
-    }
-}
-
-// MARK: - Feature Row
-
-struct FeatureRow: View {
-    let icon: String
-    let text: String
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .foregroundColor(.white)
-                .frame(width: 24)
-            Text(text)
-                .font(.subheadline)
-                .foregroundColor(.white)
-            Spacer()
-        }
+        .tint(.brandPurple)
     }
 }
 

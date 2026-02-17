@@ -74,7 +74,7 @@ fotolokashen-ios/
 │   ├── Fotolokashen.xcodeproj/        # Xcode project
 │   ├── fotolokashen/
 │   │   ├── fotolokashenApp.swift      # App entry, Google Maps init, iOS 17 branching
-│   │   ├── ContentView.swift          # Auth routing, tabs, login/logged-in views
+│   │   ├── ContentView.swift          # Auth routing, 5-tab layout, login/logged-in views
 │   │   ├── Info.plist                 # URL scheme, API key reference
 │   │   ├── Views/
 │   │   │   ├── CameraView.swift       # Full-screen camera with GPS overlay
@@ -84,7 +84,9 @@ fotolokashen-ios/
 │   │   │   ├── LocationListView.swift   # Searchable/sortable list
 │   │   │   ├── LocationRow.swift        # List row component
 │   │   │   ├── LocationClusterItem.swift # GMUClusterItem + renderer
-│   │   │   └── MapView.swift            # Google Maps with clustering
+│   │   │   ├── MapView.swift            # Google Maps with clustering
+│   │   │   ├── ProfileView.swift        # Profile editing with avatar/banner upload
+│   │   │   └── SettingsView.swift       # Privacy controls, account info, logout
 │   │   ├── Services/
 │   │   │   ├── LocationStore.swift      # Singleton shared state (@MainActor)
 │   │   │   ├── LocationTypeColors.swift # 15 type→color/icon mappings
@@ -92,9 +94,10 @@ fotolokashen-ios/
 │   │   │   ├── NetworkMonitor.swift     # NWPathMonitor connectivity
 │   │   │   ├── PlacesService.swift      # CLGeocoder reverse geocoding
 │   │   │   ├── SyncService.swift        # Download locations + upload queued photos
+│   │   │   ├── UserService.swift        # Profile CRUD, avatar/banner upload
 │   │   │   └── DataManager.swift        # SwiftData container (iOS 17+)
 │   │   └── swift-utilities/
-│   │       ├── APIClient.swift          # HTTP client, Bearer auth, 401 handling
+│   │       ├── APIClient.swift          # HTTP client, Bearer auth, PATCH/PUT, 401 handling
 │   │       ├── AuthService.swift        # OAuth2 PKCE login/logout/refresh
 │   │       ├── CameraService.swift      # AVCaptureSession management
 │   │       ├── ConfigLoader.swift       # Config.plist reader
@@ -106,7 +109,7 @@ fotolokashen-ios/
 │   │       ├── PhotoUploadService.swift # Secure multipart upload
 │   │       └── Models/
 │   │           ├── Location.swift       # Location + API response wrappers
-│   │           ├── User.swift           # User model
+│   │           ├── User.swift           # User model + profile/privacy request types
 │   │           ├── Photo.swift          # Photo + upload response models
 │   │           ├── OAuthToken.swift     # Token models
 │   │           ├── CachedLocation.swift # SwiftData @Model (iOS 17+)
@@ -184,6 +187,23 @@ let photo = try await PhotoUploadService().uploadPhoto(
 // 5. Handle SecureUploadResponse
 ```
 
+### Profile & Privacy Updates
+```swift
+// Profile update via UserService
+let request = ProfileUpdateRequest(firstName: "John", bio: "Photographer")
+let user = try await UserService.shared.updateProfile(request)
+
+// Privacy update
+let privacy = PrivacyUpdateRequest(profileVisibility: "followers", showInSearch: false)
+let user = try await UserService.shared.updatePrivacy(privacy)
+
+// Avatar upload (auto-compresses, multipart to /api/auth/avatar)
+let avatarUrl = try await UserService.shared.uploadAvatar(image: uiImage)
+
+// Banner upload (auto-compresses, multipart to /api/auth/banner)
+let bannerUrl = try await UserService.shared.uploadBanner(image: uiImage)
+```
+
 ### iOS 17+ Feature Gating
 ```swift
 if #available(iOS 17.0, *) {
@@ -220,7 +240,12 @@ let maxPhotos = config.maxPhotosPerLocation // Int (20)
 |----------|--------|---------|---------|
 | `/api/auth/oauth/token` | POST | AuthService | Token exchange & refresh |
 | `/api/auth/oauth/revoke` | POST | AuthService | Logout (revoke refresh token) |
-| `/api/auth/me` | GET | APIClient | Fetch current user |
+| `/api/v1/users/me` | GET | APIClient | Fetch current user (rich profile) |
+| `/api/v1/users/me` | PATCH | UserService | Update profile & privacy settings |
+| `/api/auth/avatar` | POST | UserService | Upload avatar (FormData) |
+| `/api/auth/avatar` | DELETE | UserService | Remove avatar |
+| `/api/auth/banner` | POST | UserService | Upload banner (FormData) |
+| `/api/auth/banner` | DELETE | UserService | Remove banner |
 | `/api/locations` | GET | LocationService | Fetch all user locations |
 | `/api/locations` | POST | LocationService | Create new location |
 | `/api/locations/{id}` | GET | LocationService | Fetch single location |
@@ -309,11 +334,12 @@ When adding new features, verify:
 
 ## Planned Features (Phased Roadmap)
 
-### Phase 1: User Profile & Settings
-- Profile editing (bio, city, country, language, timezone)
-- Avatar/banner upload via secure pipeline
-- Privacy controls (profileVisibility, showInSearch, showLocation, showSavedLocations)
-- Switch from `/api/auth/me` to `/api/v1/users/me` for richer user data
+### Phase 1: User Profile & Settings ✅ (v1.2.0)
+- ✅ Profile editing (bio, city, country, language, timezone)
+- ✅ Avatar/banner upload via secure pipeline
+- ✅ Privacy controls (profileVisibility, showInSearch, showLocation, showSavedLocations)
+- ✅ Switch from `/api/auth/me` to `/api/v1/users/me` for richer user data
+- ✅ New 5-tab layout: Locations | Map | Capture | Profile | Settings
 
 ### Phase 2: Location Editing & Enrichment
 - Edit existing locations (all fields: production notes, entry point, parking, access, indoor/outdoor)

@@ -2,6 +2,38 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
+## [1.2.0] - 2026-02-17
+
+### ✨ Phase 1: User Profile & Settings
+
+#### New Features
+- **Profile tab**: View and edit profile with banner/avatar display, personal info, location, and preferences
+- **Settings tab**: Privacy controls, account info, app version, and logout
+- **Avatar upload**: Pick from photo library, auto-compress, upload via secure server pipeline (`POST /api/auth/avatar`)
+- **Avatar delete**: Remove avatar with confirmation (`DELETE /api/auth/avatar`)
+- **Banner upload**: Pick from photo library, auto-compress, upload via secure server pipeline (`POST /api/auth/banner`)
+- **Banner delete**: Remove banner with confirmation (`DELETE /api/auth/banner`)
+- **Profile editing**: First name, last name, bio, city, country, language, timezone, email notifications
+- **Privacy controls**: Profile visibility (public/followers/private), appear in search, show location, saved locations visibility, allow follow requests
+- **Change tracking**: Unsaved changes detection with Save button in nav bar
+- **Image picker**: UIImagePickerController wrapper with edit support
+
+#### Architecture Changes
+- **New `UserService`**: Singleton service for profile CRUD and avatar/banner uploads with multipart form data
+- **New `ProfileView`**: Full profile editing with banner+avatar header, form sections, image upload
+- **New `SettingsView`**: Privacy controls, account info, logout (replaces old `BrandTabView`)
+- **User model expanded**: Added `bio`, `role`, `updatedAt`, privacy fields (`profileVisibility`, `showInSearch`, `showLocation`, `showSavedLocations`, `allowFollowRequests`), onboarding fields, and `initials` computed property
+- **New request/response models**: `ProfileUpdateRequest`, `PrivacyUpdateRequest`, `ImageUploadResponse`, `V1MeResponse`
+- **APIClient.patch()**: New PATCH method for profile and privacy updates
+- **APIClient.put()**: New PUT method for future use
+- **Switched to `/api/v1/users/me`**: `getCurrentUser()` now fetches rich user data including bio, privacy settings, and onboarding state (was `/api/auth/me`)
+
+#### Tab Bar Redesign
+- Removed `BrandTabView` (Home tab) — was placeholder with app branding
+- New 5-tab layout: **Locations** | **Map** | **Capture** | **Profile** | **Settings**
+- Tab bar uses brand purple tint
+- Logout moved from Home tab toolbar to Settings tab
+
 ## [1.1.1] - 2026-02-17
 
 ### 🔒 Security Hardening & Codebase Cleanup

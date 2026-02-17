@@ -57,6 +57,24 @@ class APIClient {
         try await request(path: path, method: "GET", body: nil as String?, authenticated: authenticated)
     }
     
+    /// Make a PATCH request
+    func patch<T: Decodable, B: Encodable>(
+        _ path: String,
+        body: B,
+        authenticated: Bool = true
+    ) async throws -> T {
+        try await request(path: path, method: "PATCH", body: body, authenticated: authenticated)
+    }
+
+    /// Make a PUT request
+    func put<T: Decodable, B: Encodable>(
+        _ path: String,
+        body: B,
+        authenticated: Bool = true
+    ) async throws -> T {
+        try await request(path: path, method: "PUT", body: body, authenticated: authenticated)
+    }
+
     /// Make a DELETE request
     func delete<T: Decodable>(
         _ path: String,
@@ -64,12 +82,12 @@ class APIClient {
     ) async throws -> T {
         try await request(path: path, method: "DELETE", body: nil as String?, authenticated: authenticated)
     }
-    
+
     // MARK: - User API
-    
-    /// Get the current authenticated user
+
+    /// Get the current authenticated user via /api/v1/users/me
     func getCurrentUser() async throws -> User {
-        let response: MeResponse = try await get("/api/auth/me", authenticated: true)
+        let response: V1MeResponse = try await get("/api/v1/users/me", authenticated: true)
         return response.user
     }
     
@@ -233,10 +251,18 @@ struct ErrorResponse: Codable {
     let code: String?
 }
 
-// MARK: - Me Response
+// MARK: - Me Response (legacy /api/auth/me)
 
 struct MeResponse: Codable {
     let user: User
+}
+
+// MARK: - Success Response
+
+/// Generic success response for delete/update operations
+struct SuccessResponse: Codable {
+    let success: Bool?
+    let message: String?
 }
 
 // MARK: - API Errors
