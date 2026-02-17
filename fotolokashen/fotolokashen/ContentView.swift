@@ -129,16 +129,16 @@ struct LoggedInView: View {
                     Label("Capture", systemImage: "camera.fill")
                 }
 
+            // People search & social
+            PeopleSearchView()
+                .tabItem {
+                    Label("People", systemImage: "person.2")
+                }
+
             // Profile
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.circle")
-                }
-
-            // Settings
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gearshape")
                 }
         }
         .tint(.brandPurple)

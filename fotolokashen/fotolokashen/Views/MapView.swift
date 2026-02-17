@@ -5,11 +5,17 @@ import CoreLocation
 import Combine
 
 /// Map view showing all user locations as markers with clustering
+/// Supports toggling friends' locations (purple markers) on the map
 struct MapView: View {
     @EnvironmentObject var authService: AuthService
     @ObservedObject private var locationStore = LocationStore.shared
+    @ObservedObject private var followService = FollowService.shared
     @State private var selectedLocation: Location?
+    @State private var selectedSocialLocation: MapSocialLocation?
     @State private var centerOnUserLocation = false
+    @State private var showFriendsLocations = false
+    @State private var friendsLocations: [MapSocialLocation] = []
+    @State private var isLoadingFriends = false
     
     var body: some View {
         NavigationStack {
@@ -17,19 +23,51 @@ struct MapView: View {
                 // Google Map with clustering
                 ClusteredMapView(
                     locations: locationStore.locations,
+                    socialLocations: showFriendsLocations ? friendsLocations : [],
                     selectedLocation: $selectedLocation,
+                    selectedSocialLocation: $selectedSocialLocation,
                     centerOnUserLocation: $centerOnUserLocation,
                     onMarkerTap: { location in
                         selectedLocation = location
+                    },
+                    onSocialMarkerTap: { socialLocation in
+                        selectedSocialLocation = socialLocation
                     }
                 )
                 .ignoresSafeArea()
                 
-                // Current location button
+                // Bottom buttons
                 VStack {
                     Spacer()
                     HStack {
+                        // Friends toggle button
+                        Button {
+                            showFriendsLocations.toggle()
+                            if showFriendsLocations && friendsLocations.isEmpty {
+                                Task { await loadFriendsLocations() }
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                if isLoadingFriends {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.7)
+                                } else {
+                                    Image(systemName: showFriendsLocations ? "person.2.fill" : "person.2")
+                                }
+                            }
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .frame(width: 50, height: 50)
+                            .background(showFriendsLocations ? Color.brandPurple : Color.gray.opacity(0.8))
+                            .clipShape(Circle())
+                            .shadow(radius: 4)
+                        }
+                        .padding(.leading)
+
                         Spacer()
+
+                        // Current location button
                         Button {
                             centerOnUserLocation = true
                         } label: {
@@ -50,10 +88,27 @@ struct MapView: View {
             .sheet(item: $selectedLocation) { location in
                 LocationDetailView(location: location)
             }
+            .sheet(item: $selectedSocialLocation) { socialLocation in
+                SocialLocationDetailSheet(socialLocation: socialLocation)
+            }
         }
         .task {
             await locationStore.fetchLocations()
         }
+    }
+
+    private func loadFriendsLocations() async {
+        isLoadingFriends = true
+        do {
+            friendsLocations = try await followService.getFriendsLocations()
+        } catch {
+            #if DEBUG
+            if ConfigLoader.shared.enableDebugLogging {
+                print("[MapView] Failed to load friends locations: \(error)")
+            }
+            #endif
+        }
+        isLoadingFriends = false
     }
 }
 
@@ -61,9 +116,12 @@ struct MapView: View {
 
 struct ClusteredMapView: UIViewRepresentable {
     let locations: [Location]
+    let socialLocations: [MapSocialLocation]
     @Binding var selectedLocation: Location?
+    @Binding var selectedSocialLocation: MapSocialLocation?
     @Binding var centerOnUserLocation: Bool
     let onMarkerTap: (Location) -> Void
+    let onSocialMarkerTap: (MapSocialLocation) -> Void
     
     func makeUIView(context: Context) -> GMSMapView {
         let camera = GMSCameraPosition.camera(
@@ -152,6 +210,13 @@ struct ClusteredMapView: UIViewRepresentable {
             context.coordinator.locationItems.append(item)
             bounds = bounds.includingCoordinate(item.position)
         }
+
+        // Add social location items (friends' locations)
+        for socialLocation in socialLocations {
+            let item = SocialLocationClusterItem(socialLocation: socialLocation)
+            clusterManager.add(item)
+            bounds = bounds.includingCoordinate(item.position)
+        }
         
         // Cluster the items
         clusterManager.cluster()
@@ -205,6 +270,13 @@ struct ClusteredMapView: UIViewRepresentable {
                 return true
             }
             
+            // Check if it's a social location marker
+            if let socialItem = marker.userData as? SocialLocationClusterItem {
+                parent.selectedSocialLocation = socialItem.socialLocation
+                parent.onSocialMarkerTap(socialItem.socialLocation)
+                return true
+            }
+
             // Check if it's already converted to a Location
             if let location = marker.userData as? Location {
                 parent.selectedLocation = location
@@ -247,4 +319,150 @@ struct ClusteredMapView: UIViewRepresentable {
 
 #Preview {
     MapView()
+}
+
+// MARK: - Social Location Detail Sheet
+
+/// Sheet shown when tapping a friend's location marker on the map
+struct SocialLocationDetailSheet: View {
+    let socialLocation: MapSocialLocation
+    @Environment(\.dismiss) private var dismiss
+    @State private var showUserProfile = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Location name and type
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(socialLocation.name)
+                            .font(.title2)
+                            .fontWeight(.bold)
+
+                        if let type = socialLocation.type {
+                            HStack(spacing: 4) {
+                                Image(systemName: LocationTypeColors.icon(for: type))
+                                    .font(.caption)
+                                Text(type)
+                                    .font(.caption)
+                            }
+                            .foregroundColor(Color(LocationTypeColors.uiColor(for: type)))
+                        }
+                    }
+
+                    // Address
+                    if let address = socialLocation.address {
+                        HStack(spacing: 8) {
+                            Image(systemName: "mappin.circle.fill")
+                                .foregroundColor(.red)
+                            Text(address)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    // City/State
+                    if let city = socialLocation.city ?? socialLocation.state {
+                        HStack(spacing: 8) {
+                            Image(systemName: "building.2")
+                                .foregroundColor(.secondary)
+                            Text(city)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    // Caption
+                    if let caption = socialLocation.caption, !caption.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Caption")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(caption)
+                                .font(.body)
+                        }
+                    }
+
+                    Divider()
+
+                    // Saved by user
+                    if let user = socialLocation.user {
+                        Button {
+                            showUserProfile = true
+                        } label: {
+                            HStack(spacing: 12) {
+                                if let avatarURL = user.avatarURL {
+                                    AsyncImage(url: avatarURL) { image in
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                    } placeholder: {
+                                        Circle()
+                                            .fill(Color.brandPurple.opacity(0.2))
+                                            .overlay(
+                                                Text(String(user.username.prefix(1)).uppercased())
+                                                    .font(.caption)
+                                                    .fontWeight(.bold)
+                                                    .foregroundColor(.brandPurple)
+                                            )
+                                    }
+                                    .frame(width: 36, height: 36)
+                                    .clipShape(Circle())
+                                } else {
+                                    Circle()
+                                        .fill(Color.brandPurple.opacity(0.2))
+                                        .frame(width: 36, height: 36)
+                                        .overlay(
+                                            Text(String(user.username.prefix(1)).uppercased())
+                                                .font(.caption)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.brandPurple)
+                                        )
+                                }
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Saved by")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text(user.displayName)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    Text("@\(user.username)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+
+                                Spacer()
+
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(16)
+            }
+            .navigationTitle("Location")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showUserProfile) {
+                if let user = socialLocation.user {
+                    NavigationStack {
+                        PublicProfileView(username: user.username)
+                            .toolbar {
+                                ToolbarItem(placement: .cancellationAction) {
+                                    Button("Done") { showUserProfile = false }
+                                }
+                            }
+                    }
+                }
+            }
+        }
+    }
 }

@@ -83,19 +83,23 @@ fotolokashen-ios/
 │   │   │   ├── LocationDetailView.swift # Full detail with photo gallery
 │   │   │   ├── LocationListView.swift   # Searchable/sortable list
 │   │   │   ├── LocationRow.swift        # List row component
-│   │   │   ├── LocationClusterItem.swift # GMUClusterItem + renderer
-│   │   │   ├── MapView.swift            # Google Maps with clustering
+│   │   │   ├── LocationClusterItem.swift # GMUClusterItem + renderer + SocialLocationClusterItem
+│   │   │   ├── MapView.swift            # Google Maps with clustering + friends' locations toggle
 │   │   │   ├── EditLocationView.swift   # Full location edit form
-│   │   │   ├── ProfileView.swift        # Profile editing with avatar/banner upload
+│   │   │   ├── PublicProfileView.swift  # Public user profile with follow button
+│   │   │   ├── FollowListView.swift     # Paginated followers/following list
+│   │   │   ├── PeopleSearchView.swift   # People search with Discover/Following/Followers tabs
+│   │   │   ├── ProfileView.swift        # Profile editing with avatar/banner upload + social stats
 │   │   │   └── SettingsView.swift       # Privacy controls, account info, logout
 │   │   ├── Services/
 │   │   │   ├── LocationStore.swift      # Singleton shared state (@MainActor), update/delete
 │   │   │   ├── LocationTypeColors.swift # 15 type→color/icon mappings
-│   │   │   ├── MarkerIconGenerator.swift # Custom camera-icon markers
+│   │   │   ├── MarkerIconGenerator.swift # Custom camera-icon + social person-icon markers
 │   │   │   ├── NetworkMonitor.swift     # NWPathMonitor connectivity
 │   │   │   ├── PlacesService.swift      # CLGeocoder reverse geocoding
 │   │   │   ├── SyncService.swift        # Download locations + upload queued photos
 │   │   │   ├── UserService.swift        # Profile CRUD, avatar/banner upload
+│   │   │   ├── FollowService.swift      # Follow/unfollow, profiles, search, social locations
 │   │   │   └── DataManager.swift        # SwiftData container (iOS 17+)
 │   │   └── swift-utilities/
 │   │       ├── APIClient.swift          # HTTP client, Bearer auth, PATCH/PUT, 401 handling
@@ -112,6 +116,7 @@ fotolokashen-ios/
 │   │           ├── Location.swift       # Location + API response wrappers
 │   │           ├── User.swift           # User model + profile/privacy request types
 │   │           ├── Photo.swift          # Photo + upload response models
+│   │           ├── Social.swift         # PublicUser, FollowStatus, SearchUser, SocialLocation models
 │   │           ├── OAuthToken.swift     # Token models
 │   │           ├── CachedLocation.swift # SwiftData @Model (iOS 17+)
 │   │           ├── CachedPhoto.swift    # SwiftData @Model (iOS 17+)
@@ -205,6 +210,30 @@ let avatarUrl = try await UserService.shared.uploadAvatar(image: uiImage)
 let bannerUrl = try await UserService.shared.uploadBanner(image: uiImage)
 ```
 
+### Social Features (Follow, Profiles, Search)
+```swift
+// Follow/unfollow
+let response = try await FollowService.shared.follow(username: "johndoe")
+let response = try await FollowService.shared.unfollow(username: "johndoe")
+
+// Check follow status
+let status = try await FollowService.shared.getFollowStatus(username: "johndoe")
+// status.isFollowing, status.isFollowedBy
+
+// Public profile
+let profile = try await FollowService.shared.getPublicProfile(username: "johndoe")
+
+// Followers/following lists (paginated)
+let followers = try await FollowService.shared.getFollowers(username: "johndoe", page: 1, limit: 20)
+let following = try await FollowService.shared.getFollowing(username: "johndoe", page: 1, limit: 20)
+
+// Friends' locations for map
+let friendsLocations = try await FollowService.shared.getFriendsLocations(bounds: mapBounds)
+
+// People search
+let results = try await FollowService.shared.searchUsers(query: "john", type: "all")
+```
+
 ### iOS 17+ Feature Gating
 ```swift
 if #available(iOS 17.0, *) {
@@ -256,6 +285,17 @@ let maxPhotos = config.maxPhotosPerLocation // Int (20)
 | `/api/locations/{id}/photos` | POST | PhotoUploadService | Associate photo with location |
 | `/api/photos/{id}` | DELETE | LocationService | Delete a photo |
 | `/api/photos/upload` | POST | PhotoUploadService | Secure multipart upload |
+| `/api/v1/users/{username}` | GET | FollowService | Fetch public profile |
+| `/api/v1/users/{username}/follow` | POST | FollowService | Follow user |
+| `/api/v1/users/{username}/unfollow` | POST | FollowService | Unfollow user |
+| `/api/v1/users/me/follow-status/{username}` | GET | FollowService | Check follow relationship |
+| `/api/v1/users/{username}/followers` | GET | FollowService | Paginated followers list |
+| `/api/v1/users/{username}/following` | GET | FollowService | Paginated following list |
+| `/api/v1/users/{username}/locations` | GET | FollowService | User's public locations |
+| `/api/v1/locations/public` | GET | FollowService | All public locations (with bounds) |
+| `/api/v1/locations/friends` | GET | FollowService | Friends' locations (privacy-enforced) |
+| `/api/v1/search/users` | GET | FollowService | User search (username/bio/geo) |
+| `/api/v1/search/suggestions` | GET | FollowService | Username autocomplete |
 
 ## Dependencies (SPM)
 
@@ -352,14 +392,18 @@ When adding new features, verify:
 - ✅ LocationType enum updated to match 15 real types from web app
 - ✅ Location model expanded with UserSave fields (color, isFavorite, tags, etc.)
 
-### Phase 3: Social Features
-- Follow/unfollow users
-- Public user profiles with avatar, banner, bio, location count
-- Followers/following lists
-- Public & friends' locations on map (purple markers)
+### Phase 3: Social Features ✅ (v1.4.0)
+- ✅ Follow/unfollow users from public profiles
+- ✅ Public user profiles with avatar, banner, bio, follower/following counts, public locations grid
+- ✅ Followers/following lists with infinite scroll pagination
+- ✅ People search with debounced typeahead (username, name, city)
+- ✅ People tab with Discover, Following, and Followers sub-tabs
+- ✅ Friends' locations on map (purple markers with person icon, toggle button)
+- ✅ Social location detail sheet with user info and profile navigation
+- ✅ Profile social stats (followers/following counts) with tappable navigation
+- ✅ 5-tab layout updated: Locations | Map | Capture | People | Profile (Settings via gear icon)
 
 ### Phase 4: Search & Onboarding
-- People search with typeahead suggestions
 - Terms of Service acceptance (blocking modal, scroll-to-bottom requirement)
 - Onboarding walkthrough (page-style SwiftUI tabs)
 

@@ -30,12 +30,21 @@ struct ProfileView: View {
     @State private var showingDeleteAvatarConfirm = false
     @State private var showingDeleteBannerConfirm = false
 
+    // Social stats
+    @State private var followersCount: Int = 0
+    @State private var followingCount: Int = 0
+    @State private var showFollowers = false
+    @State private var showFollowing = false
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
                     // Banner + Avatar header
                     profileHeader
+
+                    // Social stats (followers / following)
+                    socialStatsBar
 
                     // Edit form
                     VStack(spacing: 20) {
@@ -49,6 +58,13 @@ struct ProfileView: View {
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if hasChanges {
                         Button("Save") {
@@ -242,6 +258,74 @@ struct ProfileView: View {
         }
     }
 
+    // MARK: - Social Stats
+
+    private var socialStatsBar: some View {
+        HStack(spacing: 24) {
+            Button {
+                showFollowers = true
+            } label: {
+                VStack(spacing: 2) {
+                    Text("\(followersCount)")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    Text("Followers")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                showFollowing = true
+            } label: {
+                VStack(spacing: 2) {
+                    Text("\(followingCount)")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    Text("Following")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 8)
+        .sheet(isPresented: $showFollowers) {
+            if let username = authService.currentUser?.username {
+                NavigationStack {
+                    FollowListView(username: username, mode: .followers)
+                        .navigationTitle("Followers")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Done") { showFollowers = false }
+                            }
+                        }
+                }
+            }
+        }
+        .sheet(isPresented: $showFollowing) {
+            if let username = authService.currentUser?.username {
+                NavigationStack {
+                    FollowListView(username: username, mode: .following)
+                        .navigationTitle("Following")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Done") { showFollowing = false }
+                            }
+                        }
+                }
+            }
+        }
+        .task {
+            await loadSocialStats()
+        }
+    }
+
     // MARK: - Form Sections
 
     private var profileFieldsSection: some View {
@@ -315,6 +399,23 @@ struct ProfileView: View {
         language = user.language ?? ""
         timezone = user.timezone ?? ""
         emailNotifications = user.emailNotifications ?? true
+    }
+
+    private func loadSocialStats() async {
+        guard let username = authService.currentUser?.username else { return }
+        do {
+            async let followersTask = FollowService.shared.getFollowers(username: username, page: 1, limit: 1)
+            async let followingTask = FollowService.shared.getFollowing(username: username, page: 1, limit: 1)
+            let (followersResp, followingResp) = try await (followersTask, followingTask)
+            followersCount = followersResp.pagination.total
+            followingCount = followingResp.pagination.total
+        } catch {
+            #if DEBUG
+            if ConfigLoader.shared.enableDebugLogging {
+                print("[ProfileView] Failed to load social stats: \(error)")
+            }
+            #endif
+        }
     }
 
     private func checkForChanges() {

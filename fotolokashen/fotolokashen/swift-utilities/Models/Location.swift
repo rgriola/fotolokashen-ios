@@ -156,7 +156,7 @@ struct Location: Codable, Identifiable {
 // MARK: - Location Photo
 
 /// Simplified photo model for location list
-struct LocationPhoto: Codable {
+struct LocationPhoto: Codable, Equatable, Hashable {
     let id: Int
     let imagekitFilePath: String
     let isPrimary: Bool?

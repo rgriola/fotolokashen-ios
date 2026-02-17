@@ -1,4 +1,6 @@
 import Foundation
+import CoreLocation
+import UIKit
 import GoogleMaps
 import GoogleMapsUtils
 
@@ -18,6 +20,23 @@ class LocationClusterItem: NSObject, GMUClusterItem {
         let locationType = location.type ?? ""
         print("[LocationClusterItem] Creating marker for '\(location.name)' with type: '\(locationType)'")
         self.markerIcon = MarkerIconGenerator.cameraMarker(for: locationType)
+        super.init()
+    }
+}
+
+/// Custom cluster item for social (friends'/public) locations with purple markers
+class SocialLocationClusterItem: NSObject, GMUClusterItem {
+    var position: CLLocationCoordinate2D
+    var socialLocation: MapSocialLocation
+    var markerIcon: UIImage
+
+    init(socialLocation: MapSocialLocation) {
+        self.socialLocation = socialLocation
+        self.position = CLLocationCoordinate2D(
+            latitude: socialLocation.latitude,
+            longitude: socialLocation.longitude
+        )
+        self.markerIcon = MarkerIconGenerator.socialMarker()
         super.init()
     }
 }
@@ -45,6 +64,11 @@ extension LocationClusterRenderer: GMUClusterRendererDelegate {
             // Store the location for tap handling
             marker.userData = clusterItem
             print("[LocationClusterRenderer] Applied custom icon for: \(clusterItem.location.name)")
+        } else if let socialItem = marker.userData as? SocialLocationClusterItem {
+            // Apply purple social marker icon
+            marker.icon = socialItem.markerIcon
+            marker.groundAnchor = CGPoint(x: 0.5, y: 1.0)
+            marker.userData = socialItem
         }
         // Cluster markers keep their default appearance (colored circles)
     }

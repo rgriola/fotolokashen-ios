@@ -2,6 +2,36 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
+## [1.4.0] - 2026-02-17
+
+### ✨ Phase 3: Social Features
+
+#### New Features
+- **People Search**: New "People" tab with Discover, Following, and Followers sub-tabs
+- **User Discovery**: Search users by username, name, or city with debounced typeahead
+- **Follow/Unfollow**: Follow and unfollow users directly from public profiles
+- **Public Profiles**: View other users' profiles with banner, avatar, bio, follower/following counts, and public locations grid
+- **Followers/Following Lists**: Paginated lists with infinite scroll, navigable to user profiles
+- **Friends' Locations on Map**: Toggle purple markers on the map to see locations saved by people you follow
+- **Social Location Detail**: Tap friend's location marker to see location info and navigate to the saver's profile
+- **Profile Social Stats**: Followers and following counts displayed on your own Profile tab, tappable to view lists
+- **Settings via Profile**: Settings accessible via gear icon in Profile toolbar (tab slot freed for People)
+
+#### Architecture Changes
+- **New `Social.swift` models**: `PublicUser`, `FollowStatus`, `FollowResponse`, `UnfollowResponse`, `FollowListUser`, `SearchUser`, `SocialLocation`, `MapSocialLocation`, `SocialLocationUser`, pagination models
+- **New `FollowService`**: Singleton service handling follow/unfollow, follow status checks, public profiles, followers/following lists, social locations (public + friends), and people search
+- **New `PublicProfileView`**: Full profile view for other users with banner, avatar, bio, follow button, stats, public locations grid
+- **New `FollowListView`**: Reusable paginated list for followers/following with infinite scroll
+- **New `PeopleSearchView`**: Tabbed search view with Discover (search), Following, and Followers tabs
+- **New `SocialLocationClusterItem`**: GMUClusterItem subclass for friends' location markers (purple)
+- **New `SocialLocationDetailSheet`**: Detail sheet for tapped social location markers with user info
+- **`MarkerIconGenerator.socialMarker()`**: Purple person-icon markers for friends' locations
+- **`LocationClusterRenderer` updated**: Handles both user markers and social markers
+- **`MapView` updated**: Friends' locations toggle, social marker support, dual sheet bindings
+- **`ProfileView` updated**: Social stats bar with followers/following counts, Settings gear button
+- **`ContentView` updated**: 5-tab layout now Locations | Map | Capture | People | Profile (Settings moved into Profile)
+- **`MapBounds` struct**: Viewport bounds for filtering social locations by geographic area
+
 ## [1.3.0] - 2026-02-17
 
 ### ✨ Phase 2: Location Editing & Enrichment

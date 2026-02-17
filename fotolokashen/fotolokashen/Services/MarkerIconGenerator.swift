@@ -123,4 +123,76 @@ class MarkerIconGenerator {
         
         return marker
     }
+
+    /// Generate a purple social marker for friends'/public locations
+    /// Uses a distinct purple color to differentiate from user's own locations
+    static func socialMarker(size: CGSize = CGSize(width: 32, height: 40)) -> UIImage {
+        let purpleColor = UIColor(red: 0.36, green: 0.30, blue: 1.0, alpha: 1.0) // brand purple
+
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { context in
+            let ctx = context.cgContext
+
+            let squareSize = size.width
+            let pointerHeight: CGFloat = 8
+            let cornerRadius: CGFloat = 4
+            let borderWidth: CGFloat = 1.5
+
+            // Draw the square with rounded corners
+            let squareRect = CGRect(x: 0, y: 0, width: squareSize, height: squareSize)
+            let squarePath = UIBezierPath(roundedRect: squareRect, cornerRadius: cornerRadius)
+
+            ctx.setFillColor(purpleColor.cgColor)
+            squarePath.fill()
+
+            ctx.setStrokeColor(UIColor.white.cgColor)
+            ctx.setLineWidth(borderWidth)
+            squarePath.stroke()
+
+            // Draw a person icon (simpler than camera for social markers)
+            drawPersonIcon(in: ctx, rect: squareRect, color: .white)
+
+            // Draw pointer/pin at bottom
+            let pointerPath = UIBezierPath()
+            pointerPath.move(to: CGPoint(x: squareSize / 2, y: squareSize + pointerHeight))
+            pointerPath.addLine(to: CGPoint(x: squareSize / 2 - 6, y: squareSize))
+            pointerPath.addLine(to: CGPoint(x: squareSize / 2 + 6, y: squareSize))
+            pointerPath.close()
+
+            ctx.setFillColor(purpleColor.cgColor)
+            pointerPath.fill()
+        }
+    }
+
+    /// Draw a simple person icon for social markers
+    private static func drawPersonIcon(in context: CGContext, rect: CGRect, color: UIColor) {
+        let iconSize: CGFloat = 16
+        let iconInset = (rect.width - iconSize) / 2
+
+        context.saveGState()
+        context.translateBy(x: iconInset, y: iconInset)
+
+        let scale = iconSize / 24.0
+        context.scaleBy(x: scale, y: scale)
+
+        context.setStrokeColor(color.cgColor)
+        context.setLineWidth(2.5)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+
+        // Head circle
+        context.strokeEllipse(in: CGRect(x: 8, y: 2, width: 8, height: 8))
+
+        // Body path
+        let bodyPath = UIBezierPath()
+        bodyPath.move(to: CGPoint(x: 20, y: 21))
+        bodyPath.addLine(to: CGPoint(x: 20, y: 19))
+        bodyPath.addCurve(to: CGPoint(x: 16, y: 15), controlPoint1: CGPoint(x: 20, y: 16.8), controlPoint2: CGPoint(x: 18.2, y: 15))
+        bodyPath.addLine(to: CGPoint(x: 8, y: 15))
+        bodyPath.addCurve(to: CGPoint(x: 4, y: 19), controlPoint1: CGPoint(x: 5.8, y: 15), controlPoint2: CGPoint(x: 4, y: 16.8))
+        bodyPath.addLine(to: CGPoint(x: 4, y: 21))
+        bodyPath.stroke()
+
+        context.restoreGState()
+    }
 }
