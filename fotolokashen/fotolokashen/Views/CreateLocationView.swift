@@ -84,7 +84,7 @@ struct CreateLocationView: View {
                             
                             Toggle("Set Production Date", isOn: $hasProductionDate)
                                 .tint(.blue)
-                                .onChange(of: hasProductionDate) { oldValue, newValue in
+                                .onChange(of: hasProductionDate) { newValue in
                                     if !newValue {
                                         productionDate = nil
                                     } else if productionDate == nil {

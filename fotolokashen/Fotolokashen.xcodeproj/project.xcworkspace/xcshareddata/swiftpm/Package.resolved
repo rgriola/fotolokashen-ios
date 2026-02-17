@@ -1,22 +1,13 @@
 {
-  "originHash" : "e4f197e916036739eae3b0a5c996b7e82dbb9875df4484fab902e053595b1ec4",
+  "originHash" : "65b6c9c760e5eae045a7ae8c29007954d243328f7fd21b11c3960b0f589099a8",
   "pins" : [
     {
       "identity" : "google-maps-ios-utils",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/googlemaps/google-maps-ios-utils",
       "state" : {
-        "revision" : "55a2c5992a7b63d5dcb349f66b45f740f5c3d474",
-        "version" : "7.0.0"
-      }
-    },
-    {
-      "identity" : "imagekit-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/imagekit-developer/imagekit-ios",
-      "state" : {
-        "revision" : "22c8b49ac2ef8b2feb88f08484e061f47cc25e3a",
-        "version" : "3.1.0"
+        "revision" : "e3eec96b96ab2aa69c60e154d70edf523b495f82",
+        "version" : "7.1.0"
       }
     },
     {
@@ -24,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/googlemaps/ios-maps-sdk",
       "state" : {
-        "revision" : "dcfc4b6dda80bf7a748c34996af823be96511cc1",
-        "version" : "10.7.0"
+        "revision" : "f821a2ef5a3ffa7c704e6c98153da2592ba3049c",
+        "version" : "10.8.0"
       }
     },
     {
@@ -35,15 +26,6 @@
       "state" : {
         "revision" : "84e546727d66f1adc5439debad16270d0fdd04e7",
         "version" : "4.2.2"
-      }
-    },
-    {
-      "identity" : "kingfisher",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/onevcat/Kingfisher.git",
-      "state" : {
-        "revision" : "d30a5fad881137e2267f96a8e3fc35c58999bb94",
-        "version" : "8.6.2"
       }
     }
   ],

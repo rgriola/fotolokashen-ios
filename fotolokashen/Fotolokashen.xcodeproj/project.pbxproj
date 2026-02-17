@@ -9,9 +9,8 @@
 /* Begin PBXBuildFile section */
 		676F6BDB2F19744700CEBBE4 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BDA2F19744700CEBBE4 /* KeychainAccess */; };
 		676F6BDE2F19748D00CEBBE4 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BDD2F19748D00CEBBE4 /* GoogleMaps */; };
-		676F6BE12F1974D100CEBBE4 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BE02F1974D100CEBBE4 /* Kingfisher */; };
-		677061662F1AB10C00E97608 /* ImageKitIO in Frameworks */ = {isa = PBXBuildFile; productRef = 677061652F1AB10C00E97608 /* ImageKitIO */; };
 		677061772F1B0BE500E97608 /* GoogleMapsUtils in Frameworks */ = {isa = PBXBuildFile; productRef = 677061762F1B0BE500E97608 /* GoogleMapsUtils */; };
+		78EFEEE52F44DC0200C8B53E /* Debug.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 78EFEEE42F44DC0200C8B53E /* Debug.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,6 +34,7 @@
 		676F6B882F196B7600CEBBE4 /* fotolokashen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = fotolokashen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		676F6B952F196B7700CEBBE4 /* fotolokashenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = fotolokashenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		676F6B9F2F196B7700CEBBE4 /* fotolokashenUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = fotolokashenUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		78EFEEE42F44DC0200C8B53E /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -74,8 +74,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				676F6BE12F1974D100CEBBE4 /* Kingfisher in Frameworks */,
-				677061662F1AB10C00E97608 /* ImageKitIO in Frameworks */,
 				676F6BDE2F19748D00CEBBE4 /* GoogleMaps in Frameworks */,
 				676F6BDB2F19744700CEBBE4 /* KeychainAccess in Frameworks */,
 				677061772F1B0BE500E97608 /* GoogleMapsUtils in Frameworks */,
@@ -106,6 +104,7 @@
 				676F6B982F196B7700CEBBE4 /* fotolokashenTests */,
 				676F6BA22F196B7700CEBBE4 /* fotolokashenUITests */,
 				676F6B892F196B7600CEBBE4 /* Products */,
+				78EFEEE42F44DC0200C8B53E /* Debug.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -142,8 +141,6 @@
 			packageProductDependencies = (
 				676F6BDA2F19744700CEBBE4 /* KeychainAccess */,
 				676F6BDD2F19748D00CEBBE4 /* GoogleMaps */,
-				676F6BE02F1974D100CEBBE4 /* Kingfisher */,
-				677061652F1AB10C00E97608 /* ImageKitIO */,
 				677061762F1B0BE500E97608 /* GoogleMapsUtils */,
 			);
 			productName = fotolokashen;
@@ -231,8 +228,6 @@
 			packageReferences = (
 				676F6BD92F19744700CEBBE4 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				676F6BDC2F19748D00CEBBE4 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */,
-				676F6BDF2F1974D100CEBBE4 /* XCRemoteSwiftPackageReference "Kingfisher" */,
-				677061642F1AB10C00E97608 /* XCRemoteSwiftPackageReference "imagekit-ios" */,
 				677061752F1B0BE500E97608 /* XCRemoteSwiftPackageReference "google-maps-ios-utils" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -252,6 +247,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				78EFEEE52F44DC0200C8B53E /* Debug.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -274,6 +270,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		6770617A2F1B2C8D00E97608 /* SwiftLint */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -453,6 +450,7 @@
 		};
 		676F6BAA2F196B7700CEBBE4 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 78EFEEE42F44DC0200C8B53E /* Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -673,22 +671,6 @@
 				minimumVersion = 10.7.0;
 			};
 		};
-		676F6BDF2F1974D100CEBBE4 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 8.6.2;
-			};
-		};
-		677061642F1AB10C00E97608 /* XCRemoteSwiftPackageReference "imagekit-ios" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/imagekit-developer/imagekit-ios";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 3.1.0;
-			};
-		};
 		677061752F1B0BE500E97608 /* XCRemoteSwiftPackageReference "google-maps-ios-utils" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/googlemaps/google-maps-ios-utils";
@@ -709,16 +691,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 676F6BDC2F19748D00CEBBE4 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */;
 			productName = GoogleMaps;
-		};
-		676F6BE02F1974D100CEBBE4 /* Kingfisher */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 676F6BDF2F1974D100CEBBE4 /* XCRemoteSwiftPackageReference "Kingfisher" */;
-			productName = Kingfisher;
-		};
-		677061652F1AB10C00E97608 /* ImageKitIO */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 677061642F1AB10C00E97608 /* XCRemoteSwiftPackageReference "imagekit-ios" */;
-			productName = ImageKitIO;
 		};
 		677061762F1B0BE500E97608 /* GoogleMapsUtils */ = {
 			isa = XCSwiftPackageProductDependency;
