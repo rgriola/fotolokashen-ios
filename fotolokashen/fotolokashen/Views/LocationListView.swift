@@ -151,6 +151,8 @@ struct LocationListView: View {
                 } label: {
                     LocationRow(location: location)
                 }
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .destructive) {
                         locationToDelete = location
@@ -169,6 +171,7 @@ struct LocationListView: View {
                     ProgressView()
                     Spacer()
                 }
+                .listRowSeparator(.hidden)
             }
         }
         .listStyle(.plain)
@@ -257,12 +260,15 @@ struct LocationListView: View {
     // MARK: - Skeleton Loading
     
     private var skeletonLoadingView: some View {
-        List {
-            ForEach(0..<5, id: \.self) { _ in
-                SkeletonLocationRow()
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(0..<5, id: \.self) { _ in
+                    SkeletonLocationRow()
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
         }
-        .listStyle(.plain)
     }
 }
 
@@ -272,36 +278,44 @@ struct SkeletonLocationRow: View {
     @State private var isAnimating = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            // Skeleton thumbnail
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 80, height: 80)
+        VStack(alignment: .leading, spacing: 0) {
+            // Skeleton photo area
+            RoundedRectangle(cornerRadius: 0)
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 180)
                 .shimmer(isAnimating: isAnimating)
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 // Skeleton name
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 150, height: 16)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 180, height: 18)
                     .shimmer(isAnimating: isAnimating)
                 
                 // Skeleton address
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 200, height: 14)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 220, height: 14)
                     .shimmer(isAnimating: isAnimating)
-                
-                // Skeleton badge
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 80, height: 24)
-                    .shimmer(isAnimating: isAnimating)
+
+                // Skeleton bottom row
+                HStack {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 40, height: 12)
+                        .shimmer(isAnimating: isAnimating)
+                    Spacer()
+                }
             }
-            
-            Spacer()
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
         }
-        .padding(.vertical, 8)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.systemGray5), lineWidth: 1)
+        )
         .onAppear {
             isAnimating = true
         }

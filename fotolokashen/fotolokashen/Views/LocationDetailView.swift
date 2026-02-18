@@ -11,68 +11,160 @@ struct LocationDetailView: View {
     @State private var isLoadingDetails = true
     @State private var showingEditView = false
     @State private var currentLocation: Location
+    @State private var locationVisibility: String
+    @State private var isSavingVisibility = false
     @EnvironmentObject var networkMonitor: NetworkMonitor
 
     init(location: Location) {
         self.location = location
         self._currentLocation = State(initialValue: location)
+        self._locationVisibility = State(initialValue: location.visibility ?? "private")
     }
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // MARK: - Photo Gallery Section (Top)
+                // Photo Gallery
                 photoGallerySection
-                
+
+                // Top Bar: type badge (left) + menu (right)
+                HStack(alignment: .center) {
+                    if let type = currentLocation.type, !type.isEmpty {
+                        Text(type)
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(typeColor(for: type))
+                            .clipShape(Capsule())
+                    }
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Button(action: { showingEditView = true }) {
+                            Image(systemName: "square.and.pencil")
+                                .font(.title2)
+                                .foregroundColor(.primary)
+                                .padding(4)
+                        }
+                        Menu {
+                            ShareLink(
+                                item: "\(currentLocation.name)\n\(currentLocation.address ?? "")\nhttps://fotolokashen.com/locations/\(currentLocation.id)",
+                                label: { Label("Share", systemImage: "square.and.arrow.up") }
+                            )
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .font(.title2)
+                                .foregroundColor(.primary)
+                                .padding(4)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+
                 VStack(alignment: .leading, spacing: 20) {
-                    // MARK: - Address Section
-                    addressSection
-                    
+                    // --- Always Show Section ---
+                    Group {
+                        Text(currentLocation.name)
+                            .font(.title2).fontWeight(.bold)
+                        if let address = currentLocation.address, !address.isEmpty {
+                            Button(action: {
+                                let encoded = address.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                                let urlStr = "http://maps.apple.com/?ll=\(currentLocation.latitude),\(currentLocation.longitude)&q=\(encoded)"
+                                if let url = URL(string: urlStr) {
+                                    UIApplication.shared.open(url)
+                                }
+                            }) {
+                                HStack(alignment: .top, spacing: 4) {
+                                    Image(systemName: "mappin.circle.fill").foregroundColor(.red)
+                                    Text(address)
+                                        .font(.body)
+                                        .foregroundColor(.blue)
+                                        .underline()
+                                        .multilineTextAlignment(.leading)
+                                }
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        Text("Added \(formatDate(currentLocation.createdAt))")
+                            .font(.footnote).foregroundColor(.secondary)
+                        if let creator = userSaveDetails?.location.creator?.username {
+                            Text("by @\(creator)")
+                                .font(.footnote).foregroundColor(.secondary)
+                        }
+
+                        // --- Visibility Control ---
+                        visibilityControlRow
+                    }
+
                     Divider()
-                    
-                    // MARK: - Type & Basic Info
-                    typeSection
-                    
-                    Divider()
-                    
-                    // MARK: - Location Data (from locations table)
-                    locationDataSection
-                    
-                    Divider()
-                    
-                    // MARK: - User Save Data (from user_saves table)
-                    userSaveDataSection
-                    
-                    Divider()
-                    
-                    // MARK: - Photo Metadata (from photos table)
-                    photoMetadataSection
-                    
-                    Divider()
-                    
-                    // MARK: - Coordinates & Map Data
-                    coordinatesSection
-                    
-                    Spacer(minLength: 40)
+
+                    // --- Location Details (Conditional) ---
+                    Group {
+                        if let date = currentLocation.productionDate {
+                            DetailRow(label: "Production Date", value: formatProductionDate(date))
+                        }
+                        if let notes = currentLocation.productionNotes, !notes.isEmpty {
+                            DetailRow(label: "Production Notes", value: notes)
+                        }
+                        if let entry = currentLocation.entryPoint, !entry.isEmpty {
+                            DetailRow(label: "Entry Point", value: entry)
+                        }
+                        if let parking = currentLocation.parking, !parking.isEmpty {
+                            DetailRow(label: "Parking", value: parking)
+                        }
+                        if let access = currentLocation.access, !access.isEmpty {
+                            DetailRow(label: "Access", value: access)
+                        }
+                    }
+
+                    // --- Location Extra Metadata (Conditional) ---
+                    Group {
+                        if let bestTime = currentLocation.bestTimeOfDay, !bestTime.isEmpty {
+                            DetailRow(label: "Best Time of Day", value: bestTime)
+                        }
+                        if let contact = currentLocation.contactPerson, !contact.isEmpty {
+                            DetailRow(label: "Contact Person", value: contact)
+                        }
+                        if let phone = currentLocation.contactPhone, !phone.isEmpty {
+                            DetailRow(label: "Contact Phone", value: phone)
+                        }
+                        if let hours = currentLocation.operatingHours, !hours.isEmpty {
+                            DetailRow(label: "Operating Hours", value: hours)
+                        }
+                        if let permitCost = currentLocation.permitCost {
+                            DetailRow(label: "Permit Cost", value: String(format: "$%.2f", permitCost))
+                        }
+                        if let permitRequired = currentLocation.permitRequired {
+                            DetailRow(label: "Permit Required", value: permitRequired ? "Yes" : "No")
+                        }
+                        if let restrictions = currentLocation.restrictions, !restrictions.isEmpty {
+                            DetailRow(label: "Restrictions", value: restrictions)
+                        }
+                    }
+
+                    // --- Support Info at Bottom ---
+                    Spacer(minLength: 32)
+                    HStack {
+                        Text("Location ID: \(currentLocation.id)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color(.systemGray5))
+                            .clipShape(Capsule())
+                        Spacer()
+                    }
                 }
                 .padding()
             }
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(currentLocation.name)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showingEditView = true
-                } label: {
-                    Image(systemName: "pencil.circle")
-                }
-            }
-        }
         .sheet(isPresented: $showingEditView) {
             EditLocationView(location: currentLocation) { updated in
                 currentLocation = updated
-                // Reload photos and user save details after edit
                 Task {
                     await loadPhotos()
                     await loadUserSaveDetails()
@@ -233,6 +325,63 @@ struct LocationDetailView: View {
         }
     }
     
+    // MARK: - Visibility Control
+
+    private var visibilityControlRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: visibilityIcon(for: locationVisibility))
+                    .foregroundColor(visibilityColor(for: locationVisibility))
+                    .frame(width: 20)
+
+                Text("Visibility")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                Spacer()
+
+                if isSavingVisibility {
+                    ProgressView()
+                        .scaleEffect(0.75)
+                        .frame(height: 28)
+                } else {
+                    Menu {
+                        Button(action: { changeVisibility("public") }) {
+                            Label("Public — Anyone can view", systemImage: "globe")
+                        }
+                        Button(action: { changeVisibility("unlisted") }) {
+                            Label("Unlisted — Only with link", systemImage: "link")
+                        }
+                        Button(action: { changeVisibility("private") }) {
+                            Label("Private — Only you", systemImage: "lock.fill")
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: visibilityIcon(for: locationVisibility))
+                                .font(.caption)
+                            Text(visibilityLabel(for: locationVisibility))
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption2)
+                        }
+                        .foregroundColor(visibilityColor(for: locationVisibility))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(visibilityColor(for: locationVisibility).opacity(0.12))
+                        .clipShape(Capsule())
+                    }
+                }
+            }
+
+            Text(visibilityDescription(for: locationVisibility))
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.leading, 28)
+        }
+        .padding(.vertical, 4)
+    }
+
     // MARK: - Address Section
     
     private var addressSection: some View {
@@ -440,6 +589,63 @@ struct LocationDetailView: View {
         }
     }
     
+    // MARK: - Visibility Helpers
+
+    private func visibilityIcon(for v: String) -> String {
+        switch v {
+        case "public": return "globe"
+        case "unlisted": return "link"
+        default: return "lock.fill"
+        }
+    }
+
+    private func visibilityLabel(for v: String) -> String {
+        switch v {
+        case "public": return "Public"
+        case "unlisted": return "Unlisted"
+        default: return "Private"
+        }
+    }
+
+    private func visibilityColor(for v: String) -> Color {
+        switch v {
+        case "public": return .green
+        case "unlisted": return .orange
+        default: return Color(.systemGray)
+        }
+    }
+
+    private func visibilityDescription(for v: String) -> String {
+        switch v {
+        case "public": return "Anyone on fotolokashen can discover this location"
+        case "unlisted": return "Only people with the direct link can view"
+        default: return "Only you can see this location"
+        }
+    }
+
+    private func changeVisibility(_ newVisibility: String) {
+        guard newVisibility != locationVisibility else { return }
+        let previous = locationVisibility
+        locationVisibility = newVisibility
+        Task {
+            isSavingVisibility = true
+            var request = UpdateLocationRequest()
+            request.visibility = newVisibility
+            if let updated = await LocationStore.shared.updateLocation(currentLocation, request: request) {
+                await MainActor.run {
+                    currentLocation = updated
+                    locationVisibility = updated.visibility ?? "private"
+                    isSavingVisibility = false
+                }
+            } else {
+                await MainActor.run {
+                    locationVisibility = previous
+                    isSavingVisibility = false
+                }
+            }
+        }
+    }
+
     // MARK: - Data Loading
     
     private func loadPhotos() async {

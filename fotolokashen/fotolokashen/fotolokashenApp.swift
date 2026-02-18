@@ -36,6 +36,7 @@ struct AppRootView: View {
     @EnvironmentObject var networkMonitor: NetworkMonitor
     @Environment(\.scenePhase) private var scenePhase
 
+    @ObservedObject private var deepLinkManager = DeepLinkManager.shared
     private let syncService = SyncService.shared
     private let dataManager = DataManager.shared
 
@@ -43,13 +44,22 @@ struct AppRootView: View {
         ContentView()
             .environmentObject(syncService)
             .environmentObject(dataManager)
+            .environmentObject(deepLinkManager)
             .modelContainer(dataManager.modelContainer)
             .onOpenURL { url in
-                if url.scheme == "fotolokashen" {
-                    Task {
-                        await authService.handleCallback(url: url)
+                // Try deep link first; if not handled, fall back to OAuth
+                if !deepLinkManager.handleURL(url) {
+                    if url.scheme == "fotolokashen" {
+                        Task {
+                            await authService.handleCallback(url: url)
+                        }
                     }
                 }
+            }
+            // Universal Links arrive via NSUserActivity
+            .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                guard let url = activity.webpageURL else { return }
+                _ = deepLinkManager.handleURL(url)
             }
             .task {
                 if networkMonitor.isConnected {

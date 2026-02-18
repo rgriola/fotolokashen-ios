@@ -3,6 +3,14 @@ import CoreLocation
 
 /// Location model matching backend API response
 struct Location: Codable, Identifiable {
+        // MARK: - Extra Location Metadata (for detail panel)
+        let bestTimeOfDay: String?
+        let contactPerson: String?
+        let contactPhone: String?
+        let operatingHours: String?
+        let permitCost: Double?
+        let permitRequired: Bool?
+        let restrictions: String?
     let id: Int
     let placeId: String
     let name: String
@@ -50,6 +58,16 @@ struct Location: Codable, Identifiable {
     /// User's visibility setting for this save
     var visibility: String?
 
+    // MARK: - Creator (Owner)
+    struct Creator: Codable {
+        let id: Int?
+        let username: String?
+        let email: String?
+        let firstName: String?
+        let lastName: String?
+    }
+    let creator: Creator?
+
     /// Convenience initializer for creating locations with latitude/longitude
     init(
         id: Int,
@@ -80,7 +98,8 @@ struct Location: Codable, Identifiable {
         personalRating: Double? = nil,
         caption: String? = nil,
         tags: [String]? = nil,
-        visibility: String? = nil
+        visibility: String? = nil,
+        creator: Creator? = nil
     ) {
         self.id = id
         self.name = name
@@ -112,6 +131,14 @@ struct Location: Codable, Identifiable {
         self.caption = caption
         self.tags = tags
         self.visibility = visibility
+        self.creator = creator
+        self.bestTimeOfDay = nil
+        self.contactPerson = nil
+        self.contactPhone = nil
+        self.operatingHours = nil
+        self.permitCost = nil
+        self.permitRequired = nil
+        self.restrictions = nil
     }
 
     /// Latitude (convenience property)
@@ -319,28 +346,29 @@ struct UserSaveResponse: Codable {
 /// Combines Location fields AND UserSave fields in a single request
 struct UpdateLocationRequest: Codable {
     // Location fields (shared)
-    var name: String?
-    var notes: String?
-    var rating: Double?
-    var type: String?
-    var productionDate: String?  // ISO date string (YYYY-MM-DD), null to remove
-    var productionNotes: String?
-    var entryPoint: String?
-    var parking: String?
-    var access: String?
-    var indoorOutdoor: String?
-    var isPermanent: Bool?
+    var name: String? = nil
+    var notes: String? = nil
+    var rating: Double? = nil
+    var type: String? = nil
+    var productionDate: String? = nil  // ISO date string (YYYY-MM-DD), null to remove
+    var productionNotes: String? = nil
+    var entryPoint: String? = nil
+    var parking: String? = nil
+    var access: String? = nil
+    var indoorOutdoor: String? = nil
+    var isPermanent: Bool? = nil
     // Address components
-    var street: String?
-    var number: String?
-    var city: String?
-    var state: String?
-    var zipcode: String?
+    var street: String? = nil
+    var number: String? = nil
+    var city: String? = nil
+    var state: String? = nil
+    var zipcode: String? = nil
     // UserSave fields (per-user)
-    var tags: [String]?
-    var isFavorite: Bool?
-    var personalRating: Double?
-    var color: String?
+    var tags: [String]? = nil
+    var isFavorite: Bool? = nil
+    var personalRating: Double? = nil
+    var color: String? = nil
+    var visibility: String? = nil
 }
 
 // MARK: - Update Location Response

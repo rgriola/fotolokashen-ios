@@ -1,117 +1,186 @@
 import SwiftUI
 
-/// Individual location row component for the location list
+/// Individual location card component matching the web app's photo-prominent design.
+/// Vertical layout: photo carousel on top, name/address/badge below, three-dot menu.
 struct LocationRow: View {
     let location: Location
 
-    /// Whether to show the share button (hidden inside swipe actions or other contexts)
-    var showShareButton: Bool = true
+    @State private var currentPhotoIndex = 0
+
+    // MARK: - Photo URLs
+
+    /// All photo URLs from the location's photos array
+    private var photoURLs: [URL] {
+        guard let photos = location.photos, !photos.isEmpty else { return [] }
+        return photos.compactMap { photo in
+            URL(string: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)")
+        }
+    }
+
+    // MARK: - Static Map URL
 
     private var staticMapURL: URL? {
         let key = ConfigLoader.shared.googleMapsAPIKey
         guard !key.isEmpty else { return nil }
         let urlString = "https://maps.googleapis.com/maps/api/staticmap"
             + "?center=\(location.lat),\(location.lng)"
-            + "&zoom=15&size=160x160&scale=2"
+            + "&zoom=15&size=600x400&scale=2"
             + "&markers=color:red%7C\(location.lat),\(location.lng)"
             + "&key=\(key)"
         return URL(string: urlString)
     }
 
-    var body: some View {
-        HStack(spacing: 12) {
-            // Thumbnail — photo if available, otherwise static map
-            locationThumbnail
-                .frame(width: 80, height: 80)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+    // MARK: - Body
 
-            // Location info
-            VStack(alignment: .leading, spacing: 4) {
-                // Name
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Photo carousel area
+            ZStack(alignment: .topLeading) {
+                photoCarousel
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 180)
+                    .clipped()
+
+                // Overlays on photo
+                HStack {
+                    // Type badge (top-left)
+                    if let type = location.type, !type.isEmpty {
+                        Text(type)
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(typeColor(for: type))
+                            .clipShape(Capsule())
+                    }
+
+                    Spacer()
+
+                    // Three-dot menu (top-right)
+                    Menu {
+                        ShareLink(item: shareText) {
+                            Label("Share Location", systemImage: "square.and.arrow.up")
+                        }
+
+                        Button {
+                            // Placeholder action 1
+                        } label: {
+                            Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond")
+                        }
+
+                        Button {
+                            // Placeholder action 2
+                        } label: {
+                            Label("Add to Collection", systemImage: "folder.badge.plus")
+                        }
+
+                        Button(role: .destructive) {
+                            // Placeholder action 3
+                        } label: {
+                            Label("Report Issue", systemImage: "exclamationmark.triangle")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .background(.black.opacity(0.4))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(8)
+            }
+
+            // Info area below photo
+            VStack(alignment: .leading, spacing: 6) {
+                // Name — full display, wraps to multiple lines
                 Text(location.name)
                     .font(.headline)
-                    .lineLimit(1)
+                    .foregroundColor(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                // Address
+                // Address — full display, wraps to multiple lines
                 Text(location.address ?? "No address")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                // Type badge and photo count
-                HStack(spacing: 8) {
-                    // Type badge
-                    HStack(spacing: 4) {
-                        Image(systemName: typeIcon(for: location.type ?? ""))
-                            .font(.caption)
-                        Text(location.type ?? "Unknown")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(typeColor(for: location.type ?? "").opacity(0.2))
-                    .foregroundColor(typeColor(for: location.type ?? ""))
-                    .clipShape(Capsule())
-
-                    // Photo count
-                    if let count = location.photosCount, count > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "photo.fill")
-                                .font(.caption)
-                            Text("\(count)")
-                                .font(.caption)
-                        }
-                        .foregroundColor(.secondary)
-                    }
+                // Favorite indicator
+                if location.isFavorite == true {
+                    Image(systemName: "heart.fill")
+                        .font(.caption2)
+                        .foregroundColor(.red)
                 }
             }
-
-            Spacer()
-
-            // Share button
-            if showShareButton {
-                ShareLink(item: shareText) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
         }
-        .padding(.vertical, 8)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.systemGray5), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
     }
 
-    // MARK: - Thumbnail
+    // MARK: - Photo Carousel
 
     @ViewBuilder
-    private var locationThumbnail: some View {
-        if let thumbnailUrl = location.thumbnailUrl, let url = URL(string: thumbnailUrl) {
-            // Photo thumbnail
-            AsyncImage(url: url) { phase in
+    private var photoCarousel: some View {
+        if photoURLs.count > 1 {
+            // Multiple photos — swipeable carousel
+            TabView(selection: $currentPhotoIndex) {
+                ForEach(Array(photoURLs.enumerated()), id: \.offset) { index, url in
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(maxWidth: .infinity, maxHeight: 180)
+                                .clipped()
+                        case .failure:
+                            photoErrorPlaceholder
+                        default:
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.1))
+                                .overlay { ProgressView() }
+                        }
+                    }
+                    .tag(index)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .automatic))
+        } else if let firstURL = photoURLs.first {
+            // Single photo
+            AsyncImage(url: firstURL) { phase in
                 switch phase {
                 case .success(let image):
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 80, height: 80)
-                        .clipped()
                 case .failure:
-                    staticMapThumbnail
+                    staticMapImage
                 default:
                     Rectangle()
-                        .fill(Color.gray.opacity(0.15))
+                        .fill(Color.gray.opacity(0.1))
                         .overlay { ProgressView() }
                 }
             }
         } else {
-            // No photo — show static map
-            staticMapThumbnail
+            // No photos — static map fallback
+            staticMapImage
         }
     }
 
+    // MARK: - Static Map Fallback
+
     @ViewBuilder
-    private var staticMapThumbnail: some View {
+    private var staticMapImage: some View {
         if let mapURL = staticMapURL {
             AsyncImage(url: mapURL) { phase in
                 switch phase {
@@ -119,13 +188,11 @@ struct LocationRow: View {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 80, height: 80)
-                        .clipped()
                 case .failure:
                     mapPlaceholder
                 default:
                     Rectangle()
-                        .fill(Color.gray.opacity(0.15))
+                        .fill(Color.gray.opacity(0.1))
                         .overlay { ProgressView() }
                 }
             }
@@ -134,11 +201,22 @@ struct LocationRow: View {
         }
     }
 
+    private var photoErrorPlaceholder: some View {
+        Rectangle()
+            .fill(Color.gray.opacity(0.1))
+            .overlay {
+                Image(systemName: "photo")
+                    .font(.title2)
+                    .foregroundColor(.gray)
+            }
+    }
+
     private var mapPlaceholder: some View {
         Rectangle()
-            .fill(Color.gray.opacity(0.15))
+            .fill(Color.gray.opacity(0.1))
             .overlay {
                 Image(systemName: "map")
+                    .font(.title2)
                     .foregroundColor(.gray)
             }
     }
@@ -150,49 +228,49 @@ struct LocationRow: View {
         if let address = location.address {
             text += "\n\(address)"
         }
-        text += "\nhttps://www.google.com/maps/search/?api=1&query=\(location.lat),\(location.lng)"
+        let baseURL = ConfigLoader.shared.backendURL.absoluteString
+        text += "\n\(baseURL)/shared/\(location.id)"
         return text
     }
 
-    // MARK: - Helper Functions
-
-    private func typeIcon(for type: String) -> String {
-        return LocationTypeColors.icon(for: type)
-    }
+    // MARK: - Helpers
 
     private func typeColor(for type: String) -> Color {
-        return LocationTypeColors.color(for: type)
+        LocationTypeColors.color(for: type)
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    List {
-        LocationRow(location: Location(
-            id: 1,
-            name: "Dining Room",
-            address: "123 Main St, New York, NY",
-            latitude: 40.7128,
-            longitude: -74.0060,
-            type: "BROLL",
-            placeId: "test",
-            createdAt: Date().ISO8601Format(),
-            photosCount: 3,
-            thumbnailUrl: nil
-        ))
-        
-        LocationRow(location: Location(
-            id: 2,
-            name: "Coffee Shop Interior",
-            address: "456 Park Ave, Brooklyn, NY",
-            latitude: 40.6782,
-            longitude: -73.9442,
-            type: "STORY",
-            placeId: "test",
-            createdAt: Date().ISO8601Format(),
-            photosCount: 1,
-            thumbnailUrl: nil
-        ))
+    ScrollView {
+        VStack(spacing: 12) {
+            LocationRow(location: Location(
+                id: 1,
+                name: "Dining Room at the Grand Hotel",
+                address: "123 Main St, New York, NY 10001",
+                latitude: 40.7128,
+                longitude: -74.0060,
+                type: "BROLL",
+                placeId: "test",
+                createdAt: Date().ISO8601Format(),
+                photosCount: 3,
+                thumbnailUrl: nil
+            ))
+
+            LocationRow(location: Location(
+                id: 2,
+                name: "Coffee Shop Interior",
+                address: "456 Park Ave, Brooklyn, NY 11215",
+                latitude: 40.6782,
+                longitude: -73.9442,
+                type: "STORY",
+                placeId: "test",
+                createdAt: Date().ISO8601Format(),
+                photosCount: 1,
+                thumbnailUrl: nil
+            ))
+        }
+        .padding()
     }
 }

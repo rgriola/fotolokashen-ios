@@ -110,10 +110,13 @@ struct LoginView: View {
 
 struct LoggedInView: View {
     @ObservedObject private var locationStore = LocationStore.shared
+    @EnvironmentObject var deepLinkManager: DeepLinkManager
     @State private var selectedTab = 0
     @State private var previousTab = 0
     @State private var showingCamera = false
     @State private var capturedPhoto: PhotoCapture?
+    @State private var deepLinkLocation: Location?
+    @State private var showDeepLinkDetail = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -173,6 +176,31 @@ struct LoggedInView: View {
                 photoLocation: capture.location
             ) { location in
                 locationStore.addLocation(location)
+            }
+        }
+        // Deep link navigation
+        .onChange(of: deepLinkManager.pendingLocationId) { _, locationId in
+            guard let locationId else { return }
+            Task {
+                if let location = await deepLinkManager.resolveLocation(id: locationId) {
+                    deepLinkLocation = location
+                    showDeepLinkDetail = true
+                }
+                deepLinkManager.clearPendingNavigation()
+            }
+        }
+        .sheet(isPresented: $showDeepLinkDetail) {
+            if let location = deepLinkLocation {
+                NavigationStack {
+                    LocationDetailView(location: location)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarLeading) {
+                                Button("Close") {
+                                    showDeepLinkDetail = false
+                                }
+                            }
+                        }
+                }
             }
         }
     }
