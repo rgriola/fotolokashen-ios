@@ -13,6 +13,7 @@ struct MapView: View {
     @State private var selectedLocation: Location?
     @State private var selectedSocialLocation: MapSocialLocation?
     @State private var centerOnUserLocation = false
+    @State private var focusCoordinate: CLLocationCoordinate2D? = nil
     @State private var showFriendsLocations = false
     @State private var friendsLocations: [MapSocialLocation] = []
     @State private var isLoadingFriends = false
@@ -27,6 +28,7 @@ struct MapView: View {
                     selectedLocation: $selectedLocation,
                     selectedSocialLocation: $selectedSocialLocation,
                     centerOnUserLocation: $centerOnUserLocation,
+                    focusCoordinate: $focusCoordinate,
                     onMarkerTap: { location in
                         selectedLocation = location
                     },
@@ -95,6 +97,16 @@ struct MapView: View {
         .task {
             await locationStore.fetchLocations()
         }
+        .onChange(of: locationStore.mapFocusLocation) { _, location in
+            if let loc = location {
+                selectedLocation = loc
+                focusCoordinate = CLLocationCoordinate2D(
+                    latitude: loc.latitude,
+                    longitude: loc.longitude
+                )
+                locationStore.mapFocusLocation = nil
+            }
+        }
     }
 
     private func loadFriendsLocations() async {
@@ -120,6 +132,7 @@ struct ClusteredMapView: UIViewRepresentable {
     @Binding var selectedLocation: Location?
     @Binding var selectedSocialLocation: MapSocialLocation?
     @Binding var centerOnUserLocation: Bool
+    @Binding var focusCoordinate: CLLocationCoordinate2D?
     let onMarkerTap: (Location) -> Void
     let onSocialMarkerTap: (MapSocialLocation) -> Void
     
@@ -182,6 +195,19 @@ struct ClusteredMapView: UIViewRepresentable {
             // Reset the flag
             DispatchQueue.main.async {
                 self.centerOnUserLocation = false
+            }
+        }
+
+        // Handle focus on a specific location (e.g. from address tap)
+        if let coordinate = focusCoordinate {
+            let camera = GMSCameraPosition.camera(
+                withLatitude: coordinate.latitude,
+                longitude: coordinate.longitude,
+                zoom: 15.0
+            )
+            mapView.animate(to: camera)
+            DispatchQueue.main.async {
+                self.focusCoordinate = nil
             }
         }
         

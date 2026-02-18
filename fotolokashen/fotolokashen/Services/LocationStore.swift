@@ -9,6 +9,7 @@ class LocationStore: ObservableObject {
     @Published var locations: [Location] = []
     @Published var isLoading = false
     @Published var errorMessage = ""
+    @Published var mapFocusLocation: Location? = nil
     
     private let locationService = LocationService.shared
     private let config = ConfigLoader.shared

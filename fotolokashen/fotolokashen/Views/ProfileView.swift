@@ -126,13 +126,13 @@ struct ProfileView: View {
             // Banner
             bannerView
                 .frame(maxWidth: .infinity)
-                .frame(height: 160)
+                .frame(height: 140)
                 .clipped()
 
             // Avatar
             HStack(alignment: .bottom) {
                 avatarView
-                    .offset(y: 40)
+                    .offset(y: 36)
                     .padding(.leading, 16)
 
                 Spacer()
@@ -154,7 +154,7 @@ struct ProfileView: View {
         }
         .frame(maxWidth: .infinity)
         .clipped()
-        .padding(.bottom, 48)
+        .padding(.bottom, 42)
     }
 
     private var bannerView: some View {

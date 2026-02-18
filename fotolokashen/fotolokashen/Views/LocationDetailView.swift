@@ -70,11 +70,8 @@ struct LocationDetailView: View {
                             .font(.title2).fontWeight(.bold)
                         if let address = currentLocation.address, !address.isEmpty {
                             Button(action: {
-                                let encoded = address.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-                                let urlStr = "http://maps.apple.com/?ll=\(currentLocation.latitude),\(currentLocation.longitude)&q=\(encoded)"
-                                if let url = URL(string: urlStr) {
-                                    UIApplication.shared.open(url)
-                                }
+                                LocationStore.shared.mapFocusLocation = currentLocation
+                                NotificationCenter.default.post(name: .navigateToMapTab, object: nil)
                             }) {
                                 HStack(alignment: .top, spacing: 4) {
                                     Image(systemName: "mappin.circle.fill").foregroundColor(.red)

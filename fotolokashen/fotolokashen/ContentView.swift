@@ -7,6 +7,11 @@ extension Color {
     static let brandPurpleDark = Color(red: 0.30, green: 0.25, blue: 0.90)
 }
 
+// MARK: - Notification Names
+extension Notification.Name {
+    static let navigateToMapTab = Notification.Name("navigateToMapTab")
+}
+
 struct ContentView: View {
     @EnvironmentObject var authService: AuthService
     
@@ -177,6 +182,10 @@ struct LoggedInView: View {
             ) { location in
                 locationStore.addLocation(location)
             }
+        }
+        // Map tab navigation (from address tap in LocationDetailView)
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToMapTab)) { _ in
+            selectedTab = 1
         }
         // Deep link navigation
         .onChange(of: deepLinkManager.pendingLocationId) { _, locationId in

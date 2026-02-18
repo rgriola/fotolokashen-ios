@@ -35,7 +35,7 @@ struct PublicProfileView: View {
                 }
 
                 Divider()
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 8)
 
                 // Public Locations
                 locationsSection
@@ -91,7 +91,7 @@ struct PublicProfileView: View {
                     Rectangle()
                         .fill(Color.brandPurple.opacity(0.3))
                 }
-                .frame(height: 150)
+                .frame(height: 120)
                 .clipped()
             } else {
                 Rectangle()
@@ -102,18 +102,18 @@ struct PublicProfileView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(height: 150)
+                    .frame(height: 120)
             }
 
             // Avatar
             HStack {
                 avatarView
-                    .offset(y: 30)
+                    .offset(y: 24)
                     .padding(.leading, 16)
                 Spacer()
             }
         }
-        .padding(.bottom, 36)
+        .padding(.bottom, 28)
     }
 
     private var avatarView: some View {
@@ -126,7 +126,7 @@ struct PublicProfileView: View {
                 } placeholder: {
                     initialsPlaceholder
                 }
-                .frame(width: 80, height: 80)
+                .frame(width: 68, height: 68)
                 .clipShape(Circle())
                 .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 3))
             } else {
@@ -138,10 +138,10 @@ struct PublicProfileView: View {
     private var initialsPlaceholder: some View {
         Circle()
             .fill(Color.brandPurple)
-            .frame(width: 80, height: 80)
+            .frame(width: 68, height: 68)
             .overlay(
                 Text(profile?.initials ?? String(username.prefix(1)).uppercased())
-                    .font(.title)
+                    .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
             )
@@ -151,9 +151,9 @@ struct PublicProfileView: View {
     // MARK: - Profile Info Section
 
     private func profileInfoSection(_ profile: PublicUser) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(profile.name)
-                .font(.title2)
+                .font(.headline)
                 .fontWeight(.bold)
 
             Text("@\(profile.username)")
@@ -162,20 +162,21 @@ struct PublicProfileView: View {
 
             if let bio = profile.bio, !bio.isEmpty {
                 Text(bio)
-                    .font(.body)
+                    .font(.subheadline)
                     .foregroundColor(.primary)
-                    .padding(.top, 4)
+                    .lineLimit(3)
+                    .padding(.top, 2)
             }
 
             if let joinedAt = profile.joinedAt {
                 HStack(spacing: 4) {
                     Image(systemName: "calendar")
-                        .font(.caption)
+                        .font(.caption2)
                     Text("Joined \(formatJoinDate(joinedAt))")
                         .font(.caption)
                 }
                 .foregroundColor(.secondary)
-                .padding(.top, 4)
+                .padding(.top, 2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -185,8 +186,9 @@ struct PublicProfileView: View {
     // MARK: - Stats Section
 
     private var statsSection: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 24) {
+        VStack(spacing: 10) {
+            HStack {
+                Spacer()
                 // Followers
                 Button {
                     showFollowers = true
@@ -194,6 +196,13 @@ struct PublicProfileView: View {
                     statItem(count: followersCount, label: "Followers")
                 }
                 .buttonStyle(.plain)
+
+                Spacer()
+
+                // Divider
+                Divider().frame(height: 28)
+
+                Spacer()
 
                 // Following
                 Button {
@@ -203,26 +212,36 @@ struct PublicProfileView: View {
                 }
                 .buttonStyle(.plain)
 
+                Spacer()
+
+                // Divider
+                Divider().frame(height: 28)
+
+                Spacer()
+
                 // Locations
                 statItem(count: profile?.publicLocationCount ?? 0, label: "Locations")
+
+                Spacer()
             }
-            .padding(.top, 12)
+            .padding(.top, 10)
+            .padding(.horizontal, 16)
 
             // Follow Button
             if followStatus != nil {
                 followButton
+                    .padding(.horizontal, 16)
             }
         }
-        .padding(.horizontal, 16)
     }
 
     private func statItem(count: Int, label: String) -> some View {
         VStack(spacing: 2) {
             Text("\(count)")
-                .font(.headline)
+                .font(.subheadline)
                 .fontWeight(.bold)
             Text(label)
-                .font(.caption)
+                .font(.caption2)
                 .foregroundColor(.secondary)
         }
     }
@@ -258,42 +277,56 @@ struct PublicProfileView: View {
     // MARK: - Locations Section
 
     private var locationsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Public Locations")
-                .font(.headline)
-                .padding(.horizontal, 16)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Public Locations")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                if !locations.isEmpty {
+                    Text("\(locations.count)")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.brandPurple)
+                        .clipShape(Capsule())
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 16)
 
             if isLoadingLocations {
                 ProgressView()
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 40)
+                    .padding(.vertical, 24)
             } else if locations.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
                     Image(systemName: "mappin.slash")
-                        .font(.title)
+                        .font(.title2)
                         .foregroundColor(.secondary)
                     Text("No public locations")
-                        .font(.subheadline)
+                        .font(.footnote)
                         .foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 40)
+                .padding(.vertical, 24)
             } else {
                 LazyVGrid(columns: [
-                    GridItem(.flexible(), spacing: 8),
-                    GridItem(.flexible(), spacing: 8)
-                ], spacing: 8) {
+                    GridItem(.flexible(), spacing: 6),
+                    GridItem(.flexible(), spacing: 6)
+                ], spacing: 6) {
                     ForEach(locations) { socialLocation in
                         locationCard(socialLocation)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 16)
             }
         }
     }
 
     private func locationCard(_ socialLocation: SocialLocation) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             // Thumbnail
             if let thumbnailUrl = socialLocation.location.thumbnailUrl,
                let url = URL(string: thumbnailUrl) {
@@ -309,15 +342,15 @@ struct PublicProfileView: View {
                                 .foregroundColor(.secondary)
                         )
                 }
-                .frame(height: 100)
+                .frame(height: 88)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
                 Rectangle()
                     .fill(Color(.systemGray5))
-                    .frame(height: 100)
+                    .frame(height: 88)
                     .overlay(
                         Image(systemName: "mappin.circle.fill")
-                            .font(.title2)
+                            .font(.title3)
                             .foregroundColor(.secondary)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 8))
