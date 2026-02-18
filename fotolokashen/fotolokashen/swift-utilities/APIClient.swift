@@ -99,8 +99,15 @@ class APIClient {
         body: B? = nil as String?,
         authenticated: Bool = true
     ) async throws -> T {
-        // Build URL
-        let url = baseURL.appendingPathComponent(path)
+        // Build URL using string concatenation to preserve query parameters
+        // (appendingPathComponent percent-encodes ? and & characters, breaking query strings)
+        let baseString = baseURL.absoluteString.hasSuffix("/")
+            ? String(baseURL.absoluteString.dropLast())
+            : baseURL.absoluteString
+        let fullPath = path.hasPrefix("/") ? path : "/\(path)"
+        guard let url = URL(string: baseString + fullPath) else {
+            throw URLError(.badURL)
+        }
         
         // Encode body if present
         let bodyData: Data? = try body.map { try encoder.encode($0) }

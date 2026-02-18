@@ -138,17 +138,8 @@ struct ClusteredMapView: UIViewRepresentable {
         mapView.settings.zoomGestures = true
         mapView.settings.scrollGestures = true
         
-        // Setup clustering with custom colors
-        let iconGenerator = GMUDefaultClusterIconGenerator(
-            buckets: [10, 50, 100, 200, 1000],
-            backgroundColors: [
-                UIColor(red: 0.2, green: 0.6, blue: 1.0, alpha: 0.9),  // Light blue (< 10)
-                UIColor(red: 0.4, green: 0.4, blue: 1.0, alpha: 0.9),  // Blue (10-49)
-                UIColor(red: 0.6, green: 0.2, blue: 1.0, alpha: 0.9),  // Purple (50-99)
-                UIColor(red: 0.8, green: 0.2, blue: 0.6, alpha: 0.9),  // Pink (100-199)
-                UIColor(red: 1.0, green: 0.2, blue: 0.2, alpha: 0.9)   // Red (200+)
-            ]
-        )
+        // Setup clustering with custom camera+count icon generator (matches web app)
+        let iconGenerator = CameraClusterIconGenerator()
         let algorithm = GMUNonHierarchicalDistanceBasedAlgorithm()
         let renderer = LocationClusterRenderer(
             mapView: mapView,
@@ -169,7 +160,11 @@ struct ClusteredMapView: UIViewRepresentable {
     }
     
     func updateUIView(_ mapView: GMSMapView, context: Context) {
-        print("[MapView] updateUIView called with \(locations.count) locations")
+        #if DEBUG
+        if ConfigLoader.shared.enableDebugLogging {
+            print("[MapView] updateUIView: \(locations.count) locations")
+        }
+        #endif
         
         // Handle center on user location request
         if centerOnUserLocation {
@@ -191,7 +186,6 @@ struct ClusteredMapView: UIViewRepresentable {
         }
         
         guard let clusterManager = context.coordinator.clusterManager else {
-            print("[MapView] No cluster manager")
             return
         }
         
@@ -203,8 +197,6 @@ struct ClusteredMapView: UIViewRepresentable {
         var bounds = GMSCoordinateBounds()
         
         for location in locations {
-            print("[MapView] Adding marker for: \(location.name) at \(location.latitude), \(location.longitude)")
-            
             let item = LocationClusterItem(location: location)
             clusterManager.add(item)
             context.coordinator.locationItems.append(item)
@@ -223,24 +215,18 @@ struct ClusteredMapView: UIViewRepresentable {
         
         // Only auto-fit on first load
         if !locations.isEmpty && !context.coordinator.hasPerformedInitialFit {
-            print("[MapView] Performing initial fit to show all \(locations.count) markers")
             let update = GMSCameraUpdate.fit(bounds, withPadding: 50.0)
             mapView.animate(with: update)
             
             // Limit maximum zoom to 18
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if mapView.camera.zoom > 18.0 {
-                    print("[MapView] Zoom too high (\(mapView.camera.zoom)), limiting to 18.0")
                     let limitUpdate = GMSCameraUpdate.zoom(to: 18.0)
                     mapView.animate(with: limitUpdate)
                 }
             }
             
             context.coordinator.hasPerformedInitialFit = true
-        } else if !locations.isEmpty {
-            print("[MapView] Markers updated, keeping user's zoom level")
-        } else {
-            print("[MapView] No locations to display")
         }
     }
     

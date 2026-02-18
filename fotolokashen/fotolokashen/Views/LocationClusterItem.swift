@@ -18,7 +18,6 @@ class LocationClusterItem: NSObject, GMUClusterItem {
         )
         // Pre-generate the custom camera icon
         let locationType = location.type ?? ""
-        print("[LocationClusterItem] Creating marker for '\(location.name)' with type: '\(locationType)'")
         self.markerIcon = MarkerIconGenerator.cameraMarker(for: locationType)
         super.init()
     }
@@ -41,12 +40,21 @@ class SocialLocationClusterItem: NSObject, GMUClusterItem {
     }
 }
 
+// MARK: - Custom Cluster Icon Generator (matches web app)
+
+/// Generates cluster icons matching the web app design:
+/// Camera icon + count number in a rounded rectangle with pin triangle.
+class CameraClusterIconGenerator: NSObject, GMUClusterIconGenerator {
+    func icon(forSize size: UInt) -> UIImage {
+        MarkerIconGenerator.clusterIcon(count: Int(size))
+    }
+}
+
 /// Custom cluster renderer that applies custom icons to location markers
 class LocationClusterRenderer: GMUDefaultClusterRenderer {
     
     override init(mapView: GMSMapView, clusterIconGenerator iconGenerator: GMUClusterIconGenerator) {
         super.init(mapView: mapView, clusterIconGenerator: iconGenerator)
-        // Set self as delegate to customize markers
         self.delegate = self
     }
 }
@@ -54,22 +62,23 @@ class LocationClusterRenderer: GMUDefaultClusterRenderer {
 // MARK: - GMUClusterRendererDelegate
 extension LocationClusterRenderer: GMUClusterRendererDelegate {
     
-    /// Called before a marker is rendered - this is where we customize the icon
+    /// Called before a marker is rendered - customize the icon
     func renderer(_ renderer: GMUClusterRenderer, willRenderMarker marker: GMSMarker) {
-        // Check if this marker represents a single location item (not a cluster)
         if let clusterItem = marker.userData as? LocationClusterItem {
             // Apply the pre-generated custom camera icon
             marker.icon = clusterItem.markerIcon
             marker.groundAnchor = CGPoint(x: 0.5, y: 1.0)
-            // Store the location for tap handling
             marker.userData = clusterItem
-            print("[LocationClusterRenderer] Applied custom icon for: \(clusterItem.location.name)")
         } else if let socialItem = marker.userData as? SocialLocationClusterItem {
             // Apply purple social marker icon
             marker.icon = socialItem.markerIcon
             marker.groundAnchor = CGPoint(x: 0.5, y: 1.0)
             marker.userData = socialItem
         }
-        // Cluster markers keep their default appearance (colored circles)
+        // Cluster markers use the CameraClusterIconGenerator (camera + count)
+        // and get anchored at the pin tip
+        if !(marker.userData is LocationClusterItem) && !(marker.userData is SocialLocationClusterItem) {
+            marker.groundAnchor = CGPoint(x: 0.5, y: 1.0)
+        }
     }
 }

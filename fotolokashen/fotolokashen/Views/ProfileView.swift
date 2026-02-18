@@ -52,8 +52,10 @@ struct ProfileView: View {
                         locationSection
                         preferencesSection
                     }
-                    .padding()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical)
                 }
+                .frame(maxWidth: .infinity)
             }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
@@ -123,6 +125,7 @@ struct ProfileView: View {
         ZStack(alignment: .bottomLeading) {
             // Banner
             bannerView
+                .frame(maxWidth: .infinity)
                 .frame(height: 160)
                 .clipped()
 
@@ -149,28 +152,35 @@ struct ProfileView: View {
                 .padding(.bottom, 8)
             }
         }
+        .frame(maxWidth: .infinity)
+        .clipped()
         .padding(.bottom, 48)
     }
 
     private var bannerView: some View {
-        Group {
-            if let bannerURL = authService.currentUser?.bannerURL {
-                AsyncImage(url: bannerURL) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    case .failure:
-                        bannerPlaceholder
-                    default:
-                        bannerPlaceholder
-                            .overlay(ProgressView())
+        GeometryReader { geometry in
+            Group {
+                if let bannerURL = authService.currentUser?.bannerURL {
+                    AsyncImage(url: bannerURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .clipped()
+                        case .failure:
+                            bannerPlaceholder
+                        default:
+                            bannerPlaceholder
+                                .overlay(ProgressView())
+                        }
                     }
+                } else {
+                    bannerPlaceholder
                 }
-            } else {
-                bannerPlaceholder
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .overlay(alignment: .topTrailing) {
             if authService.currentUser?.bannerImage != nil {
@@ -204,6 +214,8 @@ struct ProfileView: View {
                             image
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
+                                .frame(width: 88, height: 88)
+                                .clipped()
                         case .failure:
                             avatarPlaceholder
                         default:

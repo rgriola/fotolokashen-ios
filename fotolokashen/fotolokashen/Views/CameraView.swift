@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreLocation
 
-/// Camera view for capturing photos with GPS — supports rotation and pinch-to-zoom
+/// Camera view with native-style zoom dial, tap-to-focus, exposure control, and GPS badge
 struct CameraView: View {
 
     @StateObject private var cameraService = CameraService()
@@ -11,6 +11,20 @@ struct CameraView: View {
     @State private var showingError = false
     @State private var errorMessage = ""
     @State private var pinchBaseZoom: CGFloat = 1.0
+
+    // Focus indicator
+    @State private var focusPoint: CGPoint? = nil
+    @State private var showFocusSquare = false
+
+    // Exposure
+    @State private var showExposureSlider = false
+    @State private var exposureDragOffset: CGFloat = 0
+
+    // Zoom dial
+    @State private var showZoomDial = false
+
+    // GPS
+    @State private var showCoordinates = false
 
     // Callback when photo is captured
     var onPhotoCaptured: ((UIImage, CLLocation?) -> Void)?
@@ -34,6 +48,9 @@ struct CameraView: View {
                                     pinchBaseZoom = cameraService.currentZoom
                                 }
                         )
+                        .onTapGesture { location in
+                            handleTapToFocus(at: location, in: geo.size)
+                        }
                 } else if cameraService.isAuthorized && !cameraService.isSessionReady {
                     VStack(spacing: 20) {
                         ProgressView()
@@ -45,30 +62,31 @@ struct CameraView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color.black)
                 } else {
-                    // Permission denied
-                    VStack(spacing: 20) {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
-                        Text("Camera Access Required")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        Text("Please enable camera access in Settings to take photos")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                        Button("Open Settings") {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-                    .padding()
+                    permissionDeniedView
                 }
 
-                // --- HUD overlays (safe-area aware) ---
+                // --- Focus square ---
+                if showFocusSquare, let point = focusPoint {
+                    FocusSquareView()
+                        .position(point)
+                }
+
+                // --- Exposure slider (right side, appears after tap-to-focus) ---
+                if showExposureSlider, let point = focusPoint {
+                    ExposureSlider(
+                        bias: Binding(
+                            get: { cameraService.currentExposureBias },
+                            set: { cameraService.setExposureBias($0) }
+                        ),
+                        minBias: cameraService.minExposureBias,
+                        maxBias: cameraService.maxExposureBias
+                    )
+                    .position(x: min(max(point.x + 60, 40), geo.size.width - 40),
+                              y: point.y)
+                    .transition(.opacity)
+                }
+
+                // --- HUD overlays ---
 
                 // Close button — top-left
                 VStack {
@@ -90,62 +108,58 @@ struct CameraView: View {
                     Spacer()
                 }
 
-                // Zoom controls — right side, vertically centred
+                // GPS badge — top-right
                 VStack {
-                    Spacer()
-                    VStack(spacing: 12) {
-                        Button {
-                            cameraService.zoomIn()
-                            pinchBaseZoom = cameraService.currentZoom
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.title3.weight(.semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 40, height: 40)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
-                        }
-
-                        // Zoom level indicator
-                        Text(String(format: "%.1f×", cameraService.currentZoom))
-                            .font(.caption2.weight(.bold).monospacedDigit())
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Color.black.opacity(0.5))
-                            .cornerRadius(6)
-
-                        Button {
-                            cameraService.zoomOut()
-                            pinchBaseZoom = cameraService.currentZoom
-                        } label: {
-                            Image(systemName: "minus")
-                                .font(.title3.weight(.semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 40, height: 40)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
-                        }
-                    }
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.trailing, geo.safeAreaInsets.trailing + 16)
-
-                // Compact GPS badge — bottom-left corner
-                VStack {
-                    Spacer()
                     HStack {
-                        gpsBadge
-                            .padding(.leading, geo.safeAreaInsets.leading + 16)
-                            .padding(.bottom, geo.safeAreaInsets.bottom + 100)
                         Spacer()
+                        gpsBadge
                     }
+                    .padding(.top, geo.safeAreaInsets.top + 8)
+                    .padding(.trailing, geo.safeAreaInsets.trailing + 16)
+                    Spacer()
                 }
 
-                // Capture button — bottom centre
-                VStack {
+                // Bottom controls stack
+                VStack(spacing: 0) {
                     Spacer()
+
+                    // Zoom dial or zoom pill
+                    if showZoomDial {
+                        ZoomDialView(
+                            currentZoom: $cameraService.currentZoom,
+                            minZoom: cameraService.minZoom,
+                            maxZoom: min(cameraService.maxZoom, 10.0),
+                            onZoomChanged: { newZoom in
+                                cameraService.setZoom(newZoom)
+                                pinchBaseZoom = newZoom
+                            },
+                            onDismiss: {
+                                withAnimation(.easeOut(duration: 0.2)) {
+                                    showZoomDial = false
+                                }
+                            }
+                        )
+                        .padding(.bottom, 12)
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    } else {
+                        // Zoom pill button (tap to expand dial)
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                showZoomDial = true
+                            }
+                        } label: {
+                            Text(zoomLabel)
+                                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                                .foregroundColor(cameraService.currentZoom > 1.01 ? .yellow : .white)
+                                .frame(width: 44, height: 44)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                        }
+                        .padding(.bottom, 12)
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    }
+
+                    // Capture button
                     Button(action: capturePhoto) {
                         ZStack {
                             Circle()
@@ -186,38 +200,97 @@ struct CameraView: View {
         }
     }
 
+    // MARK: - Zoom Label
+
+    private var zoomLabel: String {
+        let z = cameraService.currentZoom
+        if z < 10 {
+            return String(format: "%.1f", z)
+        }
+        return String(format: "%.0f", z)
+    }
+
     // MARK: - GPS Badge
 
-    /// Compact GPS badge for the lower-left corner
     @ViewBuilder
     private var gpsBadge: some View {
-        if let location = locationManager.location {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showCoordinates.toggle()
+            }
+        } label: {
             HStack(spacing: 4) {
-                Image(systemName: "location.fill")
+                Image(systemName: locationManager.location != nil ? "location.fill" : "location.slash.fill")
                     .font(.system(size: 10))
-                Text(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))
-                    .font(.system(size: 10, design: .monospaced))
-                Text("±\(Int(location.horizontalAccuracy))m")
-                    .font(.system(size: 9))
-                    .foregroundColor(.white.opacity(0.7))
+                if showCoordinates, let loc = locationManager.location {
+                    Text(String(format: "%.4f, %.4f", loc.coordinate.latitude, loc.coordinate.longitude))
+                        .font(.system(size: 10, design: .monospaced))
+                    Text("±\(Int(loc.horizontalAccuracy))m")
+                        .font(.system(size: 9))
+                        .foregroundColor(.white.opacity(0.7))
+                }
             }
             .foregroundColor(.white)
-            .padding(.horizontal, 8)
+            .padding(.horizontal, showCoordinates ? 8 : 6)
             .padding(.vertical, 5)
-            .background(Color.black.opacity(0.55))
+            .background(locationManager.location != nil ? Color.green.opacity(0.75) : Color.red.opacity(0.6))
             .cornerRadius(8)
-        } else {
-            HStack(spacing: 4) {
-                Image(systemName: "location.slash.fill")
-                    .font(.system(size: 10))
-                Text("No GPS")
-                    .font(.system(size: 10))
+        }
+    }
+
+    // MARK: - Permission Denied
+
+    private var permissionDeniedView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "camera.fill")
+                .font(.system(size: 60))
+                .foregroundColor(.gray)
+            Text("Camera Access Required")
+                .font(.title2)
+                .fontWeight(.semibold)
+            Text("Please enable camera access in Settings to take photos")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
             }
-            .foregroundColor(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(Color.red.opacity(0.6))
-            .cornerRadius(8)
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
+    }
+
+    // MARK: - Tap to Focus
+
+    private func handleTapToFocus(at point: CGPoint, in size: CGSize) {
+        // Dismiss zoom dial if open
+        if showZoomDial {
+            withAnimation(.easeOut(duration: 0.2)) {
+                showZoomDial = false
+            }
+        }
+
+        // Set focus point on camera
+        cameraService.focusAt(point: point, in: size)
+
+        // Show focus square
+        focusPoint = point
+        showFocusSquare = true
+        showExposureSlider = true
+
+        // Auto-hide after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                showFocusSquare = false
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                showExposureSlider = false
+            }
         }
     }
 
@@ -251,6 +324,151 @@ struct CameraView: View {
     private func handleCapturedPhoto(_ image: UIImage) {
         onPhotoCaptured?(image, locationManager.location)
         dismiss()
+    }
+}
+
+// MARK: - Focus Square View
+
+/// Yellow focus square that animates in, like native iOS Camera
+struct FocusSquareView: View {
+    @State private var scale: CGFloat = 1.4
+    @State private var opacity: Double = 1.0
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 2)
+            .stroke(Color.yellow, lineWidth: 1.5)
+            .frame(width: 70, height: 70)
+            .scaleEffect(scale)
+            .opacity(opacity)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    scale = 1.0
+                }
+                // Pulse
+                withAnimation(.easeInOut(duration: 0.5).delay(0.3).repeatCount(2, autoreverses: true)) {
+                    opacity = 0.5
+                }
+                withAnimation(.easeInOut(duration: 0.2).delay(1.3)) {
+                    opacity = 1.0
+                }
+            }
+    }
+}
+
+// MARK: - Exposure Slider
+
+/// Vertical sun brightness slider that appears next to the focus point
+struct ExposureSlider: View {
+    @Binding var bias: Float
+    let minBias: Float
+    let maxBias: Float
+
+    @State private var dragOffset: CGFloat = 0
+    private let sliderHeight: CGFloat = 140
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "sun.max.fill")
+                .font(.system(size: 10))
+                .foregroundColor(.yellow.opacity(0.8))
+
+            ZStack(alignment: .center) {
+                // Track
+                Capsule()
+                    .fill(Color.white.opacity(0.2))
+                    .frame(width: 2, height: sliderHeight)
+
+                // Thumb
+                Circle()
+                    .fill(Color.yellow)
+                    .frame(width: 16, height: 16)
+                    .offset(y: thumbOffset)
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                let half = sliderHeight / 2
+                                let clamped = min(max(value.location.y - half, -half), half)
+                                // Map: top = max EV, bottom = min EV
+                                let normalised = Float(-clamped / half) // -1 to 1
+                                let ev = normalised * min(maxBias, 4.0) // clamp practical range
+                                bias = ev
+                            }
+                    )
+            }
+            .frame(height: sliderHeight)
+
+            Image(systemName: "sun.min.fill")
+                .font(.system(size: 10))
+                .foregroundColor(.yellow.opacity(0.5))
+        }
+    }
+
+    private var thumbOffset: CGFloat {
+        let practicalMax = min(maxBias, 4.0)
+        guard practicalMax > 0 else { return 0 }
+        let normalised = CGFloat(bias / practicalMax)
+        return -normalised * (sliderHeight / 2)
+    }
+}
+
+// MARK: - Zoom Dial View
+
+/// Horizontal zoom dial that expands from the zoom pill — mimics native iOS Camera
+struct ZoomDialView: View {
+    @Binding var currentZoom: CGFloat
+    let minZoom: CGFloat
+    let maxZoom: CGFloat
+    var onZoomChanged: (CGFloat) -> Void
+    var onDismiss: () -> Void
+
+    // Preset stops
+    private var presets: [CGFloat] {
+        var stops: [CGFloat] = [0.5, 1.0, 2.0]
+        if maxZoom >= 3.0 { stops.append(3.0) }
+        if maxZoom >= 5.0 { stops.append(5.0) }
+        return stops
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            // Preset buttons
+            ForEach(presets, id: \.self) { preset in
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        onZoomChanged(max(preset, minZoom))
+                    }
+                } label: {
+                    Text(presetLabel(preset))
+                        .font(.system(size: 13, weight: isActive(preset) ? .bold : .medium, design: .monospaced))
+                        .foregroundColor(isActive(preset) ? .yellow : .white)
+                        .frame(width: 44, height: 36)
+                }
+            }
+
+            // Close dial
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white.opacity(0.6))
+                    .frame(width: 28, height: 36)
+            }
+        }
+        .padding(.horizontal, 4)
+        .background(Color.black.opacity(0.65))
+        .clipShape(Capsule())
+    }
+
+    private func presetLabel(_ value: CGFloat) -> String {
+        if value < 1.0 {
+            return String(format: ".%0.f", value * 10)
+        }
+        return String(format: "%.0f", value)
+    }
+
+    private func isActive(_ preset: CGFloat) -> Bool {
+        abs(currentZoom - preset) < 0.15
     }
 }
 

@@ -14,6 +14,7 @@ class CameraService: NSObject, ObservableObject {
     @Published var errorMessage: String?
     @Published var isSessionReady = false
     @Published var currentZoom: CGFloat = 1.0
+    @Published var currentExposureBias: Float = 0.0
     
     // MARK: - Properties
     
@@ -27,6 +28,14 @@ class CameraService: NSObject, ObservableObject {
     var maxZoom: CGFloat {
         guard let device = videoDeviceInput?.device else { return 5.0 }
         return min(device.activeFormat.videoMaxZoomFactor, 10.0)
+    }
+    
+    /// Exposure bias range from device
+    var minExposureBias: Float {
+        videoDeviceInput?.device.minExposureTargetBias ?? -8.0
+    }
+    var maxExposureBias: Float {
+        videoDeviceInput?.device.maxExposureTargetBias ?? 8.0
     }
     
     // Check if running on simulator
@@ -190,6 +199,63 @@ class CameraService: NSObject, ObservableObject {
     /// Handle pinch gesture scale
     func handlePinchZoom(scale: CGFloat, initialZoom: CGFloat) {
         setZoom(initialZoom * scale)
+    }
+    
+    // MARK: - Focus & Exposure
+    
+    /// Focus and meter at a normalised point (0…1, 0…1) in the preview
+    func focusAt(point: CGPoint, in viewSize: CGSize) {
+        guard let device = videoDeviceInput?.device else { return }
+        // Convert SwiftUI point (origin top-left) to AVCapture device point
+        let focusPoint = CGPoint(x: point.y / viewSize.height,
+                                 y: 1.0 - point.x / viewSize.width)
+        sessionQueue.async {
+            do {
+                try device.lockForConfiguration()
+                if device.isFocusPointOfInterestSupported {
+                    device.focusPointOfInterest = focusPoint
+                    device.focusMode = .autoFocus
+                }
+                if device.isExposurePointOfInterestSupported {
+                    device.exposurePointOfInterest = focusPoint
+                    device.exposureMode = .autoExpose
+                }
+                device.unlockForConfiguration()
+                #if DEBUG
+                print("[CameraService] Focus at \(focusPoint)")
+                #endif
+            } catch {
+                #if DEBUG
+                print("[CameraService] Focus error: \(error)")
+                #endif
+            }
+        }
+    }
+    
+    /// Set exposure compensation bias (in EV)
+    func setExposureBias(_ bias: Float) {
+        guard let device = videoDeviceInput?.device else { return }
+        let clamped = min(max(bias, device.minExposureTargetBias), device.maxExposureTargetBias)
+        sessionQueue.async {
+            do {
+                try device.lockForConfiguration()
+                device.setExposureTargetBias(clamped) { _ in
+                    DispatchQueue.main.async {
+                        self.currentExposureBias = clamped
+                    }
+                }
+                device.unlockForConfiguration()
+            } catch {
+                #if DEBUG
+                print("[CameraService] Exposure bias error: \(error)")
+                #endif
+            }
+        }
+    }
+    
+    /// Reset exposure to neutral
+    func resetExposure() {
+        setExposureBias(0)
     }
     
     // MARK: - Photo Capture

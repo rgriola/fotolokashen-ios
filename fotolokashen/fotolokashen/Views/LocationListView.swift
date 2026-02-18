@@ -38,6 +38,7 @@ struct LocationListView: View {
                 }
             }
             .navigationTitle("My Locations")
+            .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search locations")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -82,16 +83,6 @@ struct LocationListView: View {
                     selectedTypeFilter = nil
                 }
 
-                // Favorites chip
-                FilterChip(
-                    label: "Favorites",
-                    icon: "star.fill",
-                    isSelected: selectedTypeFilter == "__FAVORITES__",
-                    color: .yellow
-                ) {
-                    selectedTypeFilter = selectedTypeFilter == "__FAVORITES__" ? nil : "__FAVORITES__"
-                }
-
                 // Type chips from available types in user's locations
                 ForEach(availableTypeFilters, id: \.self) { type in
                     FilterChip(
@@ -132,11 +123,7 @@ struct LocationListView: View {
         
         // Apply type filter
         if let typeFilter = selectedTypeFilter {
-            if typeFilter == "__FAVORITES__" {
-                locations = locations.filter { $0.isFavorite == true }
-            } else {
-                locations = locations.filter { $0.type == typeFilter }
-            }
+            locations = locations.filter { $0.type == typeFilter }
         }
         
         // Apply sorting

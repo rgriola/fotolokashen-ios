@@ -195,4 +195,82 @@ class MarkerIconGenerator {
 
         context.restoreGState()
     }
+
+    // MARK: - Cluster Icon (matches web app)
+
+    /// Generate a cluster icon matching the web app design:
+    /// Camera icon on the left, count on the right, pin triangle at bottom.
+    /// Color coded by count: ≤5 blue, >5 purple, >10 amber, >20 red.
+    static func clusterIcon(count: Int) -> UIImage {
+        // Dynamic width based on digit count (matches web)
+        let countText = "\(count)"
+        let digitCount = countText.count
+        let width: CGFloat
+        switch digitCount {
+        case 1: width = 68
+        case 2: width = 76
+        default: width = 84
+        }
+
+        let rectHeight: CGFloat = 40
+        let pinHeight: CGFloat = 14
+        let totalHeight = rectHeight + pinHeight
+        let size = CGSize(width: width, height: totalHeight)
+
+        // Color based on count (matches web thresholds)
+        let color: UIColor
+        if count > 20 {
+            color = UIColor(red: 0.86, green: 0.15, blue: 0.15, alpha: 1) // #DC2626 red
+        } else if count > 10 {
+            color = UIColor(red: 0.96, green: 0.62, blue: 0.04, alpha: 1) // #F59E0B amber
+        } else if count > 5 {
+            color = UIColor(red: 0.55, green: 0.36, blue: 0.96, alpha: 1) // #8B5CF6 purple
+        } else {
+            color = UIColor(red: 0.23, green: 0.51, blue: 0.96, alpha: 1) // #3B82F6 blue
+        }
+
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { context in
+            let ctx = context.cgContext
+
+            // --- Rounded rectangle background ---
+            let rectInset: CGFloat = 2
+            let bgRect = CGRect(x: rectInset, y: rectInset, width: width - rectInset * 2, height: rectHeight - rectInset * 2)
+            let bgPath = UIBezierPath(roundedRect: bgRect, cornerRadius: 6)
+
+            ctx.setFillColor(color.cgColor)
+            bgPath.fill()
+
+            ctx.setStrokeColor(UIColor.white.cgColor)
+            ctx.setLineWidth(3)
+            bgPath.stroke()
+
+            // --- Camera icon on the left ---
+            drawCameraIcon(in: ctx, rect: CGRect(x: 0, y: 0, width: 36, height: rectHeight), color: .white)
+
+            // --- Count text on the right ---
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.alignment = .center
+
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.boldSystemFont(ofSize: 18),
+                .foregroundColor: UIColor.white,
+                .paragraphStyle: paragraphStyle
+            ]
+
+            let textRect = CGRect(x: 36, y: (rectHeight - 22) / 2, width: width - 36 - 4, height: 22)
+            countText.draw(in: textRect, withAttributes: attrs)
+
+            // --- Pin triangle at bottom ---
+            let pinPath = UIBezierPath()
+            let centerX = width / 2
+            pinPath.move(to: CGPoint(x: centerX, y: totalHeight))
+            pinPath.addLine(to: CGPoint(x: centerX - 6, y: rectHeight))
+            pinPath.addLine(to: CGPoint(x: centerX + 6, y: rectHeight))
+            pinPath.close()
+
+            ctx.setFillColor(color.cgColor)
+            pinPath.fill()
+        }
+    }
 }
