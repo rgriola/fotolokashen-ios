@@ -344,7 +344,37 @@ struct PublicProfileView: View {
                 }
                 .frame(height: 88)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else if let staticMapUrl = StaticMapHelper.thumbnailMapURL(
+                latitude: socialLocation.location.lat,
+                longitude: socialLocation.location.lng
+            ) {
+                // Show static map when no photo available
+                AsyncImage(url: staticMapUrl) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color(.systemGray5))
+                        .overlay(
+                            ProgressView()
+                        )
+                }
+                .frame(height: 88)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    // Subtle map indicator badge
+                    Image(systemName: "map.fill")
+                        .font(.caption2)
+                        .foregroundColor(.white)
+                        .padding(4)
+                        .background(Color.black.opacity(0.5))
+                        .clipShape(Circle())
+                        .padding(4),
+                    alignment: .topTrailing
+                )
             } else {
+                // Fallback if static map URL fails
                 Rectangle()
                     .fill(Color(.systemGray5))
                     .frame(height: 88)

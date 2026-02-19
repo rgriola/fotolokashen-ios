@@ -211,13 +211,20 @@ class APIClient {
         switch statusCode {
         case 200...299:
             do {
+                #if DEBUG
+                if ConfigLoader.shared.enableDebugLogging {
+                    if let jsonString = String(data: data, encoding: .utf8) {
+                        print("[APIClient] Response data: \(jsonString)")
+                    }
+                }
+                #endif
                 return try decoder.decode(T.self, from: data)
             } catch {
                 #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
                     print("[APIClient] Decode error: \(error)")
                     if let jsonString = String(data: data, encoding: .utf8) {
-                        print("[APIClient] Response data: \(jsonString)")
+                        print("[APIClient] Failed response data: \(jsonString)")
                     }
                 }
                 #endif

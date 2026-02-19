@@ -23,7 +23,8 @@ class LocationClusterItem: NSObject, GMUClusterItem {
     }
 }
 
-/// Custom cluster item for social (friends'/public) locations with purple markers
+/// Custom cluster item for social (friends'/public) locations
+/// Uses camera icons like regular locations (not person icons)
 class SocialLocationClusterItem: NSObject, GMUClusterItem {
     var position: CLLocationCoordinate2D
     var socialLocation: MapSocialLocation
@@ -35,7 +36,9 @@ class SocialLocationClusterItem: NSObject, GMUClusterItem {
             latitude: socialLocation.latitude,
             longitude: socialLocation.longitude
         )
-        self.markerIcon = MarkerIconGenerator.socialMarker()
+        // Use camera icon based on location type (same as regular locations)
+        let locationType = socialLocation.type ?? ""
+        self.markerIcon = MarkerIconGenerator.cameraMarker(for: locationType)
         super.init()
     }
 }
@@ -70,7 +73,7 @@ extension LocationClusterRenderer: GMUClusterRendererDelegate {
             marker.groundAnchor = CGPoint(x: 0.5, y: 1.0)
             marker.userData = clusterItem
         } else if let socialItem = marker.userData as? SocialLocationClusterItem {
-            // Apply purple social marker icon
+            // Apply camera icon (same as regular locations)
             marker.icon = socialItem.markerIcon
             marker.groundAnchor = CGPoint(x: 0.5, y: 1.0)
             marker.userData = socialItem

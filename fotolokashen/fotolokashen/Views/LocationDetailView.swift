@@ -756,12 +756,15 @@ struct SectionHeader: View {
     let icon: String
     
     var body: some View {
-        HStack {
+        HStack(spacing: 6) {
             Image(systemName: icon)
-                .foregroundColor(.blue)
+                .font(.caption)
+                .foregroundColor(.brandPurple)
             Text(title)
-                .font(.headline)
+                .font(.subheadline)
+                .fontWeight(.semibold)
         }
+        .padding(.top, 4)
     }
 }
 

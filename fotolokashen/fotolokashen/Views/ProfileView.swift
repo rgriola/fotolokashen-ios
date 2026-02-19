@@ -43,8 +43,16 @@ struct ProfileView: View {
                     // Banner + Avatar header
                     profileHeader
 
+                    // Profile info (name & username)
+                    if let user = authService.currentUser {
+                        profileInfoSection(user)
+                    }
+
                     // Social stats (followers / following)
                     socialStatsBar
+
+                    Divider()
+                        .padding(.vertical, 8)
 
                     // Edit form
                     VStack(spacing: 20) {
@@ -57,6 +65,7 @@ struct ProfileView: View {
                 }
                 .frame(maxWidth: .infinity)
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -126,13 +135,13 @@ struct ProfileView: View {
             // Banner
             bannerView
                 .frame(maxWidth: .infinity)
-                .frame(height: 140)
+                .frame(height: 120)
                 .clipped()
 
             // Avatar
             HStack(alignment: .bottom) {
                 avatarView
-                    .offset(y: 36)
+                    .offset(y: 24)
                     .padding(.leading, 16)
 
                 Spacer()
@@ -141,46 +150,43 @@ struct ProfileView: View {
                 Button {
                     showingBannerPicker = true
                 } label: {
-                    Label("Edit", systemImage: "camera")
+                    Image(systemName: "camera.fill")
                         .font(.caption)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
+                        .foregroundColor(.white)
+                        .padding(8)
+                        .background(Color.brandPurple)
+                        .clipShape(Circle())
+                        .shadow(radius: 2)
                 }
                 .padding(.trailing, 16)
                 .padding(.bottom, 8)
             }
         }
         .frame(maxWidth: .infinity)
-        .clipped()
-        .padding(.bottom, 42)
+        .padding(.bottom, 28)
     }
 
     private var bannerView: some View {
-        GeometryReader { geometry in
-            Group {
-                if let bannerURL = authService.currentUser?.bannerURL {
-                    AsyncImage(url: bannerURL) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                                .clipped()
-                        case .failure:
-                            bannerPlaceholder
-                        default:
-                            bannerPlaceholder
-                                .overlay(ProgressView())
-                        }
+        Group {
+            if let bannerURL = authService.currentUser?.bannerURL {
+                AsyncImage(url: bannerURL) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 120)
+                            .clipped()
+                    case .failure:
+                        bannerPlaceholder
+                    default:
+                        bannerPlaceholder
+                            .overlay(ProgressView())
                     }
-                } else {
-                    bannerPlaceholder
                 }
+            } else {
+                bannerPlaceholder
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .overlay(alignment: .topTrailing) {
             if authService.currentUser?.bannerImage != nil {
@@ -188,6 +194,7 @@ struct ProfileView: View {
                     showingDeleteBannerConfirm = true
                 } label: {
                     Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
                         .foregroundColor(.white)
                         .shadow(radius: 2)
                         .padding(8)
@@ -197,26 +204,45 @@ struct ProfileView: View {
     }
 
     private var bannerPlaceholder: some View {
-        LinearGradient(
-            colors: [.brandPurple, .brandPurpleDark],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [.brandPurple.opacity(0.6), .brandPurple.opacity(0.3)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .frame(height: 120)
     }
 
     private var avatarView: some View {
         ZStack(alignment: .bottomTrailing) {
             Group {
                 if let avatarURL = authService.currentUser?.avatarURL {
+                    #if DEBUG
+                    let _ = {
+                        if ConfigLoader.shared.enableDebugLogging {
+                            print("[ProfileView] Avatar URL: \(avatarURL.absoluteString)")
+                            print("[ProfileView] Avatar string: \(authService.currentUser?.avatar ?? "nil")")
+                        }
+                    }()
+                    #endif
                     AsyncImage(url: avatarURL) { phase in
                         switch phase {
                         case .success(let image):
                             image
                                 .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 88, height: 88)
+                                .scaledToFill()
+                                .frame(width: 68, height: 68)
                                 .clipped()
-                        case .failure:
+                        case .failure(let error):
+                            #if DEBUG
+                            let _ = {
+                                if ConfigLoader.shared.enableDebugLogging {
+                                    print("[ProfileView] Avatar load failed: \(error)")
+                                }
+                            }()
+                            #endif
                             avatarPlaceholder
                         default:
                             avatarPlaceholder
@@ -224,25 +250,33 @@ struct ProfileView: View {
                         }
                     }
                 } else {
+                    #if DEBUG
+                    let _ = {
+                        if ConfigLoader.shared.enableDebugLogging {
+                            print("[ProfileView] No avatar URL - avatar field: \(authService.currentUser?.avatar ?? "nil")")
+                        }
+                    }()
+                    #endif
                     avatarPlaceholder
                 }
             }
-            .frame(width: 88, height: 88)
+            .frame(width: 68, height: 68)
             .clipShape(Circle())
-            .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 4))
-            .shadow(radius: 2)
+            .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 3))
 
             // Camera button overlay
             Button {
                 showingAvatarPicker = true
             } label: {
                 Image(systemName: "camera.fill")
-                    .font(.caption)
+                    .font(.system(size: 10))
                     .foregroundColor(.white)
-                    .padding(6)
+                    .padding(5)
                     .background(Color.brandPurple)
                     .clipShape(Circle())
+                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
             }
+            .offset(x: 2, y: 2)
         }
         .contextMenu {
             if authService.currentUser?.avatar != nil {
@@ -261,50 +295,89 @@ struct ProfileView: View {
     }
 
     private var avatarPlaceholder: some View {
-        ZStack {
-            Color.brandPurple.opacity(0.3)
-            Text(authService.currentUser?.initials ?? "?")
-                .font(.title)
-                .fontWeight(.bold)
-                .foregroundColor(.brandPurple)
+        Circle()
+            .fill(Color.brandPurple)
+            .frame(width: 68, height: 68)
+            .overlay(
+                Text(authService.currentUser?.initials ?? "?")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+            )
+    }
+
+    // MARK: - Profile Info Section
+
+    private func profileInfoSection(_ user: User) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let firstName = user.firstName, let lastName = user.lastName {
+                Text("\(firstName) \(lastName)")
+                    .font(.headline)
+                    .fontWeight(.bold)
+            } else if let firstName = user.firstName {
+                Text(firstName)
+                    .font(.headline)
+                    .fontWeight(.bold)
+            }
+
+            Text("@\(user.username)")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.top, 4)
     }
 
     // MARK: - Social Stats
 
     private var socialStatsBar: some View {
-        HStack(spacing: 24) {
+        HStack(spacing: 0) {
+            Spacer()
+            
+            // Followers
             Button {
                 showFollowers = true
             } label: {
                 VStack(spacing: 2) {
                     Text("\(followersCount)")
-                        .font(.headline)
+                        .font(.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                     Text("Followers")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundColor(.secondary)
                 }
             }
             .buttonStyle(.plain)
-
+            
+            Spacer()
+            
+            Divider()
+                .frame(height: 28)
+            
+            Spacer()
+            
+            // Following
             Button {
                 showFollowing = true
             } label: {
                 VStack(spacing: 2) {
                     Text("\(followingCount)")
-                        .font(.headline)
+                        .font(.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                     Text("Following")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundColor(.secondary)
                 }
             }
             .buttonStyle(.plain)
+            
+            Spacer()
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
         .sheet(isPresented: $showFollowers) {
             if let username = authService.currentUser?.username {
                 NavigationStack {

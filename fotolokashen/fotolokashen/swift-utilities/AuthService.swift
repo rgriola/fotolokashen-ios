@@ -113,6 +113,10 @@ class AuthService: ObservableObject {
             #if DEBUG
             if config.enableDebugLogging {
                 print("[AuthService] Fetched current user: \(user.username)")
+                print("[AuthService] Avatar field: \(user.avatar ?? "nil")")
+                print("[AuthService] Avatar URL: \(user.avatarURL?.absoluteString ?? "nil")")
+                print("[AuthService] Banner field: \(user.bannerImage ?? "nil")")
+                print("[AuthService] Banner URL: \(user.bannerURL?.absoluteString ?? "nil")")
             }
             #endif
         } catch {

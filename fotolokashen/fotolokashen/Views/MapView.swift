@@ -151,22 +151,6 @@ struct ClusteredMapView: UIViewRepresentable {
         mapView.settings.zoomGestures = true
         mapView.settings.scrollGestures = true
         
-        // Setup clustering with custom camera+count icon generator (matches web app)
-        let iconGenerator = CameraClusterIconGenerator()
-        let algorithm = GMUNonHierarchicalDistanceBasedAlgorithm()
-        let renderer = LocationClusterRenderer(
-            mapView: mapView,
-            clusterIconGenerator: iconGenerator
-        )
-        
-        let clusterManager = GMUClusterManager(
-            map: mapView,
-            algorithm: algorithm,
-            renderer: renderer
-        )
-        clusterManager.setDelegate(context.coordinator, mapDelegate: context.coordinator)
-        
-        context.coordinator.clusterManager = clusterManager
         context.coordinator.gmsMapView = mapView
         
         return mapView
@@ -211,33 +195,48 @@ struct ClusteredMapView: UIViewRepresentable {
             }
         }
         
-        guard let clusterManager = context.coordinator.clusterManager else {
-            return
-        }
+        // Clear existing markers
+        context.coordinator.markers.forEach { $0.map = nil }
+        context.coordinator.markers.removeAll()
         
-        // Clear existing items
-        clusterManager.clearItems()
-        context.coordinator.locationItems.removeAll()
-        
-        // Add location items to cluster manager
+        // Add markers directly to map at exact GPS locations (no clustering)
         var bounds = GMSCoordinateBounds()
         
+        // Add location markers
         for location in locations {
-            let item = LocationClusterItem(location: location)
-            clusterManager.add(item)
-            context.coordinator.locationItems.append(item)
-            bounds = bounds.includingCoordinate(item.position)
+            let position = CLLocationCoordinate2D(
+                latitude: location.latitude,
+                longitude: location.longitude
+            )
+            
+            let marker = GMSMarker(position: position)
+            marker.icon = MarkerIconGenerator.cameraMarker(for: location.type ?? "")
+            marker.groundAnchor = CGPoint(x: 0.5, y: 1.0)
+            marker.title = location.name
+            marker.userData = location
+            marker.map = mapView
+            
+            context.coordinator.markers.append(marker)
+            bounds = bounds.includingCoordinate(position)
         }
 
-        // Add social location items (friends' locations)
+        // Add social location markers (friends' locations)
         for socialLocation in socialLocations {
-            let item = SocialLocationClusterItem(socialLocation: socialLocation)
-            clusterManager.add(item)
-            bounds = bounds.includingCoordinate(item.position)
+            let position = CLLocationCoordinate2D(
+                latitude: socialLocation.latitude,
+                longitude: socialLocation.longitude
+            )
+            
+            let marker = GMSMarker(position: position)
+            marker.icon = MarkerIconGenerator.cameraMarker(for: socialLocation.type ?? "")
+            marker.groundAnchor = CGPoint(x: 0.5, y: 1.0)
+            marker.title = socialLocation.name
+            marker.userData = socialLocation
+            marker.map = mapView
+            
+            context.coordinator.markers.append(marker)
+            bounds = bounds.includingCoordinate(position)
         }
-        
-        // Cluster the items
-        clusterManager.cluster()
         
         // Only auto-fit on first load
         if !locations.isEmpty && !context.coordinator.hasPerformedInitialFit {
@@ -262,12 +261,11 @@ struct ClusteredMapView: UIViewRepresentable {
     
     // MARK: - Coordinator
     
-    class Coordinator: NSObject, GMSMapViewDelegate, GMUClusterManagerDelegate {
+    class Coordinator: NSObject, GMSMapViewDelegate {
         var parent: ClusteredMapView
         var hasPerformedInitialFit = false
-        var clusterManager: GMUClusterManager?
         var gmsMapView: GMSMapView?
-        var locationItems: [LocationClusterItem] = []
+        var markers: [GMSMarker] = []
         
         init(_ parent: ClusteredMapView) {
             self.parent = parent
@@ -275,53 +273,20 @@ struct ClusteredMapView: UIViewRepresentable {
         
         // Handle marker tap
         func mapView(_ mapView: GMSMapView, didTap marker: GMSMarker) -> Bool {
-            // Check if it's a cluster item (set by LocationClusterRenderer)
-            if let clusterItem = marker.userData as? LocationClusterItem {
-                parent.selectedLocation = clusterItem.location
-                parent.onMarkerTap(clusterItem.location)
-                return true
-            }
-            
-            // Check if it's a social location marker
-            if let socialItem = marker.userData as? SocialLocationClusterItem {
-                parent.selectedSocialLocation = socialItem.socialLocation
-                parent.onSocialMarkerTap(socialItem.socialLocation)
-                return true
-            }
-
-            // Check if it's already converted to a Location
+            // Check if it's a location marker
             if let location = marker.userData as? Location {
                 parent.selectedLocation = location
                 parent.onMarkerTap(location)
                 return true
             }
             
-            // If it's a cluster, let the cluster manager handle it (return false)
-            return false
-        }
-        
-        // GMUClusterManagerDelegate - called when cluster is tapped
-        func clusterManager(_ manager: GMUClusterManager, didTap cluster: GMUCluster) -> Bool {
-            // Zoom into cluster using stored map view reference
-            guard let gmsMapView = self.gmsMapView else {
-                return false
-            }
-            
-            let newCamera = GMSCameraPosition.camera(
-                withTarget: cluster.position,
-                zoom: gmsMapView.camera.zoom + 2
-            )
-            gmsMapView.animate(to: newCamera)
-            return true
-        }
-        
-        // GMUClusterManagerDelegate - called when individual cluster item is tapped
-        func clusterManager(_ manager: GMUClusterManager, didTap clusterItem: GMUClusterItem) -> Bool {
-            if let locationItem = clusterItem as? LocationClusterItem {
-                parent.selectedLocation = locationItem.location
-                parent.onMarkerTap(locationItem.location)
+            // Check if it's a social location marker
+            if let socialLocation = marker.userData as? MapSocialLocation {
+                parent.selectedSocialLocation = socialLocation
+                parent.onSocialMarkerTap(socialLocation)
                 return true
             }
+            
             return false
         }
     }

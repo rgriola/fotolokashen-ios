@@ -1,16 +1,17 @@
 # Copilot Instructions for fotolokashen-ios
 
-*Last updated: February 17, 2026*
+*Last updated: February 19, 2026*
 
-You are assisting with the **fotolokashen iOS app** — a camera-first location scouting companion to the fotolokashen web platform.
+You are assisting with the **fotolokashen iOS app** (v1.4.0) — a camera-first location scouting companion to the fotolokashen web platform.
 
 ## Tech Stack
 - **Framework**: SwiftUI (iOS 16.0+), Swift 5.9+
 - **Architecture**: Hybrid MVVM + Shared Store (singleton `LocationStore.shared`)
 - **Auth**: OAuth2 + PKCE via Safari, JWT tokens in iOS Keychain
-- **Maps**: Google Maps SDK for iOS v10.7.0, GMUClusterManager
+- **Maps**: Google Maps SDK for iOS v10.8.0, GMUClusterManager
 - **Camera**: AVFoundation (AVCaptureSession, AVCapturePhotoOutput)
 - **Networking**: URLSession with async/await, custom `APIClient` singleton
+- **Deep Linking**: Custom URL scheme (`fotolokashen://`) + Universal Links (`applinks:fotolokashen.com`)
 - **Local Storage**: SwiftData (iOS 17+ only, feature-gated)
 - **Image Processing**: Custom `ImageCompressor` (JPEG resize + quality reduction)
 - **Photo Storage**: ImageKit CDN via server-mediated secure upload
@@ -100,6 +101,7 @@ fotolokashen-ios/
 │   │   │   ├── SyncService.swift        # Download locations + upload queued photos
 │   │   │   ├── UserService.swift        # Profile CRUD, avatar/banner upload
 │   │   │   ├── FollowService.swift      # Follow/unfollow, profiles, search, social locations
+│   │   │   ├── DeepLinkManager.swift    # Deep link routing (URL scheme + Universal Links)
 │   │   │   └── DataManager.swift        # SwiftData container (iOS 17+)
 │   │   └── swift-utilities/
 │   │       ├── APIClient.swift          # HTTP client, Bearer auth, PATCH/PUT, 401 handling
@@ -234,6 +236,42 @@ let friendsLocations = try await FollowService.shared.getFriendsLocations(bounds
 let results = try await FollowService.shared.searchUsers(query: "john", type: "all")
 ```
 
+### Deep Link Handling
+```swift
+// DeepLinkManager handles both URL schemes and Universal Links
+// Custom scheme: fotolokashen://location/123
+// Universal Link: https://fotolokashen.com/shared/123
+
+// In fotolokashenApp.swift:
+.onOpenURL { url in
+    // Try deep link first; if not handled, fall back to OAuth
+    if !deepLinkManager.handleURL(url) {
+        if url.scheme == "fotolokashen" {
+            Task {
+                await authService.handleCallback(url: url)
+            }
+        }
+    }
+}
+// Universal Links arrive via NSUserActivity
+.onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+    guard let url = activity.webpageURL else { return }
+    _ = deepLinkManager.handleURL(url)
+}
+
+// In ContentView.swift — respond to deep link navigation
+.onChange(of: deepLinkManager.pendingLocationId) { _, locationId in
+    guard let locationId else { return }
+    Task {
+        if let location = await deepLinkManager.resolveLocation(id: locationId) {
+            deepLinkLocation = location
+            showDeepLinkDetail = true
+        }
+        deepLinkManager.clearPendingNavigation()
+    }
+}
+```
+
 ### iOS 17+ Feature Gating
 ```swift
 if #available(iOS 17.0, *) {
@@ -301,11 +339,9 @@ let maxPhotos = config.maxPhotosPerLocation // Int (20)
 
 | Package | Version | Purpose | Status |
 |---------|---------|---------|--------|
-| Google Maps SDK | 10.7.0 | Map display, markers | Active |
-| Google Maps Utils | 7.0.0 | Marker clustering | Active |
+| Google Maps SDK | 10.8.0 | Map display, markers | Active |
+| Google Maps Utils | 7.1.0 | Marker clustering | Active |
 | KeychainAccess | 4.2.2 | Secure token storage | Active |
-| Kingfisher | 8.6.2 | Image caching | **Unused** — remove via Xcode |
-| ImageKit iOS | 3.1.0 | CDN (legacy) | **Unused** — remove via Xcode |
 
 ## Backend API Reference
 

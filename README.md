@@ -1,4 +1,4 @@
-# fotolokashen iOS v1.2.0
+# fotolokashen iOS v1.4.0
 
 iOS companion app for fotolokashen - A camera-first location scouting app for photographers and film crews.
 
@@ -8,12 +8,27 @@ The fotolokashen iOS app allows users to quickly capture photos with GPS coordin
 
 ## Features
 
+### v1.4 — Social Features
+- 👥 **People Search** - Discover users by username, name, or city with typeahead search
+- 🤝 **Follow System** - Follow/unfollow users and view public profiles
+- 📊 **Social Stats** - View follower/following counts and lists with infinite scroll
+- 🗺️ **Friends' Locations** - Toggle purple markers on map to see locations from people you follow
+- 📱 **Public Profiles** - View other users' profiles with banner, avatar, bio, and public locations
+- 🔗 **Deep Linking** - Share locations via custom URL scheme and Universal Links
+- 📐 **5-Tab Layout** - Locations | Map | Capture | People | Profile (Settings via gear icon)
+
+### v1.3 — Location Editing & Enrichment
+- ✏️ **Full Location Editing** - Edit all location fields including production notes, entry point, parking, access
+- ⭐ **Personal Enrichment** - Add favorites, personal ratings (1-5 stars), tags, and captions
+- 🗑️ **Photo Management** - Mark photos for deletion and remove them when saving
+- 🏷️ **Type Filtering** - Filter location list by type or favorites with horizontal chips
+- 🎨 **15 Location Types** - Updated to match web app (BROLL, STORY, INTERVIEW, etc.)
+
 ### v1.2 — Profile & Settings
 - 👤 **Profile Editing** - Bio, city, country, language, timezone, email notifications
 - 🖼️ **Avatar & Banner Upload** - Pick from library, auto-compress, secure server upload
 - 🔒 **Privacy Controls** - Profile visibility, search visibility, location sharing, follow requests
-- ⚙️ **Settings Tab** - Account info, app version, logout
-- 📐 **5-Tab Layout** - Locations | Map | Capture | Profile | Settings
+- ⚙️ **Settings Integration** - Settings accessible via Profile tab gear icon
 
 ### v1.0 — Core Features
 
@@ -36,6 +51,11 @@ The fotolokashen iOS app allows users to quickly capture photos with GPS coordin
 - 📱 **Multi-Device Support** - Auto-logout on session invalidation
 - 🔑 **Secure Storage** - Tokens stored in iOS Keychain
 
+#### Deep Linking
+- 🔗 **Custom URL Scheme** - `fotolokashen://location/123` for app-to-app sharing
+- 🌐 **Universal Links** - `https://fotolokashen.com/shared/123` for web-to-app
+- 🚀 **Direct Navigation** - Deep links open location detail views directly
+
 #### Photo Upload
 - 📤 **Smart Compression** - Optimizes images before upload
 - 🔒 **Secure Server Upload** - Virus scanning and format validation
@@ -54,6 +74,7 @@ The fotolokashen iOS app allows users to quickly capture photos with GPS coordin
 | ImageKit | Cloud image storage |
 | SwiftData | Local caching (iOS 17+) |
 | Keychain | Secure token storage |
+| Deep Linking | Custom URL scheme + Universal Links |
 
 ## Project Structure
 
@@ -78,6 +99,8 @@ fotolokashen-ios/
 │       │   ├── MarkerIconGenerator.swift # Custom markers
 │       │   ├── UserService.swift      # Profile CRUD + avatar/banner upload
 │       │   ├── SyncService.swift
+│       │   ├── FollowService.swift    # Follow/unfollow, profiles, search, social locations
+│       │   ├── DeepLinkManager.swift  # Deep link routing (URL scheme + Universal Links)
 │       │   └── DataManager.swift
 │       └── swift-utilities/
 │           ├── Models/
@@ -203,8 +226,21 @@ The app supports 15 location types with consistent colors across iOS and web:
 | `/api/locations` | GET | Fetch user's locations |
 | `/api/locations` | POST | Create new location |
 | `/api/locations/{id}` | GET | Get location details |
+| `/api/locations/{id}` | PATCH | Update location and UserSave fields |
 | `/api/locations/{id}` | DELETE | Delete location |
 | `/api/locations/{id}/photos` | POST | Associate uploaded photo with location |
+| `/api/photos/{id}` | DELETE | Delete a photo |
+| `/api/v1/users/{username}` | GET | Fetch public profile |
+| `/api/v1/users/{username}/follow` | POST | Follow user |
+| `/api/v1/users/{username}/unfollow` | POST | Unfollow user |
+| `/api/v1/users/me/follow-status/{username}` | GET | Check follow relationship |
+| `/api/v1/users/{username}/followers` | GET | Paginated followers list |
+| `/api/v1/users/{username}/following` | GET | Paginated following list |
+| `/api/v1/users/{username}/locations` | GET | User's public locations |
+| `/api/v1/locations/public` | GET | All public locations (with bounds) |
+| `/api/v1/locations/friends` | GET | Friends' locations (privacy-enforced) |
+| `/api/v1/search/users` | GET | User search (username/bio/geo) |
+| `/api/v1/search/suggestions` | GET | Username autocomplete |
 
 ### Photo Upload Flow (v1.1+)
 
@@ -279,6 +315,24 @@ View logs in Xcode console with prefixes:
 
 ## Version History
 
+### v1.4.0 (February 2026)
+- 👥 **People Search** — New People tab with Discover, Following, and Followers sub-tabs
+- 🔗 **Deep Linking** — Custom URL scheme and Universal Links support for location sharing
+- 🤝 **Follow System** — Follow/unfollow users with public profile views
+- 📊 **Social Stats** — Followers/following counts and lists with infinite scroll pagination
+- 🗺️ **Friends' Locations** — Toggle purple markers on map to see locations from people you follow
+- 🎨 **Social Markers** — Custom purple person-icon markers for friends' locations
+- 📱 **5-Tab Layout Updated** — Locations | Map | Capture | People | Profile (Settings moved to Profile gear icon)
+
+### v1.3.0 (February 2026)
+- ✏️ **Full Location Editing** — Edit all fields including production notes, entry point, parking, access, indoor/outdoor
+- ⭐ **Personal Enrichment** — Favorites, personal ratings (1-5 stars), tags, captions, color, visibility
+- 🗑️ **Photo Deletion** — Mark photos for deletion and remove them when saving changes
+- 🏷️ **Type Filtering** — Filter location list by type or favorites with horizontal scrollable chips
+- 🎨 **15 Location Types** — Replaced outdated 6-type enum with actual 15 types matching web app
+- 🔧 **Location Model Expanded** — Added UserSave fields directly on Location model for easier access
+- 📝 **Update API** — New `PATCH /api/locations/{id}` updates both Location and UserSave in one call
+
 ### v1.2.0 (February 2026)
 - ✨ **Profile & Settings** — Full profile editing with avatar/banner upload and privacy controls
 - 📐 **5-Tab Layout** — Locations | Map | Capture | Profile | Settings
@@ -323,6 +377,6 @@ Proprietary - All rights reserved
 
 ---
 
-**Version**: 1.2.0  
-**Last Updated**: February 17, 2026  
+**Version**: 1.4.0  
+**Last Updated**: February 19, 2026  
 **Status**: ✅ Production Ready

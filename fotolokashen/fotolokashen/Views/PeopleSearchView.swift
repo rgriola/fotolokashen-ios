@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// People search and discovery view with tabs for Discover, Following, and Followers
+/// People search and discovery view with tabs for Followers, Following, and Discover
 struct PeopleSearchView: View {
     @EnvironmentObject var authService: AuthService
     @ObservedObject private var followService = FollowService.shared
@@ -11,9 +11,9 @@ struct PeopleSearchView: View {
             VStack(spacing: 0) {
                 // Tab picker
                 Picker("", selection: $selectedTab) {
-                    Text("Discover").tag(0)
+                    Text("Followers").tag(0)
                     Text("Following").tag(1)
-                    Text("Followers").tag(2)
+                    Text("Discover").tag(2)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 16)
@@ -22,11 +22,11 @@ struct PeopleSearchView: View {
                 // Tab content
                 switch selectedTab {
                 case 0:
-                    DiscoverTab()
+                    MyFollowersTab()
                 case 1:
                     MyFollowingTab()
                 case 2:
-                    MyFollowersTab()
+                    DiscoverTab()
                 default:
                     EmptyView()
                 }
