@@ -48,10 +48,20 @@ struct LocationDetailView: View {
                                 .padding(4)
                         }
                         Menu {
-                            ShareLink(
-                                item: "\(currentLocation.name)\n\(currentLocation.address ?? "")\nhttps://fotolokashen.com/locations/\(currentLocation.id)",
-                                label: { Label("Share", systemImage: "square.and.arrow.up") }
-                            )
+                            if let username = currentLocation.creator?.username,
+                               let url = URL(string: "https://fotolokashen.com/\(username)/locations/\(currentLocation.id)") {
+                                ShareLink(
+                                    item: url,
+                                    subject: Text(currentLocation.name),
+                                    message: Text(currentLocation.address ?? ""),
+                                    label: { Label("Share", systemImage: "square.and.arrow.up") }
+                                )
+                            } else {
+                                ShareLink(
+                                    item: "https://fotolokashen.com/locations/\(currentLocation.id)",
+                                    label: { Label("Share", systemImage: "square.and.arrow.up") }
+                                )
+                            }
                         } label: {
                             Image(systemName: "ellipsis.circle")
                                 .font(.title2)
