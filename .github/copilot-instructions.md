@@ -1,6 +1,6 @@
 # Copilot Instructions for fotolokashen-ios
 
-*Last updated: February 19, 2026*
+*Last updated: February 20, 2026*
 
 You are assisting with the **fotolokashen iOS app** (v1.4.0) — a camera-first location scouting companion to the fotolokashen web platform.
 
@@ -447,6 +447,83 @@ When adding new features, verify:
 - AI description improvement (improve, extract, rewrite modes)
 - AI tag suggestions from production notes
 - In-app member support form
+
+## OpenGraph & Rich Link Previews
+
+### Web App Implementation
+Public location pages (`/[username]/locations/[id]`) automatically generate OpenGraph metadata for rich link previews when shared via iOS, social media, or messaging apps.
+
+**Metadata Generation** (Next.js `generateMetadata`):
+```typescript
+export async function generateMetadata({ params }: PublicLocationPageProps): Promise<Metadata> {
+  const ogImage = save.location.photos[0]?.imagekitFilePath
+    ? getImageKitUrl(save.location.photos[0].imagekitFilePath, 'w-1200,h-630,c-at_max')
+    : undefined;
+
+  return {
+    title: `${save.location.name} - ${displayName}'s Location`,
+    description: save.caption || save.location.address || `View ${save.location.name}`,
+    openGraph: {
+      title: save.location.name,
+      description: save.caption || save.location.address,
+      images: ogImage ? [ogImage] : [],
+    },
+  };
+}
+```
+
+**Generated HTML meta tags**:
+```html
+<meta property="og:title" content="Location Name">
+<meta property="og:description" content="Location address or caption">
+<meta property="og:image" content="https://ik.imagekit.io/rgriola/...?tr=w-1200,h-630,c-at_max">
+<meta property="og:url" content="https://fotolokashen.com/username/locations/123">
+```
+
+### iOS Integration
+iOS app shares location URLs (not plain text) to enable automatic OpenGraph fetching:
+
+**Correct Sharing Pattern**:
+```swift
+// ✅ Share URL object - triggers OpenGraph preview
+if let username = location.creator?.username,
+   let url = URL(string: "https://fotolokashen.com/\(username)/locations/\(location.id)") {
+    ShareLink(
+        item: url,
+        subject: Text(location.name),
+        message: Text(location.address ?? "")
+    )
+}
+
+// ❌ WRONG - Plain text string, no preview
+ShareLink(item: "Location Name\nAddress\nhttps://...", ...)
+```
+
+### How It Works
+1. **User shares location** from iOS app via ShareLink
+2. **iOS/iMessage receives URL**: `https://fotolokashen.com/rodczaro/locations/107`
+3. **Platform fetches page** and parses OpenGraph meta tags
+4. **Rich preview displayed** with:
+   - 📷 Primary photo (1200x630, optimized via ImageKit)
+   - 📍 Location name (og:title)
+   - 📝 Caption or address (og:description)
+
+### URL Format
+- **Public location pages**: `/{username}/locations/{locationId}`
+- **No @ symbol**: URLs are `/rodczaro/locations/107`, not `/@rodczaro/...`
+- **Always use creator username**: Ensures correct public profile routing
+
+### Image Optimization
+ImageKit transformations for OpenGraph images:
+- **Size**: `w-1200,h-630` (og:image standard dimensions)
+- **Fit**: `c-at_max` (maintain aspect ratio, fit within bounds)
+- **Format**: Auto (`fo-auto` - WebP/AVIF where supported)
+
+### Debugging Tips
+- **Test URL in browser**: View page source to verify meta tags
+- **iMessage cache**: Previews cached - append `?v=2` to test changes
+- **Fallback behavior**: If no photo, only title/description shown
+- **Private locations**: Only public locations (`visibility: "public"`) are accessible via shared URLs
 
 ## Documentation References
 - **Web Backend**: `/fotolokashen/.github/copilot-instructions.md`

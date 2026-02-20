@@ -43,53 +43,41 @@ struct LocationRow: View {
 
                 // Overlays on photo
                 HStack {
-                    // Type badge (top-left)
+                    // Type badge with visibility icon (top-left)
                     if let type = location.type, !type.isEmpty {
-                        Text(type)
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(typeColor(for: type))
-                            .clipShape(Capsule())
+                        HStack(spacing: 3) {
+                            Text(type)
+                            visibilityIcon(for: location.visibility)
+                        }
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(typeColor(for: type))
+                        .clipShape(Capsule())
                     }
 
                     Spacer()
 
-                    // Three-dot menu (top-right)
-                    Menu {
-                        ShareLink(item: shareText) {
-                            Label("Share Location", systemImage: "square.and.arrow.up")
+                    // Share button (top-right)
+                    if let username = location.creator?.username,
+                       let url = URL(string: "https://fotolokashen.com/\(username)/locations/\(location.id)") {
+                        ShareLink(
+                            item: url,
+                            subject: Text(location.name),
+                            message: Text(location.address ?? "")
+                        ) {
+                            Image(systemName: "arrowshape.turn.up.right")
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(.black.opacity(0.4))
+                                .clipShape(Circle())
                         }
-
-                        Button {
-                            // Placeholder action 1
-                        } label: {
-                            Label("Get Directions", systemImage: "arrow.triangle.turn.up.right.diamond")
-                        }
-
-                        Button {
-                            // Placeholder action 2
-                        } label: {
-                            Label("Add to Collection", systemImage: "folder.badge.plus")
-                        }
-
-                        Button(role: .destructive) {
-                            // Placeholder action 3
-                        } label: {
-                            Label("Report Issue", systemImage: "exclamationmark.triangle")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.subheadline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(.black.opacity(0.4))
-                            .clipShape(Circle())
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
                 .padding(8)
             }
@@ -221,22 +209,25 @@ struct LocationRow: View {
             }
     }
 
-    // MARK: - Share
-
-    private var shareText: String {
-        var text = location.name
-        if let address = location.address {
-            text += "\n\(address)"
-        }
-        let baseURL = ConfigLoader.shared.backendURL.absoluteString
-        text += "\n\(baseURL)/shared/\(location.id)"
-        return text
-    }
 
     // MARK: - Helpers
 
     private func typeColor(for type: String) -> Color {
         LocationTypeColors.color(for: type)
+    }
+    
+    @ViewBuilder
+    private func visibilityIcon(for visibility: String?) -> some View {
+        switch visibility?.lowercased() {
+        case "public":
+            Image(systemName: "globe")
+        case "unlisted":
+            Image(systemName: "person.2")
+        case "private":
+            Image(systemName: "lock")
+        default:
+            Image(systemName: "lock") // Default to private
+        }
     }
 }
 

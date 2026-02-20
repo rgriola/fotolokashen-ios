@@ -27,17 +27,20 @@ struct LocationDetailView: View {
                 // Photo Gallery
                 photoGallerySection
 
-                // Top Bar: type badge (left) + menu (right)
+                // Top Bar: type badge with visibility icon (left) + menu (right)
                 HStack(alignment: .center) {
                     if let type = currentLocation.type, !type.isEmpty {
-                        Text(type)
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(typeColor(for: type))
-                            .clipShape(Capsule())
+                        HStack(spacing: 3) {
+                            Text(type)
+                            Image(systemName: visibilityIcon(for: currentLocation.visibility ?? "private"))
+                        }
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(typeColor(for: type))
+                        .clipShape(Capsule())
                     }
                     Spacer()
                     HStack(spacing: 4) {
@@ -47,26 +50,18 @@ struct LocationDetailView: View {
                                 .foregroundColor(.primary)
                                 .padding(4)
                         }
-                        Menu {
-                            if let username = currentLocation.creator?.username,
-                               let url = URL(string: "https://fotolokashen.com/\(username)/locations/\(currentLocation.id)") {
-                                ShareLink(
-                                    item: url,
-                                    subject: Text(currentLocation.name),
-                                    message: Text(currentLocation.address ?? ""),
-                                    label: { Label("Share", systemImage: "square.and.arrow.up") }
-                                )
-                            } else {
-                                ShareLink(
-                                    item: "https://fotolokashen.com/locations/\(currentLocation.id)",
-                                    label: { Label("Share", systemImage: "square.and.arrow.up") }
-                                )
+                        if let username = currentLocation.creator?.username,
+                           let url = URL(string: "https://fotolokashen.com/\(username)/locations/\(currentLocation.id)") {
+                            ShareLink(
+                                item: url,
+                                subject: Text(currentLocation.name),
+                                message: Text(currentLocation.address ?? "")
+                            ) {
+                                Image(systemName: "arrowshape.turn.up.right")
+                                    .font(.title2)
+                                    .foregroundColor(.primary)
+                                    .padding(4)
                             }
-                        } label: {
-                            Image(systemName: "ellipsis.circle")
-                                .font(.title2)
-                                .foregroundColor(.primary)
-                                .padding(4)
                         }
                     }
                 }
@@ -599,10 +594,10 @@ struct LocationDetailView: View {
     // MARK: - Visibility Helpers
 
     private func visibilityIcon(for v: String) -> String {
-        switch v {
+        switch v.lowercased() {
         case "public": return "globe"
-        case "unlisted": return "link"
-        default: return "lock.fill"
+        case "unlisted": return "person.2"
+        default: return "lock"
         }
     }
 
