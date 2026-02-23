@@ -245,20 +245,20 @@ class FollowService: ObservableObject {
                 path += "?" + queryItems.joined(separator: "&")
             }
 
+            #if DEBUG
+            print("[FollowService] Calling GET \(path)")
+            #endif
+
             let response: MapSocialLocationsResponse = try await apiClient.get(path)
 
             #if DEBUG
-            if config.enableDebugLogging {
-                print("[FollowService] Fetched \(response.locations.count) friends' locations")
-            }
+            print("[FollowService] Fetched \(response.locations.count) friends' locations")
             #endif
 
             return response.locations
         } catch {
             #if DEBUG
-            if config.enableDebugLogging {
-                print("[FollowService] Get friends locations failed: \(error)")
-            }
+            print("[FollowService] Get friends locations failed: \(error)")
             #endif
             throw error
         }

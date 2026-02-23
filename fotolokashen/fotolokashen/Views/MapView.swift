@@ -11,7 +11,7 @@ struct MapView: View {
     @ObservedObject private var locationStore = LocationStore.shared
     @ObservedObject private var followService = FollowService.shared
     @State private var selectedLocation: Location?
-    @State private var selectedSocialLocation: MapSocialLocation?
+    @State private var selectedReadOnlyContext: ReadOnlyLocationContext?
     @State private var centerOnUserLocation = false
     @State private var focusCoordinate: CLLocationCoordinate2D? = nil
     @State private var showFriendsLocations = false
@@ -26,14 +26,15 @@ struct MapView: View {
                     locations: locationStore.locations,
                     socialLocations: showFriendsLocations ? friendsLocations : [],
                     selectedLocation: $selectedLocation,
-                    selectedSocialLocation: $selectedSocialLocation,
                     centerOnUserLocation: $centerOnUserLocation,
                     focusCoordinate: $focusCoordinate,
                     onMarkerTap: { location in
                         selectedLocation = location
                     },
                     onSocialMarkerTap: { socialLocation in
-                        selectedSocialLocation = socialLocation
+                        // Convert MapSocialLocation to ReadOnlyLocationContext for full detail view
+                        let context = createReadOnlyContext(from: socialLocation)
+                        selectedReadOnlyContext = context
                     }
                 )
                 .ignoresSafeArea()
@@ -45,6 +46,9 @@ struct MapView: View {
                         // Friends toggle button
                         Button {
                             showFriendsLocations.toggle()
+                            #if DEBUG
+                            print("[MapView] Friends toggle: \(showFriendsLocations), cached: \(friendsLocations.count)")
+                            #endif
                             if showFriendsLocations && friendsLocations.isEmpty {
                                 Task { await loadFriendsLocations() }
                             }
@@ -90,8 +94,8 @@ struct MapView: View {
             .sheet(item: $selectedLocation) { location in
                 LocationDetailView(location: location)
             }
-            .sheet(item: $selectedSocialLocation) { socialLocation in
-                SocialLocationDetailSheet(socialLocation: socialLocation)
+            .sheet(item: $selectedReadOnlyContext) { context in
+                LocationDetailView(readOnlyContext: context)
             }
         }
         .task {
@@ -107,20 +111,63 @@ struct MapView: View {
                 locationStore.mapFocusLocation = nil
             }
         }
+        .onChange(of: locationStore.mapFocusReadOnlyContext) { _, context in
+            if let ctx = context {
+                selectedReadOnlyContext = ctx
+                focusCoordinate = CLLocationCoordinate2D(
+                    latitude: ctx.location.latitude,
+                    longitude: ctx.location.longitude
+                )
+                locationStore.mapFocusReadOnlyContext = nil
+            }
+        }
     }
 
     private func loadFriendsLocations() async {
+        #if DEBUG
+        print("[MapView] loadFriendsLocations() called")
+        #endif
         isLoadingFriends = true
         do {
             friendsLocations = try await followService.getFriendsLocations()
+            #if DEBUG
+            print("[MapView] Loaded \(friendsLocations.count) friends locations")
+            #endif
         } catch {
             #if DEBUG
-            if ConfigLoader.shared.enableDebugLogging {
-                print("[MapView] Failed to load friends locations: \(error)")
-            }
+            print("[MapView] Failed to load friends locations: \(error)")
             #endif
         }
         isLoadingFriends = false
+    }
+
+    /// Convert MapSocialLocation to ReadOnlyLocationContext for displaying full LocationDetailView
+    private func createReadOnlyContext(from socialLocation: MapSocialLocation) -> ReadOnlyLocationContext {
+        // Synthesize a Location from MapSocialLocation
+        let location = Location(
+            id: socialLocation.id,
+            name: socialLocation.name,
+            address: socialLocation.address ?? "",
+            latitude: socialLocation.lat,
+            longitude: socialLocation.lng,
+            type: socialLocation.type ?? "OTHER",
+            placeId: socialLocation.placeId ?? "",
+            createdAt: socialLocation.savedAt ?? "",
+            photosCount: 0,  // Photos will be fetched by LocationDetailView
+            thumbnailUrl: nil,
+            userSaveId: nil,
+            city: socialLocation.city,
+            state: socialLocation.state,
+            caption: socialLocation.caption
+        )
+
+        return ReadOnlyLocationContext(
+            id: socialLocation.id,
+            location: location,
+            ownerUsername: socialLocation.user?.username ?? "",
+            ownerDisplayName: socialLocation.user?.displayName ?? "",
+            photos: []  // Photos will be fetched by LocationDetailView via fetchPhotosFromPublicProfile
+        )
     }
 }
 
@@ -130,7 +177,6 @@ struct ClusteredMapView: UIViewRepresentable {
     let locations: [Location]
     let socialLocations: [MapSocialLocation]
     @Binding var selectedLocation: Location?
-    @Binding var selectedSocialLocation: MapSocialLocation?
     @Binding var centerOnUserLocation: Bool
     @Binding var focusCoordinate: CLLocationCoordinate2D?
     let onMarkerTap: (Location) -> Void
@@ -158,9 +204,7 @@ struct ClusteredMapView: UIViewRepresentable {
     
     func updateUIView(_ mapView: GMSMapView, context: Context) {
         #if DEBUG
-        if ConfigLoader.shared.enableDebugLogging {
-            print("[MapView] updateUIView: \(locations.count) locations")
-        }
+        print("[MapView] updateUIView: \(locations.count) locations, \(socialLocations.count) social locations")
         #endif
         
         // Handle center on user location request
@@ -220,7 +264,7 @@ struct ClusteredMapView: UIViewRepresentable {
             bounds = bounds.includingCoordinate(position)
         }
 
-        // Add social location markers (friends' locations)
+        // Add social location markers (friends' locations - camera icon with type color)
         for socialLocation in socialLocations {
             let position = CLLocationCoordinate2D(
                 latitude: socialLocation.latitude,
@@ -282,7 +326,6 @@ struct ClusteredMapView: UIViewRepresentable {
             
             // Check if it's a social location marker
             if let socialLocation = marker.userData as? MapSocialLocation {
-                parent.selectedSocialLocation = socialLocation
                 parent.onSocialMarkerTap(socialLocation)
                 return true
             }
@@ -298,148 +341,4 @@ struct ClusteredMapView: UIViewRepresentable {
     MapView()
 }
 
-// MARK: - Social Location Detail Sheet
 
-/// Sheet shown when tapping a friend's location marker on the map
-struct SocialLocationDetailSheet: View {
-    let socialLocation: MapSocialLocation
-    @Environment(\.dismiss) private var dismiss
-    @State private var showUserProfile = false
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Location name and type
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(socialLocation.name)
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        if let type = socialLocation.type {
-                            HStack(spacing: 4) {
-                                Image(systemName: LocationTypeColors.icon(for: type))
-                                    .font(.caption)
-                                Text(type)
-                                    .font(.caption)
-                            }
-                            .foregroundColor(Color(LocationTypeColors.uiColor(for: type)))
-                        }
-                    }
-
-                    // Address
-                    if let address = socialLocation.address {
-                        HStack(spacing: 8) {
-                            Image(systemName: "mappin.circle.fill")
-                                .foregroundColor(.red)
-                            Text(address)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-
-                    // City/State
-                    if let city = socialLocation.city ?? socialLocation.state {
-                        HStack(spacing: 8) {
-                            Image(systemName: "building.2")
-                                .foregroundColor(.secondary)
-                            Text(city)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-
-                    // Caption
-                    if let caption = socialLocation.caption, !caption.isEmpty {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Caption")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(caption)
-                                .font(.body)
-                        }
-                    }
-
-                    Divider()
-
-                    // Saved by user
-                    if let user = socialLocation.user {
-                        Button {
-                            showUserProfile = true
-                        } label: {
-                            HStack(spacing: 12) {
-                                if let avatarURL = user.avatarURL {
-                                    AsyncImage(url: avatarURL) { image in
-                                        image
-                                            .resizable()
-                                            .scaledToFill()
-                                    } placeholder: {
-                                        Circle()
-                                            .fill(Color.brandPurple.opacity(0.2))
-                                            .overlay(
-                                                Text(String(user.username.prefix(1)).uppercased())
-                                                    .font(.caption)
-                                                    .fontWeight(.bold)
-                                                    .foregroundColor(.brandPurple)
-                                            )
-                                    }
-                                    .frame(width: 36, height: 36)
-                                    .clipShape(Circle())
-                                } else {
-                                    Circle()
-                                        .fill(Color.brandPurple.opacity(0.2))
-                                        .frame(width: 36, height: 36)
-                                        .overlay(
-                                            Text(String(user.username.prefix(1)).uppercased())
-                                                .font(.caption)
-                                                .fontWeight(.bold)
-                                                .foregroundColor(.brandPurple)
-                                        )
-                                }
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Saved by")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Text(user.displayName)
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                    Text("@\(user.username)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                Spacer()
-
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(16)
-            }
-            .navigationTitle("Location")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .sheet(isPresented: $showUserProfile) {
-                if let user = socialLocation.user {
-                    NavigationStack {
-                        PublicProfileView(username: user.username)
-                            .toolbar {
-                                ToolbarItem(placement: .cancellationAction) {
-                                    Button("Done") { showUserProfile = false }
-                                }
-                            }
-                    }
-                }
-            }
-        }
-    }
-}

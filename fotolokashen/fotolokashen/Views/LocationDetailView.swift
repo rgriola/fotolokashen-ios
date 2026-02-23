@@ -149,6 +149,19 @@ struct LocationDetailView: View {
         self._locationVisibility = State(initialValue: "public") // Read-only = always public
     }
 
+    /// READ-ONLY MODE INITIALIZER (from ReadOnlyLocationContext)
+    /// Use this when navigating from Map after tapping a marker for a friend's location
+    /// - Parameter context: The ReadOnlyLocationContext stored when navigating to map
+    init(readOnlyContext context: ReadOnlyLocationContext) {
+        self._currentLocation = State(initialValue: context.location)
+        self.isReadOnly = true
+        self.ownerUsername = context.ownerUsername
+        self.ownerDisplayName = context.ownerDisplayName
+        self.socialLocationId = context.id
+        self.inlinePhotos = context.photos
+        self._locationVisibility = State(initialValue: "public") // Read-only = always public
+    }
+
     // =========================================================================
     // MARK: - Body
     // =========================================================================
@@ -725,29 +738,38 @@ struct LocationDetailView: View {
 
     /// Loads photos for this location
     /// - Owner mode: fetches from /api/locations/{id}/photos
-    /// - Read-only mode: converts inline photos from SocialLocation
+    /// - Read-only mode: converts inline photos from SocialLocation, or fetches from user's public locations if empty
     private func loadPhotos() async {
         if isReadOnly {
             // Read-only mode: use inline photos from SocialLocation
-            await MainActor.run {
-                self.photos = inlinePhotos.map { photo in
-                    DetailPhoto(
-                        id: photo.id,
-                        imagekitFilePath: photo.imagekitFilePath,
-                        url: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)",
-                        thumbnailUrl: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)?tr=w-400,h-400",
-                        caption: nil,
-                        width: nil,
-                        height: nil,
-                        uploadedAt: nil,
-                        gpsLatitude: nil,
-                        gpsLongitude: nil,
-                        isPrimary: photo.isPrimary,
-                        fileSize: nil,
-                        mimeType: nil
-                    )
+            if !inlinePhotos.isEmpty {
+                await MainActor.run {
+                    self.photos = inlinePhotos.map { photo in
+                        DetailPhoto(
+                            id: photo.id,
+                            imagekitFilePath: photo.imagekitFilePath,
+                            url: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)",
+                            thumbnailUrl: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)?tr=w-400,h-400",
+                            caption: nil,
+                            width: nil,
+                            height: nil,
+                            uploadedAt: nil,
+                            gpsLatitude: nil,
+                            gpsLongitude: nil,
+                            isPrimary: photo.isPrimary,
+                            fileSize: nil,
+                            mimeType: nil
+                        )
+                    }
+                    self.isLoadingPhotos = false
                 }
-                self.isLoadingPhotos = false
+            } else if let username = ownerUsername, !username.isEmpty {
+                // No inline photos - fetch from user's public locations to get photos
+                await fetchPhotosFromPublicProfile(username: username)
+            } else {
+                await MainActor.run {
+                    self.isLoadingPhotos = false
+                }
             }
         } else {
             // Owner mode: fetch from API
@@ -784,6 +806,57 @@ struct LocationDetailView: View {
                     }
                     self.isLoadingPhotos = false
                 }
+            }
+        }
+    }
+
+    /// Fetches photos from user's public locations when inline photos are empty
+    /// Used when tapping a friend's marker on the map (MapSocialLocation doesn't include photos)
+    private func fetchPhotosFromPublicProfile(username: String) async {
+        do {
+            let response: UserLocationsResponse = try await APIClient.shared.get(
+                "/api/v1/users/\(username)/locations",
+                authenticated: true
+            )
+
+            // Find the matching location by ID
+            let locationId = socialLocationId ?? currentLocation.id
+            if let matchingLocation = response.locations.first(where: { $0.location.id == locationId }) {
+                let fetchedPhotos = matchingLocation.location.photos ?? []
+                await MainActor.run {
+                    self.photos = fetchedPhotos.map { photo in
+                        DetailPhoto(
+                            id: photo.id,
+                            imagekitFilePath: photo.imagekitFilePath,
+                            url: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)",
+                            thumbnailUrl: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)?tr=w-400,h-400",
+                            caption: nil,
+                            width: nil,
+                            height: nil,
+                            uploadedAt: nil,
+                            gpsLatitude: nil,
+                            gpsLongitude: nil,
+                            isPrimary: photo.isPrimary,
+                            fileSize: nil,
+                            mimeType: nil
+                        )
+                    }
+                    self.isLoadingPhotos = false
+                }
+            } else {
+                #if DEBUG
+                print("[LocationDetailView] Location \(locationId) not found in user's public locations")
+                #endif
+                await MainActor.run {
+                    self.isLoadingPhotos = false
+                }
+            }
+        } catch {
+            #if DEBUG
+            print("[LocationDetailView] Failed to fetch photos from public profile: \(error)")
+            #endif
+            await MainActor.run {
+                self.isLoadingPhotos = false
             }
         }
     }
@@ -901,9 +974,23 @@ struct LocationDetailView: View {
     }
 
     /// Navigate to Map tab and center on this location's pin
+    /// In read-only mode, creates a ReadOnlyLocationContext so MapView shows full LocationDetailView
     private func showOnMap() {
-        // Set the location to focus on in the map
-        LocationStore.shared.mapFocusLocation = currentLocation
+        if isReadOnly {
+            // Read-only mode: Create context so MapView can show full LocationDetailView
+            let context = ReadOnlyLocationContext(
+                id: socialLocationId ?? currentLocation.id,
+                location: currentLocation,
+                ownerUsername: ownerUsername ?? "",
+                ownerDisplayName: ownerDisplayName ?? "",
+                photos: inlinePhotos
+            )
+            LocationStore.shared.mapFocusReadOnlyContext = context
+        } else {
+            // Owner mode: Use regular location focus
+            LocationStore.shared.mapFocusLocation = currentLocation
+        }
+
         // Dismiss this view
         dismiss()
         // Navigate to Map tab

@@ -1,6 +1,20 @@
 import Foundation
 import Combine
 
+/// Context for displaying a read-only location on the map
+/// Used when navigating from PublicProfileView → LocationDetailView (read-only) → Map
+struct ReadOnlyLocationContext: Identifiable, Equatable {
+    let id: Int  // The social location ID (for share URL)
+    let location: Location
+    let ownerUsername: String
+    let ownerDisplayName: String
+    let photos: [LocationPhoto]
+    
+    static func == (lhs: ReadOnlyLocationContext, rhs: ReadOnlyLocationContext) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
 /// Shared store for location data - ensures both MapView and LocationListView stay in sync
 @MainActor
 class LocationStore: ObservableObject {
@@ -10,6 +24,7 @@ class LocationStore: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage = ""
     @Published var mapFocusLocation: Location? = nil
+    @Published var mapFocusReadOnlyContext: ReadOnlyLocationContext? = nil
     
     private let locationService = LocationService.shared
     private let config = ConfigLoader.shared

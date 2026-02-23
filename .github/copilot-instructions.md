@@ -357,22 +357,42 @@ LocationDetailView(
 ### Map Navigation from Detail View
 ```swift
 // To navigate from a detail view to the Map tab and focus on a location:
+// The `showOnMap()` method handles BOTH owner mode and read-only mode differently
+
 private func showOnMap() {
-    // 1. Set the location to focus on
-    LocationStore.shared.mapFocusLocation = currentLocation
-    
-    // 2. Dismiss the current view
+    if isReadOnly {
+        // READ-ONLY MODE: Create ReadOnlyLocationContext so MapView shows full LocationDetailView
+        let context = ReadOnlyLocationContext(
+            id: socialLocationId ?? currentLocation.id,
+            location: currentLocation,
+            ownerUsername: ownerUsername ?? "",
+            ownerDisplayName: ownerDisplayName ?? "",
+            photos: inlinePhotos
+        )
+        LocationStore.shared.mapFocusReadOnlyContext = context
+    } else {
+        // OWNER MODE: Use regular location focus
+        LocationStore.shared.mapFocusLocation = currentLocation
+    }
     dismiss()
-    
-    // 3. Post notification to switch to Map tab
     NotificationCenter.default.post(name: .navigateToMapTab, object: nil)
 }
 
-// MapView has an onChange handler that responds to mapFocusLocation:
+// MapView has TWO onChange handlers:
+// 1. For owner's locations (shows regular LocationDetailView)
 .onChange(of: locationStore.mapFocusLocation) { _, location in
     guard let loc = location else { return }
     selectedLocation = loc
     focusCoordinate = CLLocationCoordinate2D(latitude: loc.lat, longitude: loc.lng)
+    locationStore.mapFocusLocation = nil
+}
+
+// 2. For read-only locations from PublicProfileView (shows LocationDetailView in read-only mode)
+.onChange(of: locationStore.mapFocusReadOnlyContext) { _, context in
+    guard let ctx = context else { return }
+    selectedReadOnlyContext = ctx
+    focusCoordinate = CLLocationCoordinate2D(latitude: ctx.location.lat, longitude: ctx.location.lng)
+    locationStore.mapFocusReadOnlyContext = nil
 }
 
 // ContentView has a receiver that switches tabs:

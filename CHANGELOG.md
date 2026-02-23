@@ -23,16 +23,30 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 #### Address-to-Map Navigation
 - **In-App Navigation**: Tapping address in `LocationDetailView` now navigates to Map tab and centers on location (was opening Apple Maps externally)
-- **New `showOnMap()` Method**: Sets `LocationStore.shared.mapFocusLocation`, dismisses view, posts `navigateToMapTab` notification
-- **Map Response**: `MapView` already has `.onChange(of: locationStore.mapFocusLocation)` handler that centers camera and shows detail sheet
+- **Dual Mode Support**: `showOnMap()` detects owner vs read-only mode and uses the appropriate focus property
+  - Owner mode: Sets `LocationStore.shared.mapFocusLocation` → shows regular `LocationDetailView`
+  - Read-only mode: Sets `LocationStore.shared.mapFocusReadOnlyContext` → shows full `LocationDetailView` in read-only mode with photos, owner info, etc.
+- **New `ReadOnlyLocationContext` Struct**: Holds location, photos, and owner info for map navigation from read-only views
+- **New `mapFocusReadOnlyContext` Property**: Added to `LocationStore` for social/friends' location focus
+- **New LocationDetailView Initializer**: `init(readOnlyContext:)` accepts `ReadOnlyLocationContext` for map navigation
+- **MapView Sheet Binding**: Added `.sheet(item: $selectedReadOnlyContext)` to show full detail view when navigating from public profiles
 
 #### Code Reduction
 - **~290 lines removed** from `PublicProfileView.swift` (was ~805 lines, now ~518 lines)
+- **~145 lines removed** from `MapView.swift` by removing `SocialLocationDetailSheet` (now uses unified `LocationDetailView`)
 - **Eliminated duplicate code paths** for location detail and photo gallery rendering
 - **Single maintenance point** for location detail UI across owner and social contexts
 
 #### Files Changed
-- **`LocationDetailView.swift`**: Added second initializer for read-only mode, `isReadOnly` flag, `showOnMap()` method, uses `AppIcons` constants
+- **`LocationDetailView.swift`**: Added second and third initializers for read-only mode, `isReadOnly` flag, `showOnMap()` method, uses `AppIcons` constants
+  - `init(socialLocation:ownerUsername:ownerDisplayName:)` — from PublicProfileView
+  - `init(readOnlyContext:)` — from Map navigation (social marker tap or address tap)
+- **`LocationStore.swift`**: Added `ReadOnlyLocationContext` struct and `mapFocusReadOnlyContext` property
+- **`MapView.swift`**: 
+  - Added `createReadOnlyContext(from:)` helper to convert `MapSocialLocation` to `ReadOnlyLocationContext`
+  - Social marker tap now shows full `LocationDetailView` (was `SocialLocationDetailSheet`)
+  - Removed `SocialLocationDetailSheet` (~145 lines) - no longer needed
+  - Removed `selectedSocialLocation` state - replaced with `selectedReadOnlyContext`
 - **`PublicProfileView.swift`**: Removed embedded `ProfileLocationDetailView` and `ProfilePhotoGalleryView`, now uses unified `LocationDetailView`
 - **`AppIcons.swift`** (NEW): Centralized icon constants in `Services/` directory
 - **`LocationRow.swift`**: Updated to use `AppIcons.share` constant
