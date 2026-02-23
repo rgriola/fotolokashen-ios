@@ -2,6 +2,43 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
+## [1.4.1] - 2026-02-23
+
+### 🔧 Architecture Improvements & UI Enhancements
+
+#### Unified LocationDetailView
+- **Single Source of Truth**: Consolidated `LocationDetailView` now handles both owner mode and read-only mode (viewing others' public locations)
+- **Removed `ProfileLocationDetailView`**: Deleted ~150 lines of duplicate code that was embedded in `PublicProfileView.swift`
+- **Removed `ProfilePhotoGalleryView`**: Deleted ~140 lines of duplicate photo gallery code from `PublicProfileView.swift`
+- **Two Initializers**:
+  - `init(location:)` — Owner mode with Edit/Share buttons
+  - `init(socialLocation:ownerUsername:ownerDisplayName:)` — Read-only mode for viewing others' locations
+- **`isReadOnly` Flag**: Internal property controls toolbar visibility and editing capabilities
+
+#### New AppIcons.swift
+- **Centralized SF Symbol Names**: New `AppIcons` enum with 45+ icon constants for consistent icon usage across the app
+- **Categories**: Navigation, Actions, Location Types, Camera, Profile, Settings, Social, Map, Status, Content
+- **Preview Support**: Includes `#Preview` with visual icon grid for development reference
+- **Usage Pattern**: `Image(systemName: AppIcons.edit)` instead of hardcoded strings
+
+#### Address-to-Map Navigation
+- **In-App Navigation**: Tapping address in `LocationDetailView` now navigates to Map tab and centers on location (was opening Apple Maps externally)
+- **New `showOnMap()` Method**: Sets `LocationStore.shared.mapFocusLocation`, dismisses view, posts `navigateToMapTab` notification
+- **Map Response**: `MapView` already has `.onChange(of: locationStore.mapFocusLocation)` handler that centers camera and shows detail sheet
+
+#### Code Reduction
+- **~290 lines removed** from `PublicProfileView.swift` (was ~805 lines, now ~518 lines)
+- **Eliminated duplicate code paths** for location detail and photo gallery rendering
+- **Single maintenance point** for location detail UI across owner and social contexts
+
+#### Files Changed
+- **`LocationDetailView.swift`**: Added second initializer for read-only mode, `isReadOnly` flag, `showOnMap()` method, uses `AppIcons` constants
+- **`PublicProfileView.swift`**: Removed embedded `ProfileLocationDetailView` and `ProfilePhotoGalleryView`, now uses unified `LocationDetailView`
+- **`AppIcons.swift`** (NEW): Centralized icon constants in `Services/` directory
+- **`LocationRow.swift`**: Updated to use `AppIcons.share` constant
+
+---
+
 ## [1.4.0] - 2026-02-17
 
 ### ✨ Phase 3: Social Features

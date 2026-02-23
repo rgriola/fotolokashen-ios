@@ -68,7 +68,7 @@ struct LocationRow: View {
                             subject: Text(location.name),
                             message: Text(location.address ?? "")
                         ) {
-                            Image(systemName: "arrowshape.turn.up.right")
+                            Image(systemName: AppIcons.share)
                                 .font(.subheadline)
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
@@ -113,6 +113,7 @@ struct LocationRow: View {
                 .stroke(Color(.systemGray5), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+        .contentShape(Rectangle()) // Make entire card tappable for NavigationLink
     }
 
     // MARK: - Photo Carousel
@@ -120,7 +121,7 @@ struct LocationRow: View {
     @ViewBuilder
     private var photoCarousel: some View {
         if photoURLs.count > 1 {
-            // Multiple photos — swipeable carousel
+            // Multiple photos — swipeable carousel with tap-through for navigation
             TabView(selection: $currentPhotoIndex) {
                 ForEach(Array(photoURLs.enumerated()), id: \.offset) { index, url in
                     AsyncImage(url: url) { phase in
@@ -131,12 +132,15 @@ struct LocationRow: View {
                                 .aspectRatio(contentMode: .fill)
                                 .frame(maxWidth: .infinity, maxHeight: 180)
                                 .clipped()
+                                .allowsHitTesting(false) // Allow taps to pass through for NavigationLink
                         case .failure:
                             photoErrorPlaceholder
+                                .allowsHitTesting(false)
                         default:
                             Rectangle()
                                 .fill(Color.gray.opacity(0.1))
                                 .overlay { ProgressView() }
+                                .allowsHitTesting(false)
                         }
                     }
                     .tag(index)

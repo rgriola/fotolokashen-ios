@@ -1,4 +1,4 @@
-# fotolokashen iOS v1.4.0
+# fotolokashen iOS v1.4.1
 
 iOS companion app for fotolokashen - A camera-first location scouting app for photographers and film crews.
 
@@ -83,25 +83,36 @@ fotolokashen-ios/
 ├── fotolokashen/
 │   └── fotolokashen/
 │       ├── fotolokashenApp.swift      # App entry point
-│       ├── ContentView.swift          # 5-tab layout
+│       ├── ContentView.swift          # 5-tab layout + navigateToMapTab notification
 │       ├── Views/
 │       │   ├── CameraView.swift       # Camera capture
+│       │   ├── CameraPreview.swift    # AVCaptureVideoPreviewLayer wrapper
 │       │   ├── CreateLocationView.swift
-│       │   ├── MapView.swift          # Google Maps
-│       │   ├── LocationListView.swift
-│       │   ├── LocationDetailView.swift
-│       │   ├── LocationRow.swift
-│       │   ├── ProfileView.swift      # Profile editing + avatar/banner
+│       │   ├── EditLocationView.swift # Full location edit form
+│       │   ├── MapView.swift          # Google Maps + friends' locations toggle
+│       │   ├── LocationListView.swift # Searchable list with type filter chips
+│       │   ├── LocationDetailView.swift # Unified view (owner + read-only modes)
+│       │   ├── LocationRow.swift      # List row with share button
+│       │   ├── LocationClusterItem.swift # GMUClusterItem + renderer
+│       │   ├── ProfileView.swift      # Profile editing + avatar/banner + social stats
+│       │   ├── PublicProfileView.swift # Other users' profiles (uses unified LocationDetailView)
+│       │   ├── PeopleSearchView.swift # Discover/Following/Followers tabs
+│       │   ├── FollowListView.swift   # Paginated followers/following list
 │       │   └── SettingsView.swift     # Privacy controls + logout
 │       ├── Services/
-│       │   ├── LocationStore.swift    # Shared state
-│       │   ├── LocationTypeColors.swift # Centralized colors
-│       │   ├── MarkerIconGenerator.swift # Custom markers
+│       │   ├── AppIcons.swift         # Centralized SF Symbol icon names (45+ constants)
+│       │   ├── LocationStore.swift    # Shared state + mapFocusLocation
+│       │   ├── LocationTypeColors.swift # 15 type→color mappings
+│       │   ├── MarkerIconGenerator.swift # Custom camera + social markers
 │       │   ├── UserService.swift      # Profile CRUD + avatar/banner upload
-│       │   ├── SyncService.swift
+│       │   ├── SyncService.swift      # Download locations + upload queued photos
 │       │   ├── FollowService.swift    # Follow/unfollow, profiles, search, social locations
 │       │   ├── DeepLinkManager.swift  # Deep link routing (URL scheme + Universal Links)
-│       │   └── DataManager.swift
+│       │   ├── NetworkMonitor.swift   # NWPathMonitor connectivity
+│       │   ├── PlacesService.swift    # CLGeocoder reverse geocoding
+│       │   ├── GeographicClusterAlgorithm.swift # Custom clustering algorithm
+│       │   ├── StaticMapHelper.swift  # Static map image generation
+│       │   └── DataManager.swift      # SwiftData container (iOS 17+)
 │       └── swift-utilities/
 │           ├── Models/
 │           │   ├── Location.swift
@@ -315,6 +326,13 @@ View logs in Xcode console with prefixes:
 
 ## Version History
 
+### v1.4.1 (February 2026)
+- 🔧 **Unified LocationDetailView** — Single view handles both owner mode (Edit/Share buttons) and read-only mode (viewing others' locations)
+- 🎨 **AppIcons.swift** — New centralized SF Symbol constants (45+ icons) for consistent icon usage
+- 🗺️ **Address-to-Map Navigation** — Tapping address navigates to in-app Map tab instead of opening Apple Maps
+- 🧹 **Code Cleanup** — Removed ~290 lines of duplicate code (`ProfileLocationDetailView`, `ProfilePhotoGalleryView`) from `PublicProfileView.swift`
+- 📐 **PublicProfileView Simplified** — Now uses unified `LocationDetailView` instead of embedded duplicate views
+
 ### v1.4.0 (February 2026)
 - 👥 **People Search** — New People tab with Discover, Following, and Followers sub-tabs
 - 🔗 **Deep Linking** — Custom URL scheme and Universal Links support for location sharing
@@ -377,6 +395,6 @@ Proprietary - All rights reserved
 
 ---
 
-**Version**: 1.4.0  
-**Last Updated**: February 19, 2026  
+**Version**: 1.4.1  
+**Last Updated**: February 23, 2026  
 **Status**: ✅ Production Ready

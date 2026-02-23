@@ -1,8 +1,8 @@
 # Copilot Instructions for fotolokashen-ios
 
-*Last updated: February 20, 2026*
+*Last updated: February 23, 2026*
 
-You are assisting with the **fotolokashen iOS app** (v1.4.0) — a camera-first location scouting companion to the fotolokashen web platform.
+You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first location scouting companion to the fotolokashen web platform.
 
 ## Tech Stack
 - **Framework**: SwiftUI (iOS 16.0+), Swift 5.9+
@@ -83,19 +83,20 @@ fotolokashen-ios/
 │   │   │   ├── CameraView.swift       # Full-screen camera with GPS overlay
 │   │   │   ├── CameraPreview.swift    # AVCaptureVideoPreviewLayer wrapper
 │   │   │   ├── CreateLocationView.swift # New location form
-│   │   │   ├── LocationDetailView.swift # Full detail with photo gallery
-│   │   │   ├── LocationListView.swift   # Searchable/sortable list
-│   │   │   ├── LocationRow.swift        # List row component
+│   │   │   ├── LocationDetailView.swift # UNIFIED: owner mode + read-only mode (two initializers)
+│   │   │   ├── LocationListView.swift   # Searchable/sortable list with type filter chips
+│   │   │   ├── LocationRow.swift        # List row component with share button
 │   │   │   ├── LocationClusterItem.swift # GMUClusterItem + renderer + SocialLocationClusterItem
 │   │   │   ├── MapView.swift            # Google Maps with clustering + friends' locations toggle
 │   │   │   ├── EditLocationView.swift   # Full location edit form
-│   │   │   ├── PublicProfileView.swift  # Public user profile with follow button
+│   │   │   ├── PublicProfileView.swift  # Public user profile (uses unified LocationDetailView)
 │   │   │   ├── FollowListView.swift     # Paginated followers/following list
 │   │   │   ├── PeopleSearchView.swift   # People search with Discover/Following/Followers tabs
 │   │   │   ├── ProfileView.swift        # Profile editing with avatar/banner upload + social stats
 │   │   │   └── SettingsView.swift       # Privacy controls, account info, logout
 │   │   ├── Services/
-│   │   │   ├── LocationStore.swift      # Singleton shared state (@MainActor), update/delete
+│   │   │   ├── AppIcons.swift           # Centralized SF Symbol icon names (45+ constants)
+│   │   │   ├── LocationStore.swift      # Singleton shared state (@MainActor), mapFocusLocation
 │   │   │   ├── LocationTypeColors.swift # 15 type→color/icon mappings
 │   │   │   ├── MarkerIconGenerator.swift # Custom camera-icon + social person-icon markers
 │   │   │   ├── NetworkMonitor.swift     # NWPathMonitor connectivity
@@ -104,6 +105,8 @@ fotolokashen-ios/
 │   │   │   ├── UserService.swift        # Profile CRUD, avatar/banner upload
 │   │   │   ├── FollowService.swift      # Follow/unfollow, profiles, search, social locations
 │   │   │   ├── DeepLinkManager.swift    # Deep link routing (URL scheme + Universal Links)
+│   │   │   ├── GeographicClusterAlgorithm.swift # Custom clustering algorithm
+│   │   │   ├── StaticMapHelper.swift    # Static map image generation
 │   │   │   └── DataManager.swift        # SwiftData container (iOS 17+)
 │   │   └── swift-utilities/
 │   │       ├── APIClient.swift          # HTTP client, Bearer auth, PATCH/PUT, 401 handling
@@ -302,6 +305,80 @@ let baseURL = config.backendURL           // URL type
 let apiKey = config.googleMapsAPIKey       // String
 let isDebug = config.enableDebugLogging   // Bool
 let maxPhotos = config.maxPhotosPerLocation // Int (20)
+```
+
+### AppIcons Usage (IMPORTANT)
+```swift
+// Use centralized icon constants from AppIcons.swift — do NOT hardcode SF Symbol strings
+import SwiftUI
+
+// ✅ CORRECT - Use AppIcons constants
+Image(systemName: AppIcons.edit)        // "square.and.pencil"
+Image(systemName: AppIcons.share)       // "arrowshape.turn.up.right"
+Image(systemName: AppIcons.mapPin)      // "mappin.circle.fill"
+Image(systemName: AppIcons.camera)      // "camera.fill"
+Image(systemName: AppIcons.person)      // "person.fill"
+
+// ❌ WRONG - Do not hardcode strings
+Image(systemName: "square.and.pencil")  // Use AppIcons.edit instead
+
+// Available categories in AppIcons:
+// - Navigation: back, close, menu, chevronRight, chevronDown
+// - Actions: add, edit, delete, share, search, filter, refresh
+// - Location Types: broll, story, interview, drone, etc. (15 types)
+// - Camera: camera, flash, switchCamera, gallery
+// - Profile: person, followers, following, settings, logout
+// - Map: map, mapPin, location, compass, directions
+// - Status: checkmark, warning, error, info, star, heart
+// - Content: photo, video, document, folder
+```
+
+### Unified LocationDetailView Pattern (CRITICAL)
+```swift
+// LocationDetailView has TWO initializers — use the correct one for the context
+// DO NOT create duplicate detail views — always use the unified LocationDetailView
+
+// Owner mode: User's own locations (Edit + Share buttons in toolbar)
+LocationDetailView(location: myLocation)
+
+// Read-only mode: Viewing another user's public location (no Edit button)
+LocationDetailView(
+    socialLocation: socialLocation,
+    ownerUsername: "johndoe",
+    ownerDisplayName: "John Doe"
+)
+
+// The view internally uses `isReadOnly` flag to control:
+// - Toolbar buttons (Edit + Share for owner, Share only for read-only)
+// - Edit sheet presentation
+// - Delete confirmation
+```
+
+### Map Navigation from Detail View
+```swift
+// To navigate from a detail view to the Map tab and focus on a location:
+private func showOnMap() {
+    // 1. Set the location to focus on
+    LocationStore.shared.mapFocusLocation = currentLocation
+    
+    // 2. Dismiss the current view
+    dismiss()
+    
+    // 3. Post notification to switch to Map tab
+    NotificationCenter.default.post(name: .navigateToMapTab, object: nil)
+}
+
+// MapView has an onChange handler that responds to mapFocusLocation:
+.onChange(of: locationStore.mapFocusLocation) { _, location in
+    guard let loc = location else { return }
+    selectedLocation = loc
+    focusCoordinate = CLLocationCoordinate2D(latitude: loc.lat, longitude: loc.lng)
+}
+
+// ContentView has a receiver that switches tabs:
+.onReceive(NotificationCenter.default.publisher(for: .navigateToMapTab)) { _ in
+    selectedTab = 1  // Map tab index
+}
 ```
 
 ## API Endpoints Used
