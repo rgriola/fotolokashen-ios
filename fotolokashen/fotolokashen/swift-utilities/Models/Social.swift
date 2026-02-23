@@ -223,7 +223,8 @@ struct SocialLocation: Codable, Identifiable, Equatable, Hashable {
 }
 
 /// Location detail within a social location response
-struct SocialLocationDetail: Codable, Equatable, Hashable {
+/// Supports both lat/lng (canonical) and latitude/longitude (legacy) field names
+struct SocialLocationDetail: Equatable, Hashable {
     let id: Int
     let placeId: String?
     let name: String
@@ -257,6 +258,62 @@ struct SocialLocationDetail: Codable, Equatable, Hashable {
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+    }
+}
+
+// MARK: - SocialLocationDetail Codable (handles lat/lng OR latitude/longitude)
+
+extension SocialLocationDetail: Codable {
+    enum CodingKeys: String, CodingKey {
+        case id, placeId, name, address, city, state, type, rating, photos
+        // Primary field names (canonical)
+        case lat, lng
+        // Fallback field names (legacy API)
+        case latitude, longitude
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(Int.self, forKey: .id)
+        placeId = try container.decodeIfPresent(String.self, forKey: .placeId)
+        name = try container.decode(String.self, forKey: .name)
+        address = try container.decodeIfPresent(String.self, forKey: .address)
+        city = try container.decodeIfPresent(String.self, forKey: .city)
+        state = try container.decodeIfPresent(String.self, forKey: .state)
+        type = try container.decodeIfPresent(String.self, forKey: .type)
+        rating = try container.decodeIfPresent(Double.self, forKey: .rating)
+        photos = try container.decodeIfPresent([LocationPhoto].self, forKey: .photos)
+
+        // Try lat/lng first (canonical), then fall back to latitude/longitude (legacy)
+        if let latValue = try container.decodeIfPresent(Double.self, forKey: .lat) {
+            lat = latValue
+        } else {
+            lat = try container.decode(Double.self, forKey: .latitude)
+        }
+
+        if let lngValue = try container.decodeIfPresent(Double.self, forKey: .lng) {
+            lng = lngValue
+        } else {
+            lng = try container.decode(Double.self, forKey: .longitude)
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(id, forKey: .id)
+        try container.encodeIfPresent(placeId, forKey: .placeId)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(address, forKey: .address)
+        try container.encodeIfPresent(city, forKey: .city)
+        try container.encodeIfPresent(state, forKey: .state)
+        try container.encodeIfPresent(type, forKey: .type)
+        try container.encodeIfPresent(rating, forKey: .rating)
+        try container.encodeIfPresent(photos, forKey: .photos)
+        // Always encode as canonical lat/lng
+        try container.encode(lat, forKey: .lat)
+        try container.encode(lng, forKey: .lng)
     }
 }
 

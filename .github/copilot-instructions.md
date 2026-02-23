@@ -16,7 +16,8 @@ You are assisting with the **fotolokashen iOS app** (v1.4.0) — a camera-first 
 - **Image Processing**: Custom `ImageCompressor` (JPEG resize + quality reduction)
 - **Photo Storage**: ImageKit CDN via server-mediated secure upload
 - **Token Storage**: KeychainAccess library (`.whenUnlocked`, not synced to iCloud)
-- **Monitoring**: Sentry (planned)
+- **UX**: The web app and iOS app should share common design patterns and user flows. iOS is optimized for on-the-go location scouting with quick references and creation. The web app remains the source of truth for all features and backend integration, with the iOS app selectively integrating features based on mobile relevance and development resources. 
+
 
 ## Key Principles
 
@@ -33,6 +34,7 @@ You are assisting with the **fotolokashen iOS app** (v1.4.0) — a camera-first 
 - Use `CodingKeys` for snake_case ↔ camelCase mapping
 - Use optional types (`?`) for fields that may be absent in API responses
 - Match backend response shapes exactly
+- **Coordinate fields**: iOS models handle both `lat`/`lng` (canonical) and `latitude`/`longitude` (legacy) via custom `Codable` init — see `SocialLocationDetail` in `Social.swift`
 
 ### 3. Async/Await
 - Prefer `async/await` over completion handlers everywhere
@@ -527,6 +529,7 @@ ImageKit transformations for OpenGraph images:
 
 ## Documentation References
 - **Web Backend**: `/fotolokashen/.github/copilot-instructions.md`
+- **Mobile API Schemas**: `/fotolokashen/docs/api/MOBILE_API_SCHEMAS.md` (CRITICAL - canonical response structures)
 - **Photo Upload Security**: `docs/IOS_PHOTO_UPLOAD_SECURITY_REVIEW.md`
 - **Config Template**: `Config.example.plist`
 
