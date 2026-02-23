@@ -17,6 +17,7 @@ struct PublicProfileView: View {
     @State private var errorMessage: String?
     @State private var showFollowers = false
     @State private var showFollowing = false
+    @State private var selectedLocation: SocialLocation?
 
     var body: some View {
         ScrollView {
@@ -69,6 +70,13 @@ struct PublicProfileView: View {
                         }
                     }
             }
+        }
+        .sheet(item: $selectedLocation) { socialLocation in
+            ProfileLocationDetailView(
+                socialLocation: socialLocation,
+                ownerUsername: username,
+                ownerDisplayName: profile?.name ?? username
+            )
         }
         .overlay {
             if isLoadingProfile {
@@ -316,7 +324,12 @@ struct PublicProfileView: View {
                     GridItem(.flexible(), spacing: 6)
                 ], spacing: 6) {
                     ForEach(locations) { socialLocation in
-                        locationCard(socialLocation)
+                        Button {
+                            selectedLocation = socialLocation
+                        } label: {
+                            locationCard(socialLocation)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 12)
@@ -493,5 +506,293 @@ struct PublicProfileView: View {
         let displayFormatter = DateFormatter()
         displayFormatter.dateFormat = "MMMM yyyy"
         return displayFormatter.string(from: date)
+    }
+}
+
+// MARK: - Profile Location Detail View
+
+/// Detail view shown when tapping a location card in a public profile
+struct ProfileLocationDetailView: View {
+    let socialLocation: SocialLocation
+    let ownerUsername: String
+    let ownerDisplayName: String
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedPhotoIndex: Int = 0
+    @State private var showFullScreenGallery = false
+
+    private var location: SocialLocationDetail { socialLocation.location }
+    private var photos: [LocationPhoto] { location.photos ?? [] }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    // Photo Gallery or Static Map
+                    photoSection
+                        .frame(height: 220)
+
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Type Badge
+                        if let type = location.type, !type.isEmpty {
+                            HStack(spacing: 4) {
+                                Image(systemName: LocationTypeColors.icon(for: type))
+                                    .font(.caption)
+                                Text(type)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color(LocationTypeColors.uiColor(for: type)))
+                            .clipShape(Capsule())
+                        }
+
+                        // Location Name
+                        Text(location.name)
+                            .font(.title2)
+                            .fontWeight(.bold)
+
+                        // Address
+                        if let address = location.address, !address.isEmpty {
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "mappin.circle.fill")
+                                    .foregroundColor(.red)
+                                Text(address)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        // City/State
+                        if let cityState = formatCityState() {
+                            HStack(spacing: 8) {
+                                Image(systemName: "building.2")
+                                    .foregroundColor(.secondary)
+                                Text(cityState)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        // Caption
+                        if let caption = socialLocation.caption, !caption.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Caption")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(caption)
+                                    .font(.body)
+                            }
+                            .padding(.top, 4)
+                        }
+
+                        // Saved date
+                        if let savedAt = socialLocation.savedAt {
+                            Text("Saved \(formatSavedDate(savedAt))")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Divider()
+
+                        // Saved by user
+                        HStack(spacing: 12) {
+                            Circle()
+                                .fill(Color.brandPurple.opacity(0.2))
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Text(String(ownerUsername.prefix(1)).uppercased())
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.brandPurple)
+                                )
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Saved by")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(ownerDisplayName)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                Text("@\(ownerUsername)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Spacer()
+                        }
+                    }
+                    .padding(16)
+                }
+            }
+            .navigationTitle("Location")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    if let url = URL(string: "https://fotolokashen.com/\(ownerUsername)/locations/\(socialLocation.id)") {
+                        ShareLink(
+                            item: url,
+                            subject: Text(location.name),
+                            message: Text(location.address ?? "")
+                        ) {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                }
+            }
+            .fullScreenCover(isPresented: $showFullScreenGallery) {
+                ProfilePhotoGalleryView(
+                    photos: photos,
+                    selectedIndex: $selectedPhotoIndex
+                )
+            }
+        }
+    }
+
+    // MARK: - Photo Section
+
+    @ViewBuilder
+    private var photoSection: some View {
+        if !photos.isEmpty {
+            TabView(selection: $selectedPhotoIndex) {
+                ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
+                    AsyncImage(url: URL(string: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)")) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color(.systemGray5))
+                            .overlay(ProgressView())
+                    }
+                    .tag(index)
+                    .onTapGesture {
+                        showFullScreenGallery = true
+                    }
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .automatic))
+            .overlay(alignment: .topTrailing) {
+                if photos.count > 1 {
+                    Text("\(selectedPhotoIndex + 1)/\(photos.count)")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.black.opacity(0.6))
+                        .clipShape(Capsule())
+                        .padding(8)
+                }
+            }
+        } else if let staticMapUrl = StaticMapHelper.thumbnailMapURL(
+            latitude: location.lat,
+            longitude: location.lng
+        ) {
+            AsyncImage(url: staticMapUrl) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                Rectangle()
+                    .fill(Color(.systemGray5))
+                    .overlay(ProgressView())
+            }
+            .overlay(
+                Image(systemName: "map.fill")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(6)
+                    .background(Color.black.opacity(0.5))
+                    .clipShape(Circle())
+                    .padding(8),
+                alignment: .topTrailing
+            )
+        } else {
+            Rectangle()
+                .fill(Color(.systemGray5))
+                .overlay(
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.largeTitle)
+                        .foregroundColor(.secondary)
+                )
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func formatCityState() -> String? {
+        let parts = [location.city, location.state].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
+    }
+
+    private func formatSavedDate(_ dateString: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        guard let date = formatter.date(from: dateString) else {
+            return dateString
+        }
+        let displayFormatter = DateFormatter()
+        displayFormatter.dateStyle = .medium
+        return displayFormatter.string(from: date)
+    }
+}
+
+// MARK: - Profile Photo Gallery View (Full Screen)
+
+/// Full-screen photo gallery for profile location photos
+struct ProfilePhotoGalleryView: View {
+    let photos: [LocationPhoto]
+    @Binding var selectedIndex: Int
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            TabView(selection: $selectedIndex) {
+                ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
+                    AsyncImage(url: URL(string: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)")) { image in
+                        image
+                            .resizable()
+                            .scaledToFit()
+                    } placeholder: {
+                        ProgressView()
+                            .tint(.white)
+                    }
+                    .tag(index)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .automatic))
+
+            // Close button
+            VStack {
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .padding()
+                    Spacer()
+                }
+                Spacer()
+            }
+
+            // Photo counter
+            VStack {
+                Spacer()
+                Text("\(selectedIndex + 1) of \(photos.count)")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+                    .padding(.bottom, 40)
+            }
+        }
     }
 }
