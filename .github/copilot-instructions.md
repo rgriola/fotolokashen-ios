@@ -1,10 +1,11 @@
 # Copilot Instructions for fotolokashen-ios
 
-*Last updated: February 23, 2026*
+_Last updated: February 23, 2026_
 
 You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first location scouting companion to the fotolokashen web platform.
 
 ## Tech Stack
+
 - **Framework**: SwiftUI (iOS 16.0+), Swift 5.9+
 - **Architecture**: Hybrid MVVM + Shared Store (singleton `LocationStore.shared`)
 - **Auth**: OAuth2 + PKCE via Safari, JWT tokens in iOS Keychain
@@ -16,12 +17,12 @@ You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first 
 - **Image Processing**: Custom `ImageCompressor` (JPEG resize + quality reduction)
 - **Photo Storage**: ImageKit CDN via server-mediated secure upload
 - **Token Storage**: KeychainAccess library (`.whenUnlocked`, not synced to iCloud)
-- **UX**: The web app and iOS app should share common design patterns and user flows. iOS is optimized for on-the-go location scouting with quick references and creation. The web app remains the source of truth for all features and backend integration, with the iOS app selectively integrating features based on mobile relevance and development resources. 
-
+- **UX**: The web app and iOS app should share common design patterns and user flows. iOS is optimized for on-the-go location scouting with quick references and creation. The web app remains the source of truth for all features and backend integration, with the iOS app selectively integrating features based on mobile relevance and development resources.
 
 ## Key Principles
 
 ### 1. Security First
+
 - **Never log tokens in release builds**: All `print()` statements with sensitive data MUST be wrapped in `#if DEBUG`
 - **API keys via build configuration**: Google Maps key uses `$(GOOGLE_MAPS_API_KEY)` in Info.plist, loaded from xcconfig
 - **Config.plist is gitignored**: Use `Config.example.plist` as template; never commit actual keys
@@ -30,6 +31,7 @@ You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first 
 - **Auto-logout on 401**: `APIClient` broadcasts `authSessionInvalidated` notification → `AuthService` clears state
 
 ### 2. Type Safety & Codable
+
 - All API models conform to `Codable`
 - Use `CodingKeys` for snake_case ↔ camelCase mapping
 - Use optional types (`?`) for fields that may be absent in API responses
@@ -37,12 +39,14 @@ You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first 
 - **Coordinate fields**: iOS models handle both `lat`/`lng` (canonical) and `latitude`/`longitude` (legacy) via custom `Codable` init — see `SocialLocationDetail` in `Social.swift`
 
 ### 3. Async/Await
+
 - Prefer `async/await` over completion handlers everywhere
 - Use `@MainActor` for UI-bound services and view models
 - Wrap in `Task {}` when calling from non-async context
 - Handle cancellation appropriately
 
 ### 4. Code Style
+
 - Follow SwiftLint configuration in `.swiftlint.yml`
 - Line length: 120 char warning, 150 char error
 - Function body length: 50 lines warning, 100 lines error
@@ -51,6 +55,7 @@ You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first 
 - Views: `XxxView.swift` suffix
 
 ### 5. Debug Logging Pattern
+
 ```swift
 #if DEBUG
 if ConfigLoader.shared.enableDebugLogging {
@@ -58,6 +63,7 @@ if ConfigLoader.shared.enableDebugLogging {
 }
 #endif
 ```
+
 - Always use `#if DEBUG` wrapper for ANY print statement
 - Use service tag prefixes: `[APIClient]`, `[AuthService]`, `[PhotoUpload]`, `[Sync]`, `[LocationStore]`
 - NEVER log full tokens — use `[REDACTED]` in debug output
@@ -135,6 +141,7 @@ fotolokashen-ios/
 ## Common Patterns
 
 ### APIClient Usage
+
 ```swift
 // GET request
 let response: MyResponse = try await APIClient.shared.get("/api/endpoint", authenticated: true)
@@ -147,21 +154,22 @@ let _: EmptyResponse = try await APIClient.shared.delete("/api/locations/\(id)")
 ```
 
 ### Protected Service Pattern
+
 ```swift
 @MainActor
 class MyService: ObservableObject {
     static let shared = MyService()
-    
+
     @Published var isLoading = false
     @Published var errorMessage: String?
-    
+
     private let apiClient = APIClient.shared
     private let config = ConfigLoader.shared
-    
+
     func doSomething() async throws -> MyResult {
         isLoading = true
         defer { isLoading = false }
-        
+
         do {
             let result: MyResult = try await apiClient.get("/api/something")
             return result
@@ -179,6 +187,7 @@ class MyService: ObservableObject {
 ```
 
 ### Secure Photo Upload
+
 ```swift
 // All uploads go through PhotoUploadService → /api/photos/upload
 // Server performs: virus scan, format validation, HEIC/TIFF→JPEG conversion
@@ -191,6 +200,7 @@ let photo = try await PhotoUploadService().uploadPhoto(
 ```
 
 ### Multipart Upload (for new upload types)
+
 ```swift
 // Use the pattern from PhotoUploadService.uploadSecurely()
 // 1. Get auth token from KeychainService
@@ -201,6 +211,7 @@ let photo = try await PhotoUploadService().uploadPhoto(
 ```
 
 ### Profile & Privacy Updates
+
 ```swift
 // Profile update via UserService
 let request = ProfileUpdateRequest(firstName: "John", bio: "Photographer")
@@ -218,6 +229,7 @@ let bannerUrl = try await UserService.shared.uploadBanner(image: uiImage)
 ```
 
 ### Social Features (Follow, Profiles, Search)
+
 ```swift
 // Follow/unfollow
 let response = try await FollowService.shared.follow(username: "johndoe")
@@ -242,6 +254,7 @@ let results = try await FollowService.shared.searchUsers(query: "john", type: "a
 ```
 
 ### Deep Link Handling
+
 ```swift
 // DeepLinkManager handles both URL schemes and Universal Links
 // Custom scheme: fotolokashen://location/123
@@ -278,6 +291,7 @@ let results = try await FollowService.shared.searchUsers(query: "john", type: "a
 ```
 
 ### iOS 17+ Feature Gating
+
 ```swift
 if #available(iOS 17.0, *) {
     // SwiftData features
@@ -289,6 +303,7 @@ if #available(iOS 17.0, *) {
 ```
 
 ### Google Maps Integration
+
 ```swift
 // Initialize in fotolokashenApp.init()
 GMSServices.provideAPIKey(config.googleMapsAPIKey)
@@ -299,6 +314,7 @@ GMSServices.provideAPIKey(config.googleMapsAPIKey)
 ```
 
 ### ConfigLoader Access
+
 ```swift
 let config = ConfigLoader.shared
 let baseURL = config.backendURL           // URL type
@@ -308,6 +324,7 @@ let maxPhotos = config.maxPhotosPerLocation // Int (20)
 ```
 
 ### AppIcons Usage (IMPORTANT)
+
 ```swift
 // Use centralized icon constants from AppIcons.swift — do NOT hardcode SF Symbol strings
 import SwiftUI
@@ -334,6 +351,7 @@ Image(systemName: "square.and.pencil")  // Use AppIcons.edit instead
 ```
 
 ### Unified LocationDetailView Pattern (CRITICAL)
+
 ```swift
 // LocationDetailView has TWO initializers — use the correct one for the context
 // DO NOT create duplicate detail views — always use the unified LocationDetailView
@@ -355,6 +373,7 @@ LocationDetailView(
 ```
 
 ### Map Navigation from Detail View
+
 ```swift
 // To navigate from a detail view to the Map tab and focus on a location:
 // The `showOnMap()` method handles BOTH owner mode and read-only mode differently
@@ -403,50 +422,51 @@ private func showOnMap() {
 
 ## API Endpoints Used
 
-| Endpoint | Method | Service | Purpose |
-|----------|--------|---------|---------|
-| `/api/auth/oauth/token` | POST | AuthService | Token exchange & refresh |
-| `/api/auth/oauth/revoke` | POST | AuthService | Logout (revoke refresh token) |
-| `/api/v1/users/me` | GET | APIClient | Fetch current user (rich profile) |
-| `/api/v1/users/me` | PATCH | UserService | Update profile & privacy settings |
-| `/api/auth/avatar` | POST | UserService | Upload avatar (FormData) |
-| `/api/auth/avatar` | DELETE | UserService | Remove avatar |
-| `/api/auth/banner` | POST | UserService | Upload banner (FormData) |
-| `/api/auth/banner` | DELETE | UserService | Remove banner |
-| `/api/locations` | GET | LocationService | Fetch all user locations |
-| `/api/locations` | POST | LocationService | Create new location |
-| `/api/locations/{id}` | GET | LocationService | Fetch single location |
-| `/api/locations/{id}` | PATCH | LocationService | Update location + UserSave fields |
-| `/api/locations/{id}` | DELETE | LocationStore | Delete location |
-| `/api/locations/{id}/photos` | GET | LocationDetailView | Fetch location photos |
-| `/api/locations/{id}/photos` | POST | PhotoUploadService | Associate photo with location |
-| `/api/photos/{id}` | DELETE | LocationService | Delete a photo |
-| `/api/photos/upload` | POST | PhotoUploadService | Secure multipart upload |
-| `/api/v1/users/{username}` | GET | FollowService | Fetch public profile |
-| `/api/v1/users/{username}/follow` | POST | FollowService | Follow user |
-| `/api/v1/users/{username}/unfollow` | POST | FollowService | Unfollow user |
-| `/api/v1/users/me/follow-status/{username}` | GET | FollowService | Check follow relationship |
-| `/api/v1/users/{username}/followers` | GET | FollowService | Paginated followers list |
-| `/api/v1/users/{username}/following` | GET | FollowService | Paginated following list |
-| `/api/v1/users/{username}/locations` | GET | FollowService | User's public locations |
-| `/api/v1/locations/public` | GET | FollowService | All public locations (with bounds) |
-| `/api/v1/locations/friends` | GET | FollowService | Friends' locations (privacy-enforced) |
-| `/api/v1/search/users` | GET | FollowService | User search (username/bio/geo) |
-| `/api/v1/search/suggestions` | GET | FollowService | Username autocomplete |
+| Endpoint                                    | Method | Service            | Purpose                               |
+| ------------------------------------------- | ------ | ------------------ | ------------------------------------- |
+| `/api/auth/oauth/token`                     | POST   | AuthService        | Token exchange & refresh              |
+| `/api/auth/oauth/revoke`                    | POST   | AuthService        | Logout (revoke refresh token)         |
+| `/api/v1/users/me`                          | GET    | APIClient          | Fetch current user (rich profile)     |
+| `/api/v1/users/me`                          | PATCH  | UserService        | Update profile & privacy settings     |
+| `/api/auth/avatar`                          | POST   | UserService        | Upload avatar (FormData)              |
+| `/api/auth/avatar`                          | DELETE | UserService        | Remove avatar                         |
+| `/api/auth/banner`                          | POST   | UserService        | Upload banner (FormData)              |
+| `/api/auth/banner`                          | DELETE | UserService        | Remove banner                         |
+| `/api/locations`                            | GET    | LocationService    | Fetch all user locations              |
+| `/api/locations`                            | POST   | LocationService    | Create new location                   |
+| `/api/locations/{id}`                       | GET    | LocationService    | Fetch single location                 |
+| `/api/locations/{id}`                       | PATCH  | LocationService    | Update location + UserSave fields     |
+| `/api/locations/{id}`                       | DELETE | LocationStore      | Delete location                       |
+| `/api/locations/{id}/photos`                | GET    | LocationDetailView | Fetch location photos                 |
+| `/api/locations/{id}/photos`                | POST   | PhotoUploadService | Associate photo with location         |
+| `/api/photos/{id}`                          | DELETE | LocationService    | Delete a photo                        |
+| `/api/photos/upload`                        | POST   | PhotoUploadService | Secure multipart upload               |
+| `/api/v1/users/{username}`                  | GET    | FollowService      | Fetch public profile                  |
+| `/api/v1/users/{username}/follow`           | POST   | FollowService      | Follow user                           |
+| `/api/v1/users/{username}/unfollow`         | POST   | FollowService      | Unfollow user                         |
+| `/api/v1/users/me/follow-status/{username}` | GET    | FollowService      | Check follow relationship             |
+| `/api/v1/users/{username}/followers`        | GET    | FollowService      | Paginated followers list              |
+| `/api/v1/users/{username}/following`        | GET    | FollowService      | Paginated following list              |
+| `/api/v1/users/{username}/locations`        | GET    | FollowService      | User's public locations               |
+| `/api/v1/locations/public`                  | GET    | FollowService      | All public locations (with bounds)    |
+| `/api/v1/locations/friends`                 | GET    | FollowService      | Friends' locations (privacy-enforced) |
+| `/api/v1/search/users`                      | GET    | FollowService      | User search (username/bio/geo)        |
+| `/api/v1/search/suggestions`                | GET    | FollowService      | Username autocomplete                 |
 
 ## Dependencies (SPM)
 
-| Package | Version | Purpose | Status |
-|---------|---------|---------|--------|
-| Google Maps SDK | 10.8.0 | Map display, markers | Active |
-| Google Maps Utils | 7.1.0 | Marker clustering | Active |
-| KeychainAccess | 4.2.2 | Secure token storage | Active |
+| Package           | Version | Purpose              | Status |
+| ----------------- | ------- | -------------------- | ------ |
+| Google Maps SDK   | 10.8.0  | Map display, markers | Active |
+| Google Maps Utils | 7.1.0   | Marker clustering    | Active |
+| KeychainAccess    | 4.2.2   | Secure token storage | Active |
 
 ## Backend API Reference
 
 The iOS app connects to the fotolokashen web backend at `https://fotolokashen.com`.
 
 ### Authentication Flow
+
 1. `AuthService.startLogin()` → opens Safari with OAuth2 params + PKCE challenge
 2. User logs in on web → redirected back via `fotolokashen://oauth-callback?code=...`
 3. `AuthService.handleCallback(url:)` → exchanges code for tokens via `/api/auth/oauth/token`
@@ -455,6 +475,7 @@ The iOS app connects to the fotolokashen web backend at `https://fotolokashen.co
 6. On logout: revoke refresh token via `/api/auth/oauth/revoke`, clear Keychain
 
 ### Location Model Mapping
+
 ```
 Backend (snake_case)     →  iOS (camelCase)
 place_id                 →  placeId
@@ -464,7 +485,9 @@ user_save_id             →  userSaveId
 ```
 
 ## Location Types (15)
+
 Consistent colors across iOS and web:
+
 - BROLL (#3B82F6), STORY (#22C55E), INTERVIEW (#EAB308)
 - LIVE ANCHOR (#F97316), REPORTER LIVE (#F97316), STAKEOUT (#EF4444)
 - DRONE (#8B5CF6), SCENE (#EC4899), EVENT (#6366F1)
@@ -472,6 +495,7 @@ Consistent colors across iOS and web:
 - BUREAU (#14B8A6), REMOTE STAFF (#0EA5E9), STORAGE (#F59E0B)
 
 ## Testing
+
 - Unit tests in `fotolokashenTests/`
 - Test files: `AuthServiceTests`, `PKCEGeneratorTests`, `ImageCompressorTests`, `LocationStoreTests`
 - Mock network calls for service tests
@@ -481,12 +505,14 @@ Consistent colors across iOS and web:
 ## Development Workflow
 
 ### Running Locally
+
 ```bash
 open fotolokashen/Fotolokashen.xcodeproj  # Open in Xcode
 # Select target device/simulator → ⌘+R to build and run
 ```
 
 ### Configuration Setup
+
 ```bash
 cp Config.example.plist Config.plist
 # Edit Config.plist with your API keys
@@ -494,6 +520,7 @@ cp Config.example.plist Config.plist
 ```
 
 ### Building for Release
+
 1. Set `enableDebugLogging` to `false` in Config.plist
 2. Select "Any iOS Device" as target
 3. Product → Archive
@@ -502,6 +529,7 @@ cp Config.example.plist Config.plist
 ## Security Checklist
 
 When adding new features, verify:
+
 - [ ] All `print()` statements wrapped in `#if DEBUG`
 - [ ] API calls use `APIClient.shared` (handles auth headers automatically)
 - [ ] No API keys hardcoded in Swift files
@@ -513,6 +541,7 @@ When adding new features, verify:
 ## Planned Features (Phased Roadmap)
 
 ### Phase 1: User Profile & Settings ✅ (v1.2.0)
+
 - ✅ Profile editing (bio, city, country, language, timezone)
 - ✅ Avatar/banner upload via secure pipeline
 - ✅ Privacy controls (profileVisibility, showInSearch, showLocation, showSavedLocations)
@@ -520,6 +549,7 @@ When adding new features, verify:
 - ✅ New 5-tab layout: Locations | Map | Capture | Profile | Settings
 
 ### Phase 2: Location Editing & Enrichment ✅ (v1.3.0)
+
 - ✅ Edit existing locations (all fields: production notes, entry point, parking, access, indoor/outdoor)
 - ✅ Favorites, tags, personal ratings via EditLocationView
 - ✅ Photo deletion from locations (mark + delete on save)
@@ -528,6 +558,7 @@ When adding new features, verify:
 - ✅ Location model expanded with UserSave fields (color, isFavorite, tags, etc.)
 
 ### Phase 3: Social Features ✅ (v1.4.0)
+
 - ✅ Follow/unfollow users from public profiles
 - ✅ Public user profiles with avatar, banner, bio, follower/following counts, public locations grid
 - ✅ Followers/following lists with infinite scroll pagination
@@ -539,10 +570,12 @@ When adding new features, verify:
 - ✅ 5-tab layout updated: Locations | Map | Capture | People | Profile (Settings via gear icon)
 
 ### Phase 4: Search & Onboarding
+
 - Terms of Service acceptance (blocking modal, scroll-to-bottom requirement)
 - Onboarding walkthrough (page-style SwiftUI tabs)
 
 ### Phase 5: AI & Support
+
 - AI description improvement (improve, extract, rewrite modes)
 - AI tag suggestions from production notes
 - In-app member support form
@@ -550,18 +583,26 @@ When adding new features, verify:
 ## OpenGraph & Rich Link Previews
 
 ### Web App Implementation
+
 Public location pages (`/[username]/locations/[id]`) automatically generate OpenGraph metadata for rich link previews when shared via iOS, social media, or messaging apps.
 
 **Metadata Generation** (Next.js `generateMetadata`):
+
 ```typescript
-export async function generateMetadata({ params }: PublicLocationPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PublicLocationPageProps): Promise<Metadata> {
   const ogImage = save.location.photos[0]?.imagekitFilePath
-    ? getImageKitUrl(save.location.photos[0].imagekitFilePath, 'w-1200,h-630,c-at_max')
+    ? getImageKitUrl(
+        save.location.photos[0].imagekitFilePath,
+        "w-1200,h-630,c-at_max",
+      )
     : undefined;
 
   return {
     title: `${save.location.name} - ${displayName}'s Location`,
-    description: save.caption || save.location.address || `View ${save.location.name}`,
+    description:
+      save.caption || save.location.address || `View ${save.location.name}`,
     openGraph: {
       title: save.location.name,
       description: save.caption || save.location.address,
@@ -572,17 +613,26 @@ export async function generateMetadata({ params }: PublicLocationPageProps): Pro
 ```
 
 **Generated HTML meta tags**:
+
 ```html
-<meta property="og:title" content="Location Name">
-<meta property="og:description" content="Location address or caption">
-<meta property="og:image" content="https://ik.imagekit.io/rgriola/...?tr=w-1200,h-630,c-at_max">
-<meta property="og:url" content="https://fotolokashen.com/username/locations/123">
+<meta property="og:title" content="Location Name" />
+<meta property="og:description" content="Location address or caption" />
+<meta
+  property="og:image"
+  content="https://ik.imagekit.io/rgriola/...?tr=w-1200,h-630,c-at_max"
+/>
+<meta
+  property="og:url"
+  content="https://fotolokashen.com/username/locations/123"
+/>
 ```
 
 ### iOS Integration
+
 iOS app shares location URLs (not plain text) to enable automatic OpenGraph fetching:
 
 **Correct Sharing Pattern**:
+
 ```swift
 // ✅ Share URL object - triggers OpenGraph preview
 if let username = location.creator?.username,
@@ -599,6 +649,7 @@ ShareLink(item: "Location Name\nAddress\nhttps://...", ...)
 ```
 
 ### How It Works
+
 1. **User shares location** from iOS app via ShareLink
 2. **iOS/iMessage receives URL**: `https://fotolokashen.com/rodczaro/locations/107`
 3. **Platform fetches page** and parses OpenGraph meta tags
@@ -608,29 +659,35 @@ ShareLink(item: "Location Name\nAddress\nhttps://...", ...)
    - 📝 Caption or address (og:description)
 
 ### URL Format
+
 - **Public location pages**: `/{username}/locations/{locationId}`
 - **No @ symbol**: URLs are `/rodczaro/locations/107`, not `/@rodczaro/...`
 - **Always use creator username**: Ensures correct public profile routing
 
 ### Image Optimization
+
 ImageKit transformations for OpenGraph images:
+
 - **Size**: `w-1200,h-630` (og:image standard dimensions)
 - **Fit**: `c-at_max` (maintain aspect ratio, fit within bounds)
 - **Format**: Auto (`fo-auto` - WebP/AVIF where supported)
 
 ### Debugging Tips
+
 - **Test URL in browser**: View page source to verify meta tags
 - **iMessage cache**: Previews cached - append `?v=2` to test changes
 - **Fallback behavior**: If no photo, only title/description shown
 - **Private locations**: Only public locations (`visibility: "public"`) are accessible via shared URLs
 
 ## Documentation References
+
 - **Web Backend**: `/fotolokashen/.github/copilot-instructions.md`
 - **Mobile API Schemas**: `/fotolokashen/docs/api/MOBILE_API_SCHEMAS.md` (CRITICAL - canonical response structures)
 - **Photo Upload Security**: `docs/IOS_PHOTO_UPLOAD_SECURITY_REVIEW.md`
 - **Config Template**: `Config.example.plist`
 
 ## Important Notes
+
 - **Custom OAuth2 Auth**: PKCE flow via Safari, NOT Sign in with Apple/Google
 - **Session Management**: Multi-device (web + iOS) with auto-logout on invalidation
 - **iOS 16 Support**: Maintained — SwiftData features gated behind `@available(iOS 17, *)`
