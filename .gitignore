@@ -54,6 +54,7 @@ Config.plist
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
+*.psd
 
 # Directories potentially created on remote AFP share
 .AppleDB
