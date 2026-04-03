@@ -65,7 +65,7 @@ struct MapView: View {
                             .font(.title3)
                             .foregroundColor(.white)
                             .frame(width: 50, height: 50)
-                            .background(showFriendsLocations ? Color.brandPurple : Color.gray.opacity(0.8))
+                            .background(showFriendsLocations ? Color.brandPurple : Color(.systemGray2))
                             .clipShape(Circle())
                             .shadow(radius: 4)
                         }
@@ -81,7 +81,7 @@ struct MapView: View {
                                 .font(.title2)
                                 .foregroundColor(.white)
                                 .frame(width: 50, height: 50)
-                                .background(Color.blue)
+                                .background(Color.brand)
                                 .clipShape(Circle())
                                 .shadow(radius: 4)
                         }

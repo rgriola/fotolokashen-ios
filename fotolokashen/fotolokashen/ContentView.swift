@@ -1,10 +1,10 @@
 import SwiftUI
 import CoreLocation
 
-// MARK: - Brand Colors
+// MARK: - Legacy Brand Color Aliases (use Color.brand / Color.brandDark from AppColors.swift)
 extension Color {
-    static let brandPurple = Color(red: 0.36, green: 0.30, blue: 1.0)  // #5B4CFF
-    static let brandPurpleDark = Color(red: 0.30, green: 0.25, blue: 0.90)
+    static let brandPurple = Color.brand
+    static let brandPurpleDark = Color.brandDark
 }
 
 // MARK: - Notification Names

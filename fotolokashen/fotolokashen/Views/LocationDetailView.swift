@@ -372,7 +372,7 @@ struct LocationDetailView: View {
                                     .fill(Color(.systemGray5))
                                 Image(systemName: "photo")
                                     .font(.largeTitle)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(Color(.tertiaryLabel))
                             }
                         @unknown default:
                             EmptyView()
@@ -446,7 +446,7 @@ struct LocationDetailView: View {
                 } label: {
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: AppIcons.mapPin)
-                            .foregroundColor(.red)
+                            .foregroundColor(.destructive)
                         Text(address)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -719,7 +719,7 @@ struct LocationDetailView: View {
             VStack(spacing: 12) {
                 Image(systemName: "wifi.slash")
                     .font(.system(size: 40))
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
 
                 Text("No connection")
                     .font(.subheadline)

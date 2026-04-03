@@ -244,7 +244,7 @@ struct CameraView: View {
         VStack(spacing: 20) {
             Image(systemName: "camera.fill")
                 .font(.system(size: 60))
-                .foregroundColor(.gray)
+                .foregroundColor(.secondary)
             Text("Camera Access Required")
                 .font(.title2)
                 .fontWeight(.semibold)

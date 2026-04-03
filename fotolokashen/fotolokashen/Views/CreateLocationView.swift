@@ -117,7 +117,7 @@ struct CreateLocationView: View {
                                 // Address
                                 HStack(alignment: .top, spacing: 8) {
                                     Image(systemName: "mappin.and.ellipse")
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(.brand)
                                         .frame(width: 20)
                                     
                                     VStack(alignment: .leading, spacing: 4) {
@@ -135,13 +135,13 @@ struct CreateLocationView: View {
                                     }
                                 }
                                 .padding()
-                                .background(Color.gray.opacity(0.1))
+                                .background(Color(.systemFill))
                                 .cornerRadius(8)
                                 
                                 // Coordinates
                                 HStack(alignment: .top, spacing: 8) {
                                     Image(systemName: "location.fill")
-                                        .foregroundColor(.green)
+                                        .foregroundColor(.success)
                                         .frame(width: 20)
                                     
                                     VStack(alignment: .leading, spacing: 4) {
@@ -157,7 +157,7 @@ struct CreateLocationView: View {
                                     }
                                 }
                                 .padding()
-                                .background(Color.gray.opacity(0.1))
+                                .background(Color(.systemFill))
                                 .cornerRadius(8)
                                 
                                 // Accuracy
@@ -175,7 +175,7 @@ struct CreateLocationView: View {
                                     .foregroundColor(.secondary)
                                     .padding()
                                     .frame(maxWidth: .infinity)
-                                    .background(Color.yellow.opacity(0.1))
+                                    .background(Color.warning.opacity(0.1))
                                     .cornerRadius(8)
                             }
                         }
@@ -200,7 +200,7 @@ struct CreateLocationView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(canSave ? Color.blue : Color.gray)
+                        .background(canSave ? Color.brand : Color(.systemGray3))
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
@@ -212,7 +212,7 @@ struct CreateLocationView: View {
                     if let error = locationService.errorMessage {
                         Text(error)
                             .font(.caption)
-                            .foregroundColor(.red)
+                            .foregroundColor(.destructive)
                             .multilineTextAlignment(.center)
                             .padding()
                     }

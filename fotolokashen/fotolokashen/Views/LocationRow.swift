@@ -100,7 +100,7 @@ struct LocationRow: View {
                 if location.isFavorite == true {
                     Image(systemName: "heart.fill")
                         .font(.caption2)
-                        .foregroundColor(.red)
+                        .foregroundColor(.destructive)
                 }
             }
             .padding(.horizontal, 12)
@@ -138,7 +138,7 @@ struct LocationRow: View {
                                 .allowsHitTesting(false)
                         default:
                             Rectangle()
-                                .fill(Color.gray.opacity(0.1))
+                                .fill(Color(.systemFill))
                                 .overlay { ProgressView() }
                                 .allowsHitTesting(false)
                         }
@@ -159,7 +159,7 @@ struct LocationRow: View {
                     staticMapImage
                 default:
                     Rectangle()
-                        .fill(Color.gray.opacity(0.1))
+                        .fill(Color(.systemFill))
                         .overlay { ProgressView() }
                 }
             }
@@ -184,7 +184,7 @@ struct LocationRow: View {
                     mapPlaceholder
                 default:
                     Rectangle()
-                        .fill(Color.gray.opacity(0.1))
+                        .fill(Color(.systemFill))
                         .overlay { ProgressView() }
                 }
             }
@@ -195,21 +195,21 @@ struct LocationRow: View {
 
     private var photoErrorPlaceholder: some View {
         Rectangle()
-            .fill(Color.gray.opacity(0.1))
+            .fill(Color(.systemFill))
             .overlay {
                 Image(systemName: "photo")
                     .font(.title2)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
             }
     }
 
     private var mapPlaceholder: some View {
         Rectangle()
-            .fill(Color.gray.opacity(0.1))
+            .fill(Color(.systemFill))
             .overlay {
                 Image(systemName: "map")
                     .font(.title2)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
             }
     }
 

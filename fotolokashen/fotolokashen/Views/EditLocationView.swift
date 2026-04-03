@@ -137,8 +137,8 @@ struct EditLocationView: View {
                                         .font(.caption)
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 5)
-                                        .background(Color.blue.opacity(0.15))
-                                        .foregroundColor(.blue)
+                                        .background(Color.brand.opacity(0.15))
+                                        .foregroundColor(.brand)
                                         .clipShape(Capsule())
                                 }
                             }
@@ -168,7 +168,7 @@ struct EditLocationView: View {
                         Button("Clear Rating") {
                             personalRating = 0
                         }
-                        .foregroundColor(.red)
+                        .foregroundColor(.destructive)
                         .font(.caption)
                     }
                 } header: {
@@ -203,7 +203,7 @@ struct EditLocationView: View {
                                             .frame(width: 60, height: 60)
                                             .overlay {
                                                 Image(systemName: "photo")
-                                                    .foregroundColor(.gray)
+                                                    .foregroundColor(.secondary)
                                             }
                                     }
                                 }
@@ -218,8 +218,8 @@ struct EditLocationView: View {
                                             .font(.caption2)
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 2)
-                                            .background(Color.blue.opacity(0.2))
-                                            .foregroundColor(.blue)
+                                            .background(Color.brand.opacity(0.2))
+                                            .foregroundColor(.brand)
                                             .clipShape(Capsule())
                                     }
                                 }
@@ -229,14 +229,14 @@ struct EditLocationView: View {
                                 if photosToDelete.contains(photo.id) {
                                     Text("Marked for deletion")
                                         .font(.caption2)
-                                        .foregroundColor(.red)
+                                        .foregroundColor(.destructive)
                                 } else {
                                     Button {
                                         photoToDeleteId = photo.id
                                         showingDeletePhotoConfirmation = true
                                     } label: {
                                         Image(systemName: "trash")
-                                            .foregroundColor(.red)
+                                            .foregroundColor(.destructive)
                                     }
                                     .buttonStyle(.borderless)
                                 }
@@ -246,10 +246,10 @@ struct EditLocationView: View {
                         if !photosToDelete.isEmpty {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle")
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(.warning)
                                 Text("\(photosToDelete.count) photo(s) will be deleted on save")
                                     .font(.caption)
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(.warning)
                             }
 
                             Button("Undo All Photo Deletions") {

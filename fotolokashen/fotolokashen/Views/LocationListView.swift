@@ -232,7 +232,7 @@ struct LocationListView: View {
         VStack(spacing: 20) {
             Image(systemName: searchText.isEmpty ? "mappin.slash" : "magnifyingglass")
                 .font(.system(size: 60))
-                .foregroundColor(.gray)
+                .foregroundColor(.secondary)
             
             Text(searchText.isEmpty ? "No Locations Yet" : "No Results")
                 .font(.title2)
@@ -250,7 +250,7 @@ struct LocationListView: View {
                     Text("Use the Capture tab below")
                 }
                 .font(.headline)
-                .foregroundColor(.blue)
+                .foregroundColor(.brand)
                 .padding(.top)
             }
         }
@@ -281,27 +281,27 @@ struct SkeletonLocationRow: View {
         VStack(alignment: .leading, spacing: 0) {
             // Skeleton photo area
             RoundedRectangle(cornerRadius: 0)
-                .fill(Color.gray.opacity(0.2))
+                .fill(Color(.systemFill))
                 .frame(height: 180)
                 .shimmer(isAnimating: isAnimating)
 
             VStack(alignment: .leading, spacing: 8) {
                 // Skeleton name
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.gray.opacity(0.2))
+                    .fill(Color(.systemFill))
                     .frame(width: 180, height: 18)
                     .shimmer(isAnimating: isAnimating)
                 
                 // Skeleton address
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.gray.opacity(0.2))
+                    .fill(Color(.systemFill))
                     .frame(width: 220, height: 14)
                     .shimmer(isAnimating: isAnimating)
 
                 // Skeleton bottom row
                 HStack {
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(Color(.systemFill))
                         .frame(width: 40, height: 12)
                         .shimmer(isAnimating: isAnimating)
                     Spacer()

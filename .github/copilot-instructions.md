@@ -54,7 +54,62 @@ You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first 
 - Models: Singular nouns in `Models/` directory
 - Views: `XxxView.swift` suffix
 
-### 5. Debug Logging Pattern
+### 5. Style Guide (ENFORCED — do not bypass)
+
+#### Color — Semantic Tokens Only
+
+**Never use hardcoded SwiftUI color literals** (`.red`, `.blue`, `.green`, `.orange`, `.gray`) for semantic intent. Always use the centralized tokens defined in `Services/AppColors.swift`:
+
+| Intent                | Token              | Usage                            | Web equivalent      |
+| --------------------- | ------------------ | -------------------------------- | ------------------- |
+| Brand / interactive   | `Color.brand`      | `.foregroundColor(.brand)`       | `primary`           |
+| Brand pressed/active  | `Color.brandDark`  | `.background(Color.brandDark)`   | `primary` (darker)  |
+| Error / delete        | `Color.destructive`| `.foregroundColor(.destructive)` | `destructive`       |
+| Success / confirm     | `Color.success`    | `.foregroundColor(.success)`     | `success`           |
+| Warning / caution     | `Color.warning`    | `.foregroundColor(.warning)`     | `warning`           |
+| Social / follow       | `Color.social`     | `.foregroundColor(.social)`      | `social`            |
+
+**System-adaptive colors** (use SwiftUI/UIKit built-ins, do NOT hardcode):
+
+| Intent                 | iOS Token                            | Web equivalent      |
+| ---------------------- | ------------------------------------ | ------------------- |
+| Primary text           | `.primary` (SwiftUI)                 | `foreground`        |
+| Secondary / muted text | `.secondary` (SwiftUI)               | `muted-foreground`  |
+| Page background        | `Color(.systemBackground)`           | `background`        |
+| Card surface           | `Color(.secondarySystemBackground)`  | `card`              |
+| Muted background       | `Color(.systemGray6)`                | `muted`             |
+| Borders                | `Color(.separator)`                  | `border`            |
+| Subtle fill            | `Color(.systemFill)`                 | `bg-muted`          |
+
+**Backward compatibility**: `Color.brandPurple` and `Color.brandPurpleDark` exist as aliases in `ContentView.swift` — they point to `Color.brand` and `Color.brandDark`. New code should use `.brand` / `.brandDark` directly.
+
+**Exceptions** (hardcoded colors permitted):
+
+- **CameraView.swift**: `.yellow` (focus square), `.green/.red` (GPS status indicator) — contextual camera UI
+- **EditLocationView.swift**: `.tint(.yellow)` (star rating), `.tint(.green)` (permanent toggle), `.tint(.blue)` (date picker) — iOS system tint conventions
+- **LocationTypeColors.swift**: 15 location-type colors — brand identity, not UI chrome
+
+#### Typography
+
+SwiftUI Dynamic Type maps to the web app typography system — let the system handle sizing:
+
+| SwiftUI style   | Web equivalent | Use for                     |
+| --------------- | -------------- | --------------------------- |
+| `.title2`       | `h1`           | Page titles                 |
+| `.headline`     | `h2`           | Section headers             |
+| `.subheadline`  | `h3` / `p`     | Sub-sections, body text     |
+| `.caption`      | `small`        | Metadata, timestamps        |
+| `.footnote`     | `small`        | Tertiary info               |
+
+**Do NOT hardcode font sizes** (`.font(.system(size: 14))`). Use Dynamic Type styles (`.font(.headline)`) so iOS accessibility scaling works automatically.
+
+#### Spacing
+
+- Use standard SwiftUI spacing values: 4, 8, 12, 16, 20, 24, 32
+- `cornerRadius`: 8 (cards/inputs), 12 (larger panels), 20+ (pills/badges)
+- Prefer `.padding()` defaults over custom values when the default looks right
+
+### 6. Debug Logging Pattern
 
 ```swift
 #if DEBUG
@@ -101,6 +156,7 @@ fotolokashen-ios/
 │   │   │   ├── ProfileView.swift        # Profile editing with avatar/banner upload + social stats
 │   │   │   └── SettingsView.swift       # Privacy controls, account info, logout
 │   │   ├── Services/
+│   │   │   ├── AppColors.swift          # Centralized semantic color tokens (brand, destructive, etc.)
 │   │   │   ├── AppIcons.swift           # Centralized SF Symbol icon names (45+ constants)
 │   │   │   ├── LocationStore.swift      # Singleton shared state (@MainActor), mapFocusLocation
 │   │   │   ├── LocationTypeColors.swift # 15 type→color/icon mappings
