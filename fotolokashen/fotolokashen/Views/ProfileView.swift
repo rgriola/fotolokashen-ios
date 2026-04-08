@@ -133,16 +133,38 @@ struct ProfileView: View {
     private var profileHeader: some View {
         ZStack(alignment: .bottomLeading) {
             // Banner
-            bannerView
-                .frame(maxWidth: .infinity)
-                .frame(height: 120)
-                .clipped()
+            ProfileBannerView(
+                bannerURL: authService.currentUser?.bannerURL,
+                hasBannerImage: authService.currentUser?.bannerImage != nil,
+                onEdit: nil,
+                onDelete: { showingDeleteBannerConfirm = true }
+            )
 
-            // Avatar
+            // Avatar + Edit banner button
             HStack(alignment: .bottom) {
-                avatarView
-                    .offset(y: 24)
-                    .padding(.leading, 16)
+                ProfileAvatarView(
+                    avatarURL: authService.currentUser?.avatarURL,
+                    initials: authService.currentUser?.initials ?? "?",
+                    onEdit: { showingAvatarPicker = true },
+                    editMenuContent: {
+                        Group {
+                            if authService.currentUser?.avatar != nil {
+                                Button(role: .destructive) {
+                                    showingDeleteAvatarConfirm = true
+                                } label: {
+                                    Label("Remove Avatar", systemImage: "trash")
+                                }
+                            }
+                            Button {
+                                showingAvatarPicker = true
+                            } label: {
+                                Label("Change Avatar", systemImage: "camera")
+                            }
+                        }
+                    }
+                )
+                .offset(y: 24)
+                .padding(.leading, 16)
 
                 Spacer()
 
@@ -164,146 +186,6 @@ struct ProfileView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.bottom, 28)
-    }
-
-    private var bannerView: some View {
-        Group {
-            if let bannerURL = authService.currentUser?.bannerURL {
-                AsyncImage(url: bannerURL) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 120)
-                            .clipped()
-                    case .failure:
-                        bannerPlaceholder
-                    default:
-                        bannerPlaceholder
-                            .overlay(ProgressView())
-                    }
-                }
-            } else {
-                bannerPlaceholder
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if authService.currentUser?.bannerImage != nil {
-                Button {
-                    showingDeleteBannerConfirm = true
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .foregroundColor(.white)
-                        .shadow(radius: 2)
-                        .padding(8)
-                }
-            }
-        }
-    }
-
-    private var bannerPlaceholder: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [.brandPurple.opacity(0.6), .brandPurple.opacity(0.3)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .frame(height: 120)
-    }
-
-    private var avatarView: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Group {
-                if let avatarURL = authService.currentUser?.avatarURL {
-                    #if DEBUG
-                    let _ = {
-                        if ConfigLoader.shared.enableDebugLogging {
-                            print("[ProfileView] Avatar URL: \(avatarURL.absoluteString)")
-                            print("[ProfileView] Avatar string: \(authService.currentUser?.avatar ?? "nil")")
-                        }
-                    }()
-                    #endif
-                    AsyncImage(url: avatarURL) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 68, height: 68)
-                                .clipped()
-                        case .failure(let error):
-                            #if DEBUG
-                            let _ = {
-                                if ConfigLoader.shared.enableDebugLogging {
-                                    print("[ProfileView] Avatar load failed: \(error)")
-                                }
-                            }()
-                            #endif
-                            avatarPlaceholder
-                        default:
-                            avatarPlaceholder
-                                .overlay(ProgressView())
-                        }
-                    }
-                } else {
-                    #if DEBUG
-                    let _ = {
-                        if ConfigLoader.shared.enableDebugLogging {
-                            print("[ProfileView] No avatar URL - avatar field: \(authService.currentUser?.avatar ?? "nil")")
-                        }
-                    }()
-                    #endif
-                    avatarPlaceholder
-                }
-            }
-            .frame(width: 68, height: 68)
-            .clipShape(Circle())
-            .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 3))
-
-            // Camera button overlay
-            Button {
-                showingAvatarPicker = true
-            } label: {
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.white)
-                    .padding(5)
-                    .background(Color.brandPurple)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
-            }
-            .offset(x: 2, y: 2)
-        }
-        .contextMenu {
-            if authService.currentUser?.avatar != nil {
-                Button(role: .destructive) {
-                    showingDeleteAvatarConfirm = true
-                } label: {
-                    Label("Remove Avatar", systemImage: "trash")
-                }
-            }
-            Button {
-                showingAvatarPicker = true
-            } label: {
-                Label("Change Avatar", systemImage: "camera")
-            }
-        }
-    }
-
-    private var avatarPlaceholder: some View {
-        Circle()
-            .fill(Color.brandPurple)
-            .frame(width: 68, height: 68)
-            .overlay(
-                Text(authService.currentUser?.initials ?? "?")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-            )
     }
 
     // MARK: - Profile Info Section
@@ -339,15 +221,7 @@ struct ProfileView: View {
             Button {
                 showFollowers = true
             } label: {
-                VStack(spacing: 2) {
-                    Text("\(followersCount)")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    Text("Followers")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
+                ProfileStatItem(count: followersCount, label: "Followers")
             }
             .buttonStyle(.plain)
             
@@ -362,15 +236,7 @@ struct ProfileView: View {
             Button {
                 showFollowing = true
             } label: {
-                VStack(spacing: 2) {
-                    Text("\(followingCount)")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    Text("Following")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
+                ProfileStatItem(count: followingCount, label: "Following")
             }
             .buttonStyle(.plain)
             
@@ -578,83 +444,6 @@ struct ProfileView: View {
         } catch {
             errorText = error.localizedDescription
             showingError = true
-        }
-    }
-}
-
-// MARK: - Helper Views
-
-struct FormField: View {
-    let label: String
-    @Binding var text: String
-    var placeholder: String = ""
-    var isMultiline: Bool = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            if isMultiline {
-                TextEditor(text: $text)
-                    .frame(minHeight: 80, maxHeight: 120)
-                    .padding(4)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(.systemGray4), lineWidth: 1)
-                    )
-            } else {
-                TextField(placeholder, text: $text)
-                    .textFieldStyle(.roundedBorder)
-            }
-        }
-    }
-}
-
-// MARK: - Image Picker
-
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.delegate = context.coordinator
-        picker.allowsEditing = true
-        picker.sourceType = .photoLibrary
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
-
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-
-        func imagePickerController(
-            _ picker: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-        ) {
-            if let edited = info[.editedImage] as? UIImage {
-                parent.image = edited
-            } else if let original = info[.originalImage] as? UIImage {
-                parent.image = original
-            }
-            parent.dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
         }
     }
 }

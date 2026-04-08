@@ -97,70 +97,20 @@ struct PublicProfileView: View {
     private var headerSection: some View {
         ZStack(alignment: .bottomLeading) {
             // Banner
-            if let bannerURL = profile?.bannerURL {
-                AsyncImage(url: bannerURL) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color.brandPurple.opacity(0.3))
-                }
-                .frame(height: 120)
-                .clipped()
-            } else {
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.brandPurple.opacity(0.6), .brandPurple.opacity(0.3)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(height: 120)
-            }
+            ProfileBannerView(bannerURL: profile?.bannerURL)
 
             // Avatar
             HStack {
-                avatarView
-                    .offset(y: 24)
-                    .padding(.leading, 16)
+                ProfileAvatarView(
+                    avatarURL: profile?.avatarURL,
+                    initials: profile?.initials ?? String(username.prefix(1)).uppercased()
+                )
+                .offset(y: 24)
+                .padding(.leading, 16)
                 Spacer()
             }
         }
         .padding(.bottom, 28)
-    }
-
-    private var avatarView: some View {
-        Group {
-            if let avatarURL = profile?.avatarURL {
-                AsyncImage(url: avatarURL) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    initialsPlaceholder
-                }
-                .frame(width: 68, height: 68)
-                .clipShape(Circle())
-                .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 3))
-            } else {
-                initialsPlaceholder
-            }
-        }
-    }
-
-    private var initialsPlaceholder: some View {
-        Circle()
-            .fill(Color.brandPurple)
-            .frame(width: 68, height: 68)
-            .overlay(
-                Text(profile?.initials ?? String(username.prefix(1)).uppercased())
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-            )
-            .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 3))
     }
 
     // MARK: - Profile Info Section
@@ -208,7 +158,7 @@ struct PublicProfileView: View {
                 Button {
                     showFollowers = true
                 } label: {
-                    statItem(count: followersCount, label: "Followers")
+                    ProfileStatItem(count: followersCount, label: "Followers")
                 }
                 .buttonStyle(.plain)
 
@@ -223,7 +173,7 @@ struct PublicProfileView: View {
                 Button {
                     showFollowing = true
                 } label: {
-                    statItem(count: followingCount, label: "Following")
+                    ProfileStatItem(count: followingCount, label: "Following")
                 }
                 .buttonStyle(.plain)
 
@@ -235,7 +185,7 @@ struct PublicProfileView: View {
                 Spacer()
 
                 // Locations
-                statItem(count: profile?.publicLocationCount ?? 0, label: "Locations")
+                ProfileStatItem(count: profile?.publicLocationCount ?? 0, label: "Locations")
 
                 Spacer()
             }
@@ -247,17 +197,6 @@ struct PublicProfileView: View {
                 followButton
                     .padding(.horizontal, 16)
             }
-        }
-    }
-
-    private func statItem(count: Int, label: String) -> some View {
-        VStack(spacing: 2) {
-            Text("\(count)")
-                .font(.subheadline)
-                .fontWeight(.bold)
-            Text(label)
-                .font(.caption2)
-                .foregroundColor(.secondary)
         }
     }
 

@@ -60,26 +60,26 @@ You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first 
 
 **Never use hardcoded SwiftUI color literals** (`.red`, `.blue`, `.green`, `.orange`, `.gray`) for semantic intent. Always use the centralized tokens defined in `Services/AppColors.swift`:
 
-| Intent                | Token              | Usage                            | Web equivalent      |
-| --------------------- | ------------------ | -------------------------------- | ------------------- |
-| Brand / interactive   | `Color.brand`      | `.foregroundColor(.brand)`       | `primary`           |
-| Brand pressed/active  | `Color.brandDark`  | `.background(Color.brandDark)`   | `primary` (darker)  |
-| Error / delete        | `Color.destructive`| `.foregroundColor(.destructive)` | `destructive`       |
-| Success / confirm     | `Color.success`    | `.foregroundColor(.success)`     | `success`           |
-| Warning / caution     | `Color.warning`    | `.foregroundColor(.warning)`     | `warning`           |
-| Social / follow       | `Color.social`     | `.foregroundColor(.social)`      | `social`            |
+| Intent               | Token               | Usage                            | Web equivalent     |
+| -------------------- | ------------------- | -------------------------------- | ------------------ |
+| Brand / interactive  | `Color.brand`       | `.foregroundColor(.brand)`       | `primary`          |
+| Brand pressed/active | `Color.brandDark`   | `.background(Color.brandDark)`   | `primary` (darker) |
+| Error / delete       | `Color.destructive` | `.foregroundColor(.destructive)` | `destructive`      |
+| Success / confirm    | `Color.success`     | `.foregroundColor(.success)`     | `success`          |
+| Warning / caution    | `Color.warning`     | `.foregroundColor(.warning)`     | `warning`          |
+| Social / follow      | `Color.social`      | `.foregroundColor(.social)`      | `social`           |
 
 **System-adaptive colors** (use SwiftUI/UIKit built-ins, do NOT hardcode):
 
-| Intent                 | iOS Token                            | Web equivalent      |
-| ---------------------- | ------------------------------------ | ------------------- |
-| Primary text           | `.primary` (SwiftUI)                 | `foreground`        |
-| Secondary / muted text | `.secondary` (SwiftUI)               | `muted-foreground`  |
-| Page background        | `Color(.systemBackground)`           | `background`        |
-| Card surface           | `Color(.secondarySystemBackground)`  | `card`              |
-| Muted background       | `Color(.systemGray6)`                | `muted`             |
-| Borders                | `Color(.separator)`                  | `border`            |
-| Subtle fill            | `Color(.systemFill)`                 | `bg-muted`          |
+| Intent                 | iOS Token                           | Web equivalent     |
+| ---------------------- | ----------------------------------- | ------------------ |
+| Primary text           | `.primary` (SwiftUI)                | `foreground`       |
+| Secondary / muted text | `.secondary` (SwiftUI)              | `muted-foreground` |
+| Page background        | `Color(.systemBackground)`          | `background`       |
+| Card surface           | `Color(.secondarySystemBackground)` | `card`             |
+| Muted background       | `Color(.systemGray6)`               | `muted`            |
+| Borders                | `Color(.separator)`                 | `border`           |
+| Subtle fill            | `Color(.systemFill)`                | `bg-muted`         |
 
 **Backward compatibility**: `Color.brandPurple` and `Color.brandPurpleDark` exist as aliases in `ContentView.swift` — they point to `Color.brand` and `Color.brandDark`. New code should use `.brand` / `.brandDark` directly.
 
@@ -93,13 +93,13 @@ You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first 
 
 SwiftUI Dynamic Type maps to the web app typography system — let the system handle sizing:
 
-| SwiftUI style   | Web equivalent | Use for                     |
-| --------------- | -------------- | --------------------------- |
-| `.title2`       | `h1`           | Page titles                 |
-| `.headline`     | `h2`           | Section headers             |
-| `.subheadline`  | `h3` / `p`     | Sub-sections, body text     |
-| `.caption`      | `small`        | Metadata, timestamps        |
-| `.footnote`     | `small`        | Tertiary info               |
+| SwiftUI style  | Web equivalent | Use for                 |
+| -------------- | -------------- | ----------------------- |
+| `.title2`      | `h1`           | Page titles             |
+| `.headline`    | `h2`           | Section headers         |
+| `.subheadline` | `h3` / `p`     | Sub-sections, body text |
+| `.caption`     | `small`        | Metadata, timestamps    |
+| `.footnote`    | `small`        | Tertiary info           |
 
 **Do NOT hardcode font sizes** (`.font(.system(size: 14))`). Use Dynamic Type styles (`.font(.headline)`) so iOS accessibility scaling works automatically.
 

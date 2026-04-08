@@ -4,40 +4,10 @@
 //
 //  Created by Rodolfo Cesarotti on 1/16/26.
 //
-//  ============================================================================
 //  UNIFIED LOCATION DETAIL VIEW
-//  ============================================================================
+//  Two modes: Owner (editable) and Read-only (viewing someone else's public location)
+//  See copilot-instructions.md for usage patterns and initializer documentation.
 //
-//  This view handles TWO modes of displaying location details:
-//
-//  1. OWNER MODE (isReadOnly = false):
-//     - User is viewing their OWN saved location
-//     - Shows edit button in toolbar → opens EditLocationView
-//     - Shows visibility control (Public/Unlisted/Private dropdown)
-//     - Full production details (notes, entry point, parking, access, etc.)
-//     - Photos loaded from `/api/locations/{id}/photos` endpoint
-//     - Location ID shown at bottom for support
-//
-//  2. READ-ONLY MODE (isReadOnly = true):
-//     - User is viewing SOMEONE ELSE's public location (from PublicProfileView)
-//     - NO edit button, NO visibility control
-//     - Shows "Saved by" section with owner avatar + username
-//     - Photos inline from SocialLocation model (no additional API call)
-//     - Share button generates URL to owner's public profile page
-//
-//  HOW TO USE:
-//  -----------
-//  // Owner mode (user's own location):
-//  LocationDetailView(location: myLocation)
-//
-//  // Read-only mode (viewing someone else's location):
-//  LocationDetailView(
-//      socialLocation: socialLoc,
-//      ownerUsername: "johndoe",
-//      ownerDisplayName: "John Doe"
-//  )
-//
-//  ============================================================================
 
 import SwiftUI
 import CoreLocation
@@ -170,19 +140,17 @@ struct LocationDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
 
-                // =============================================================
                 // Photo Gallery with type badge overlay
-                // Shows photos in a swipeable TabView
-                // =============================================================
-                ZStack(alignment: .topLeading) {
-                    photoGallerySection
-
-                    // Type badge (category like BROLL, STORY, etc.)
-                    if let type = currentLocation.type, !type.isEmpty {
-                        typeBadge(type: type)
-                            .padding(12)
-                    }
-                }
+                PhotoGallerySection(
+                    photos: photos,
+                    isLoading: isLoadingPhotos,
+                    locationType: currentLocation.type,
+                    latitude: currentLocation.latitude,
+                    longitude: currentLocation.longitude,
+                    isConnected: networkMonitor.isConnected,
+                    selectedPhotoIndex: $selectedPhotoIndex,
+                    showingFullScreenGallery: $showingFullScreenGallery
+                )
 
                 // =============================================================
                 // Main Content
@@ -330,102 +298,7 @@ struct LocationDetailView: View {
         }
     }
 
-    // =========================================================================
-    // MARK: - Photo Gallery Section
-    // =========================================================================
 
-    /// Displays photos in a swipeable gallery, or falls back to map/placeholder
-    @ViewBuilder
-    private var photoGallerySection: some View {
-        if isLoadingPhotos {
-            // Loading state - show progress indicator
-            ZStack {
-                Rectangle()
-                    .fill(Color(.systemGray5))
-                    .frame(height: 300)
-                ProgressView()
-                    .scaleEffect(1.5)
-            }
-        } else if !photos.isEmpty {
-            // Photo gallery - swipeable TabView
-            TabView(selection: $selectedPhotoIndex) {
-                ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
-                    AsyncImage(url: URL(string: photo.url)) { phase in
-                        switch phase {
-                        case .empty:
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color(.systemGray5))
-                                ProgressView()
-                            }
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                                .onTapGesture {
-                                    selectedPhotoIndex = index
-                                    showingFullScreenGallery = true
-                                }
-                        case .failure:
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color(.systemGray5))
-                                Image(systemName: "photo")
-                                    .font(.largeTitle)
-                                    .foregroundColor(Color(.tertiaryLabel))
-                            }
-                        @unknown default:
-                            EmptyView()
-                        }
-                    }
-                    .tag(index)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .automatic))
-            .frame(height: 300)
-            .clipped()
-
-            // Photo counter badge
-            HStack {
-                Spacer()
-                Text("\(selectedPhotoIndex + 1) / \(photos.count)")
-                    .font(.caption)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-            }
-            .padding(.horizontal)
-            .padding(.top, -35)
-            .padding(.bottom, 10)
-        } else if networkMonitor.isConnected {
-            // No photos - show Google Maps static image
-            googleMapsStaticImageSection
-        } else {
-            // Offline - show placeholder
-            offlinePlaceholder
-        }
-    }
-
-    // =========================================================================
-    // MARK: - Type Badge
-    // =========================================================================
-
-    /// Badge showing the location type (BROLL, STORY, etc.)
-    private func typeBadge(type: String) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: LocationTypeColors.icon(for: type))
-                .font(.caption)
-            Text(type)
-                .font(.caption)
-                .fontWeight(.semibold)
-        }
-        .foregroundColor(.white)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(LocationTypeColors.color(for: type))
-        .clipShape(Capsule())
-    }
 
     // =========================================================================
     // MARK: - Location Header Section
@@ -660,77 +533,7 @@ struct LocationDetailView: View {
         }
     }
 
-    // =========================================================================
-    // MARK: - Google Maps Static Image (Fallback when no photos)
-    // =========================================================================
 
-    private var googleMapsStaticImageSection: some View {
-        let apiKey = ConfigLoader.shared.googleMapsAPIKey
-        let mapUrl = "https://maps.googleapis.com/maps/api/staticmap?center=\(currentLocation.latitude),\(currentLocation.longitude)&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C\(currentLocation.latitude),\(currentLocation.longitude)&key=\(apiKey)"
-
-        return AsyncImage(url: URL(string: mapUrl)) { phase in
-            switch phase {
-            case .empty:
-                ZStack {
-                    Rectangle()
-                        .fill(Color(.systemGray5))
-                        .frame(height: 200)
-                    ProgressView()
-                }
-            case .success(let image):
-                image
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 200)
-                    .clipped()
-                    .overlay(
-                        VStack {
-                            Spacer()
-                            HStack {
-                                Image(systemName: "photo.badge.exclamationmark")
-                                Text("No photos available")
-                            }
-                            .font(.caption)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Capsule())
-                            .padding(.bottom, 8)
-                        }
-                    )
-            case .failure:
-                offlinePlaceholder
-            @unknown default:
-                EmptyView()
-            }
-        }
-    }
-
-    // =========================================================================
-    // MARK: - Offline Placeholder
-    // =========================================================================
-
-    private var offlinePlaceholder: some View {
-        ZStack {
-            Rectangle()
-                .fill(Color(.systemGray6))
-                .frame(height: 200)
-
-            VStack(spacing: 12) {
-                Image(systemName: "wifi.slash")
-                    .font(.system(size: 40))
-                    .foregroundColor(.secondary)
-
-                Text("No connection")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-
-                Text("Photos will load when online")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
 
     // =========================================================================
     // MARK: - Data Loading
@@ -744,23 +547,7 @@ struct LocationDetailView: View {
             // Read-only mode: use inline photos from SocialLocation
             if !inlinePhotos.isEmpty {
                 await MainActor.run {
-                    self.photos = inlinePhotos.map { photo in
-                        DetailPhoto(
-                            id: photo.id,
-                            imagekitFilePath: photo.imagekitFilePath,
-                            url: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)",
-                            thumbnailUrl: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)?tr=w-400,h-400",
-                            caption: nil,
-                            width: nil,
-                            height: nil,
-                            uploadedAt: nil,
-                            gpsLatitude: nil,
-                            gpsLongitude: nil,
-                            isPrimary: photo.isPrimary,
-                            fileSize: nil,
-                            mimeType: nil
-                        )
-                    }
+                    self.photos = DetailPhoto.fromLocationPhotos(inlinePhotos)
                     self.isLoadingPhotos = false
                 }
             } else if let username = ownerUsername, !username.isEmpty {
@@ -786,24 +573,7 @@ struct LocationDetailView: View {
                 print("[LocationDetailView] Failed to load photos: \(error)")
                 #endif
                 await MainActor.run {
-                    // Use embedded photos as fallback
-                    self.photos = (currentLocation.photos ?? []).map { photo in
-                        DetailPhoto(
-                            id: photo.id,
-                            imagekitFilePath: photo.imagekitFilePath,
-                            url: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)",
-                            thumbnailUrl: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)?tr=w-400,h-400",
-                            caption: nil,
-                            width: nil,
-                            height: nil,
-                            uploadedAt: nil,
-                            gpsLatitude: nil,
-                            gpsLongitude: nil,
-                            isPrimary: photo.isPrimary,
-                            fileSize: nil,
-                            mimeType: nil
-                        )
-                    }
+                    self.photos = DetailPhoto.fromLocationPhotos(currentLocation.photos ?? [])
                     self.isLoadingPhotos = false
                 }
             }
@@ -822,25 +592,8 @@ struct LocationDetailView: View {
             // Find the matching location by ID
             let locationId = socialLocationId ?? currentLocation.id
             if let matchingLocation = response.locations.first(where: { $0.location.id == locationId }) {
-                let fetchedPhotos = matchingLocation.location.photos ?? []
                 await MainActor.run {
-                    self.photos = fetchedPhotos.map { photo in
-                        DetailPhoto(
-                            id: photo.id,
-                            imagekitFilePath: photo.imagekitFilePath,
-                            url: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)",
-                            thumbnailUrl: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)?tr=w-400,h-400",
-                            caption: nil,
-                            width: nil,
-                            height: nil,
-                            uploadedAt: nil,
-                            gpsLatitude: nil,
-                            gpsLongitude: nil,
-                            isPrimary: photo.isPrimary,
-                            fileSize: nil,
-                            mimeType: nil
-                        )
-                    }
+                    self.photos = DetailPhoto.fromLocationPhotos(matchingLocation.location.photos ?? [])
                     self.isLoadingPhotos = false
                 }
             } else {
@@ -995,150 +748,6 @@ struct LocationDetailView: View {
         dismiss()
         // Navigate to Map tab
         NotificationCenter.default.post(name: .navigateToMapTab, object: nil)
-    }
-}
-
-// MARK: - Supporting Types
-
-/// Response from /api/locations/{id}/photos
-struct PhotosResponse: Codable {
-    let photos: [DetailPhoto]
-    let pagination: PhotoPagination?
-}
-
-struct PhotoPagination: Codable {
-    let page: Int
-    let limit: Int
-    let total: Int
-    let totalPages: Int
-}
-
-/// Detailed photo information from API
-struct DetailPhoto: Codable, Identifiable {
-    let id: Int
-    let imagekitFilePath: String
-    let url: String
-    let thumbnailUrl: String
-    let caption: String?
-    let width: Int?
-    let height: Int?
-    let uploadedAt: String?
-    let gpsLatitude: Double?
-    let gpsLongitude: Double?
-    let isPrimary: Bool?
-    let fileSize: Int?
-    let mimeType: String?
-}
-
-// MARK: - Section Header Component
-
-struct SectionHeader: View {
-    let title: String
-    let icon: String
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(.brandPurple)
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-        }
-        .padding(.top, 4)
-    }
-}
-
-// MARK: - Detail Row Component
-
-struct DetailRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack(alignment: .top) {
-            Text(label)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .frame(width: 120, alignment: .leading)
-            Text(value)
-                .font(.subheadline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-}
-
-// MARK: - Full Screen Photo Gallery
-
-struct PhotoGalleryFullScreen: View {
-    let photos: [DetailPhoto]
-    @Binding var selectedIndex: Int
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-
-            TabView(selection: $selectedIndex) {
-                ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
-                    AsyncImage(url: URL(string: photo.url)) { phase in
-                        switch phase {
-                        case .empty:
-                            ProgressView()
-                                .tint(.white)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFit()
-                        case .failure:
-                            Image(systemName: "photo")
-                                .font(.largeTitle)
-                                .foregroundColor(.white)
-                        @unknown default:
-                            EmptyView()
-                        }
-                    }
-                    .tag(index)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .automatic))
-
-            // Close button
-            VStack {
-                HStack {
-                    Spacer()
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title)
-                            .foregroundColor(.white)
-                            .padding()
-                    }
-                }
-                Spacer()
-
-                // Photo info
-                if !photos.isEmpty && selectedIndex < photos.count {
-                    let photo = photos[selectedIndex]
-                    VStack(spacing: 4) {
-                        Text("\(selectedIndex + 1) of \(photos.count)")
-                            .font(.headline)
-                            .foregroundColor(.white)
-
-                        if let caption = photo.caption, !caption.isEmpty {
-                            Text(caption)
-                                .font(.subheadline)
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                    }
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .padding(.bottom, 40)
-                }
-            }
-        }
     }
 }
 
