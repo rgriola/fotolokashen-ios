@@ -16,6 +16,10 @@ class DeepLinkManager: ObservableObject {
     /// Error message if deep link resolution fails.
     @Published var deepLinkError: String?
 
+    /// Set when the user verified their email from the iOS registration flow.
+    /// Observe this to auto-present the login screen after email verification.
+    @Published var emailVerified = false
+
     private init() {}
 
     // MARK: - URL Handling
@@ -33,6 +37,16 @@ class DeepLinkManager: ObservableObject {
         if url.scheme == "fotolokashen" {
             if url.host == "location", let idString = url.pathComponents.last, let id = Int(idString) {
                 navigateToLocation(id: id)
+                return true
+            }
+            // Email verification redirect from web → app
+            if url.host == "email-verified" {
+                #if DEBUG
+                if ConfigLoader.shared.enableDebugLogging {
+                    print("[DeepLink] Email verified — returning user to app")
+                }
+                #endif
+                emailVerified = true
                 return true
             }
             // OAuth callback — not a deep link
