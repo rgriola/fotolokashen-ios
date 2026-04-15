@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import AuthenticationServices
 
 /// Authentication service managing OAuth2 PKCE flow
 @MainActor
@@ -22,6 +23,10 @@ class AuthService: ObservableObject {
     // PKCE state
     private var codeVerifier: String?
     private var codeChallenge: String?
+    
+    // ASWebAuthenticationSession (retained to keep the session alive)
+    private var webAuthSession: ASWebAuthenticationSession?
+    private let presentationContextProvider = AuthPresentationContextProvider()
     
     // MARK: - Initialization
     
@@ -130,7 +135,7 @@ class AuthService: ObservableObject {
     
     // MARK: - OAuth Login
     
-    /// Start OAuth login flow by opening Safari
+    /// Start OAuth login flow via in-app browser (ASWebAuthenticationSession)
     func startLogin() {
         // Generate PKCE
         let (verifier, challenge) = PKCEGenerator.generate()
@@ -163,12 +168,107 @@ class AuthService: ObservableObject {
         
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Opening Safari: \(loginURL.absoluteString)")
+            print("[AuthService] Opening in-app browser: \(loginURL.absoluteString)")
         }
         #endif
         
-        // Open Safari for login
-        UIApplication.shared.open(loginURL)
+        startWebAuthSession(url: loginURL)
+    }
+    
+    /// Start OAuth registration flow via in-app browser (ASWebAuthenticationSession)
+    func startRegistration() {
+        // Generate PKCE (user will register, then login in the same browser session)
+        let (verifier, challenge) = PKCEGenerator.generate()
+        self.codeVerifier = verifier
+        self.codeChallenge = challenge
+        
+        #if DEBUG
+        if config.enableDebugLogging {
+            print("[AuthService] Starting registration flow")
+        }
+        #endif
+        
+        // Build register URL with OAuth parameters
+        var components = URLComponents(url: config.backendURL, resolvingAgainstBaseURL: false)!
+        components.path = "/register"
+        components.queryItems = [
+            URLQueryItem(name: "client_id", value: config.oauthClientId),
+            URLQueryItem(name: "redirect_uri", value: config.oauthRedirectUri),
+            URLQueryItem(name: "code_challenge", value: challenge),
+            URLQueryItem(name: "code_challenge_method", value: "S256"),
+            URLQueryItem(name: "scope", value: config.oauthScopesString),
+            URLQueryItem(name: "response_type", value: "code")
+        ]
+        
+        guard let registerURL = components.url else {
+            errorMessage = "Failed to build registration URL"
+            return
+        }
+        
+        #if DEBUG
+        if config.enableDebugLogging {
+            print("[AuthService] Opening in-app browser for registration: \(registerURL.absoluteString)")
+        }
+        #endif
+        
+        startWebAuthSession(url: registerURL)
+    }
+    
+    /// Present ASWebAuthenticationSession for OAuth flow (login or registration)
+    private func startWebAuthSession(url: URL) {
+        isLoading = true
+        errorMessage = nil
+        
+        let session = ASWebAuthenticationSession(
+            url: url,
+            callbackURLScheme: "fotolokashen"
+        ) { [weak self] callbackURL, error in
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+                self.webAuthSession = nil
+                
+                if let error = error as? ASWebAuthenticationSessionError,
+                   error.code == .canceledLogin {
+                    // User dismissed the browser — not an error
+                    self.isLoading = false
+                    #if DEBUG
+                    if self.config.enableDebugLogging {
+                        print("[AuthService] User cancelled authentication")
+                    }
+                    #endif
+                    return
+                }
+                
+                if let error = error {
+                    self.isLoading = false
+                    self.errorMessage = error.localizedDescription
+                    #if DEBUG
+                    if self.config.enableDebugLogging {
+                        print("[AuthService] ASWebAuthenticationSession error: \(error)")
+                    }
+                    #endif
+                    return
+                }
+                
+                guard let callbackURL = callbackURL else {
+                    self.isLoading = false
+                    self.errorMessage = "No callback URL received"
+                    return
+                }
+                
+                await self.handleCallback(url: callbackURL)
+            }
+        }
+        
+        session.presentationContextProvider = presentationContextProvider
+        session.prefersEphemeralWebBrowserSession = false
+        
+        webAuthSession = session
+        
+        if !session.start() {
+            isLoading = false
+            errorMessage = "Failed to start authentication session"
+        }
     }
     
     /// Handle OAuth callback with authorization code
@@ -470,5 +570,18 @@ enum AuthError: Error, LocalizedError {
         case .authorizationFailed:
             return "Authorization failed"
         }
+    }
+}
+
+// MARK: - ASWebAuthenticationSession Presentation Context
+
+/// Provides the window anchor for ASWebAuthenticationSession
+class AuthPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first(where: { $0.isKeyWindow }) else {
+            return ASPresentationAnchor()
+        }
+        return window
     }
 }

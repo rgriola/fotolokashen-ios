@@ -143,6 +143,34 @@ class UserService: ObservableObject {
         #endif
     }
 
+    // MARK: - Account Deletion
+
+    /// Permanently delete the authenticated user's account via DELETE /api/auth/delete-account
+    /// Server deletes all user data (locations, photos, follows, sessions)
+    func deleteAccount() async throws {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            let _: SuccessResponse = try await apiClient.delete("/api/auth/delete-account")
+
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[UserService] Account deleted successfully")
+            }
+            #endif
+        } catch {
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[UserService] Account deletion failed: \(error)")
+            }
+            #endif
+            errorMessage = error.localizedDescription
+            throw error
+        }
+    }
+
     // MARK: - Banner Upload
 
     /// Upload banner image via POST /api/auth/banner (FormData)

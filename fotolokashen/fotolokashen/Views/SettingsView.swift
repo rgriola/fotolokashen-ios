@@ -19,6 +19,8 @@ struct SettingsView: View {
     @State private var showingError = false
     @State private var errorText = ""
     @State private var showingLogoutConfirmation = false
+    @State private var showingDeleteAccountConfirmation = false
+    @State private var isDeletingAccount = false
 
     private let visibilityOptions = ["public", "followers", "private"]
 
@@ -36,6 +38,9 @@ struct SettingsView: View {
 
                 // Logout
                 logoutSection
+
+                // Delete account
+                deleteAccountSection
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -71,6 +76,14 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("Are you sure you want to logout?")
+            }
+            .alert("Delete Account", isPresented: $showingDeleteAccountConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete Permanently", role: .destructive) {
+                    Task { await deleteAccount() }
+                }
+            } message: {
+                Text("Your account, all locations, photos, and data will be permanently removed. This cannot be undone.")
             }
         }
     }
@@ -156,6 +169,31 @@ struct SettingsView: View {
         }
     }
 
+    private var deleteAccountSection: some View {
+        Section {
+            Button(role: .destructive) {
+                showingDeleteAccountConfirmation = true
+            } label: {
+                HStack {
+                    Spacer()
+                    if isDeletingAccount {
+                        ProgressView()
+                            .padding(.trailing, 8)
+                        Text("Deleting Account...")
+                    } else {
+                        Label("Delete Account", systemImage: AppIcons.delete)
+                    }
+                    Spacer()
+                }
+            }
+            .disabled(isDeletingAccount)
+        } footer: {
+            Text("Permanently deletes your account and all associated data. This action cannot be undone.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     // MARK: - Helpers
 
     private func loadPrivacyData() {
@@ -191,6 +229,22 @@ struct SettingsView: View {
             hasChanges = false
             showingSaveSuccess = true
         } catch {
+            errorText = error.localizedDescription
+            showingError = true
+        }
+    }
+
+    private func deleteAccount() async {
+        isDeletingAccount = true
+        do {
+            try await UserService.shared.deleteAccount()
+            // Clear all local state
+            LocationStore.shared.clear()
+            try? KeychainService.shared.clearTokens()
+            authService.isAuthenticated = false
+            authService.currentUser = nil
+        } catch {
+            isDeletingAccount = false
             errorText = error.localizedDescription
             showingError = true
         }

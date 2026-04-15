@@ -67,7 +67,7 @@ struct LoginView: View {
                                     .progressViewStyle(CircularProgressViewStyle(tint: .brandPurple))
                             } else {
                                 Image(systemName: "person.circle.fill")
-                                Text("Login with Safari")
+                                Text("Sign In")
                             }
                         }
                         .font(.headline)
@@ -79,7 +79,27 @@ struct LoginView: View {
                     }
                     .disabled(authService.isLoading)
                     
-                    Text("Opens Safari for secure login")
+                    Button(action: {
+                        authService.startRegistration()
+                    }) {
+                        HStack {
+                            Image(systemName: "person.badge.plus")
+                            Text("Create Account")
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white.opacity(0.2))
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                        )
+                    }
+                    .disabled(authService.isLoading)
+                    
+                    Text("Secure sign-in via fotolokashen.com")
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.7))
                 }
