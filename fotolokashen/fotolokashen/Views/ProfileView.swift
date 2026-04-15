@@ -2,6 +2,11 @@ import SwiftUI
 
 /// Profile view with avatar/banner display and profile edit form
 /// Matches web app's /profile Account tab functionality
+///
+// REVIEW: State management — this view has 20+ @State vars.
+// Consider extracting into a ProfileViewModel (@StateObject) that holds form state,
+// change tracking, and avatar/banner upload logic. Social stats (followers/following counts)
+// are also loaded here AND in SettingsView — centralize in one place.
 struct ProfileView: View {
     @EnvironmentObject var authService: AuthService
     @ObservedObject private var userService = UserService.shared

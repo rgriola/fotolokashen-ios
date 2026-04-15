@@ -250,6 +250,9 @@ class APIClient {
             throw APIError.notFound
             
         default:
+            // REVIEW: Status 400 (and other 4xx/5xx) tries to decode ErrorResponse but silently
+            // falls back to .unknownError if decoding fails. Consider logging the raw response
+            // body in DEBUG builds to aid debugging malformed server responses.
             if let errorResponse = try? decoder.decode(ErrorResponse.self, from: data) {
                 throw APIError.apiError(errorResponse.error, errorResponse.code)
             }

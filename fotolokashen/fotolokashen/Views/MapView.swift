@@ -6,6 +6,14 @@ import Combine
 
 /// Map view showing all user locations as markers with clustering
 /// Supports toggling friends' locations (purple markers) on the map
+///
+// REVIEW: Two issues:
+// 1. NYC hardcoded as default camera position (40.7128, -74.0060) — should use user's current
+//    location if available, falling back to a sensible default.
+// 2. LocationClusterItem and SocialLocationClusterItem classes exist in LocationClusterItem.swift
+//    but MapView appears to use direct GMSMarker placement instead of GMUClusterManager.
+//    Verify whether clustering is actually active; if not, consider wiring it up or removing
+//    the unused cluster classes.
 struct MapView: View {
     @EnvironmentObject var authService: AuthService
     @ObservedObject private var locationStore = LocationStore.shared

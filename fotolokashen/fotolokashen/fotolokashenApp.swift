@@ -68,7 +68,9 @@ struct AppRootView: View {
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
+                    #if DEBUG
                     print("[App] Scene became active - checking auth status")
+                    #endif
                     authService.checkAuthStatus()
                 }
             }

@@ -51,6 +51,9 @@ class DataManager: ObservableObject {
             }
             
         } catch {
+            // REVIEW: fatalError() on SwiftData init failure is too aggressive.
+            // Consider providing an in-memory fallback container so the app can still
+            // function without offline caching, and surface the error to the user.
             fatalError("Could not create ModelContainer: \(error)")
         }
     }

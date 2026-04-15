@@ -8,6 +8,12 @@
 //  Two modes: Owner (editable) and Read-only (viewing someone else's public location)
 //  See copilot-instructions.md for usage patterns and initializer documentation.
 //
+// REVIEW: This file is ~750 lines — consider decomposing:
+// 1. Extract owner-mode production detail sections into LocationDetailOwnerSections.swift
+// 2. Extract read-only "Saved by" section into LocationDetailReadOnlySection.swift
+// 3. Extract the visibility picker + toolbar logic into LocationDetailToolbar.swift
+// 4. The formatDate/formatProductionDate helpers are duplicated — move to a shared Date extension.
+//
 
 import SwiftUI
 import CoreLocation

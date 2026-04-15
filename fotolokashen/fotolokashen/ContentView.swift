@@ -140,6 +140,7 @@ struct LoggedInView: View {
     @State private var previousTab = 0
     @State private var showingCamera = false
     @State private var capturedPhoto: PhotoCapture?
+    @State private var libraryPhotos: [PipelinePhoto]?
     @State private var deepLinkLocation: Location?
     @State private var showDeepLinkDetail = false
 
@@ -193,6 +194,10 @@ struct LoggedInView: View {
         .fullScreenCover(isPresented: $showingCamera) {
             CameraView { image, location in
                 capturedPhoto = PhotoCapture(image: image, location: location)
+            } onLibraryPhotosPicked: { photos in
+                guard !photos.isEmpty else { return }
+                showingCamera = false
+                libraryPhotos = photos
             }
         }
         .sheet(item: $capturedPhoto) { capture in
@@ -201,6 +206,17 @@ struct LoggedInView: View {
                 photoLocation: capture.location
             ) { location in
                 locationStore.addLocation(location)
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { libraryPhotos != nil },
+            set: { if !$0 { libraryPhotos = nil } }
+        )) {
+            if let photos = libraryPhotos {
+                LibraryCreateLocationView(
+                    initialPhotos: photos,
+                    locationStore: locationStore
+                )
             }
         }
         // Map tab navigation (from address tap in LocationDetailView)
@@ -236,6 +252,32 @@ struct LoggedInView: View {
 }
 
 // MARK: - Photo Capture
+
+/// Wrapper that presents CreateLocationView pre-loaded with library photos.
+/// Uses the first photo's EXIF GPS (if available) or the device's current location.
+private struct LibraryCreateLocationView: View {
+    let initialPhotos: [PipelinePhoto]
+    let locationStore: LocationStore
+    @StateObject private var locationManager = LocationManager()
+
+    var body: some View {
+        let gps = initialPhotos.first?.gpsCoordinate
+        let clLocation: CLLocation? = if let gps {
+            CLLocation(latitude: gps.lat, longitude: gps.lng)
+        } else {
+            locationManager.location
+        }
+
+        CreateLocationView(
+            photoLocation: clLocation
+        ) { location in
+            locationStore.addLocation(location)
+        }
+        .onAppear {
+            locationManager.startTracking()
+        }
+    }
+}
 
 struct PhotoCapture: Identifiable {
     let id = UUID()

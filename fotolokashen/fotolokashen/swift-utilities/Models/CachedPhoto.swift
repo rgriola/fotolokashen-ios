@@ -69,7 +69,20 @@ final class CachedPhoto {
             gpsLongitude: gpsLongitude,
             isPrimary: isPrimary,
             fileSize: fileSize,
-            mimeType: mimeType
+            mimeType: mimeType,
+            cameraMake: nil,
+            cameraModel: nil,
+            lensMake: nil,
+            lensModel: nil,
+            iso: nil,
+            focalLength: nil,
+            aperture: nil,
+            shutterSpeed: nil,
+            exposureMode: nil,
+            whiteBalance: nil,
+            flash: nil,
+            colorSpace: nil,
+            dateTaken: nil
         )
     }
     

@@ -37,6 +37,11 @@ class LocationService: ObservableObject {
     
     // MARK: - Create Location
     
+    // REVIEW: createLocation() is missing caption, tags, personalRating, isFavorite, and color fields
+    // that the web app supports at creation time. Users must edit the location post-create to add these.
+    // Also: 40+ bare print statements below should be wrapped in #if DEBUG + enableDebugLogging checks
+    // to match the project's debug logging pattern and avoid production performance impact.
+    
     /// Create a new location with photo using geocoded address data
     func createLocation(
         name: String,

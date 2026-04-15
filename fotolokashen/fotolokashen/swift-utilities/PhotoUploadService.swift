@@ -6,6 +6,13 @@ import Combine
 /// Service for secure photo uploads via server-mediated endpoint
 /// All uploads go through /api/photos/upload for virus scanning,
 /// format validation, and compression before reaching CDN
+///
+// REVIEW: Two gaps in this service:
+// 1. No EXIF metadata extraction from UIImage before upload — the web app captures cameraMake,
+//    cameraModel, iso, focalLength, aperture, shutterSpeed, etc. from photos before uploading.
+//    iOS sends only GPS data. Solution: Use ImageIO CGImageSource to extract EXIF dictionaries.
+// 2. uploadSecurely() has inconsistent response handling — tries both wrapped { data: ... } and
+//    direct SecureUploadResponse formats. Pick one canonical format matching the backend.
 @MainActor
 class PhotoUploadService: ObservableObject {
     
@@ -30,6 +37,25 @@ class PhotoUploadService: ObservableObject {
         locationId: Int,
         location: CLLocation?,
         caption: String? = nil
+    ) async throws -> Photo {
+        // Delegate to the EXIF-aware overload with nil metadata
+        try await uploadPhoto(
+            image: image,
+            locationId: locationId,
+            location: location,
+            caption: caption,
+            exifMetadata: nil
+        )
+    }
+
+    /// Upload photo with extracted EXIF metadata to a location via secure server endpoint.
+    /// When exifMetadata is provided, its GPS and camera data are forwarded to the server.
+    func uploadPhoto(
+        image: UIImage,
+        locationId: Int,
+        location: CLLocation?,
+        caption: String? = nil,
+        exifMetadata: EXIFMetadata?
     ) async throws -> Photo {
         isUploading = true
         uploadProgress = 0.0
@@ -56,7 +82,7 @@ class PhotoUploadService: ObservableObject {
             #endif
             
             // Step 2: Build metadata for GPS/EXIF data
-            let metadata = buildUploadMetadata(location: location)
+            let metadata = buildUploadMetadata(location: location, exif: exifMetadata)
             
             uploadProgress = 0.3
             
@@ -92,6 +118,11 @@ class PhotoUploadService: ObservableObject {
             }
             #endif
             
+            // Use CLLocation GPS, falling back to EXIF GPS
+            let gpsLat = location?.coordinate.latitude ?? exifMetadata?.latitude
+            let gpsLng = location?.coordinate.longitude ?? exifMetadata?.longitude
+            let gpsAlt = location?.altitude ?? exifMetadata?.altitude
+
             let associateRequest = AssociatePhotoRequest(
                 fileId: secureResponse.upload.fileId,
                 filePath: secureResponse.upload.filePath,
@@ -100,9 +131,9 @@ class PhotoUploadService: ObservableObject {
                 width: secureResponse.upload.width,
                 height: secureResponse.upload.height,
                 caption: caption,
-                gpsLatitude: location?.coordinate.latitude,
-                gpsLongitude: location?.coordinate.longitude,
-                gpsAltitude: location?.altitude
+                gpsLatitude: gpsLat,
+                gpsLongitude: gpsLng,
+                gpsAltitude: gpsAlt
             )
             
             let photo: Photo = try await apiClient.post(
@@ -255,8 +286,24 @@ class PhotoUploadService: ObservableObject {
         }
     }
     
-    /// Build metadata dictionary for upload
-    private func buildUploadMetadata(location: CLLocation?) -> [String: Any] {
+    /// Build metadata dictionary for upload.
+    /// When EXIF metadata is available, its values take priority (richer data from photo).
+    /// Falls back to CLLocation GPS and generic device info when EXIF is absent.
+    private func buildUploadMetadata(location: CLLocation?, exif: EXIFMetadata? = nil) -> [String: Any] {
+        // If we have extracted EXIF metadata, use it as the primary source
+        if let exif = exif {
+            var metadata = exif.toUploadMetadata()
+            // If EXIF has no GPS but we have CLLocation, supplement it
+            if !exif.hasGPS, let loc = location {
+                metadata["hasGPS"] = true
+                metadata["lat"] = loc.coordinate.latitude
+                metadata["lng"] = loc.coordinate.longitude
+                metadata["altitude"] = loc.altitude
+            }
+            return metadata
+        }
+
+        // Fallback: CLLocation only (legacy camera-capture path)
         var metadata: [String: Any] = [:]
         
         if let loc = location {

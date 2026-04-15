@@ -1,6 +1,12 @@
 import Foundation
 
 /// Photo model matching backend API response
+///
+// REVIEW: Missing EXIF metadata fields that the web app captures and stores:
+// cameraMake, cameraModel, lensMake, lensModel, iso, focalLength, aperture,
+// shutterSpeed, exposureMode, whiteBalance, flash, colorSpace, dateTaken.
+// The SecurePhotoMetadata struct (below) already defines these fields for the upload
+// response — add matching optional fields here so iOS can display photo EXIF info.
 struct Photo: Codable, Identifiable {
     let id: Int
     let imagekitFilePath: String
@@ -15,6 +21,21 @@ struct Photo: Codable, Identifiable {
     let isPrimary: Bool
     let fileSize: Int?
     let mimeType: String?
+
+    // EXIF metadata (matches web app schema)
+    let cameraMake: String?
+    let cameraModel: String?
+    let lensMake: String?
+    let lensModel: String?
+    let iso: Int?
+    let focalLength: String?
+    let aperture: String?
+    let shutterSpeed: String?
+    let exposureMode: String?
+    let whiteBalance: String?
+    let flash: String?
+    let colorSpace: String?
+    let dateTaken: String?
     
     /// Photo URL
     var photoURL: URL? {

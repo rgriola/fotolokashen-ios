@@ -48,6 +48,11 @@ class DeepLinkManager: ObservableObject {
                 navigateToLocation(id: id)
                 return true
             }
+            
+            // REVIEW: Missing support for /{username}/locations/{id} Universal Link format.
+            // Web app shares URLs like https://fotolokashen.com/rodczaro/locations/107
+            // This format is not handled here — add pattern matching for pathComponents[2] == "locations"
+            // and Int(pathComponents[3]) to support the canonical share URL format.
         }
 
         return false

@@ -1,6 +1,13 @@
 import SwiftUI
 
 /// Edit view for an existing location with all editable fields
+///
+// REVIEW: State management — this view has 15+ @State vars for form fields.
+// Consider extracting into an EditLocationViewModel (@StateObject ObservableObject) that
+// holds all form state + change tracking logic. This would:
+// - Simplify the view body
+// - Make change tracking testable
+// - Enable form validation before API calls
 struct EditLocationView: View {
     let location: Location
     var onLocationUpdated: ((Location) -> Void)?

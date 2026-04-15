@@ -1,6 +1,12 @@
 import SwiftUI
 
 /// People search and discovery view with tabs for Followers, Following, and Discover
+///
+// REVIEW: Architecture improvements:
+// 1. SearchUserRow and UserRowView are nearly identical components — merge into one reusable view.
+// 2. Three tab contents (DiscoverTab, MyFollowersTab, MyFollowingTab) are ~150 lines each —
+//    extract to separate files to reduce this file from ~520 to ~200 lines.
+// 3. No VoiceOver announcements when search results load or are empty.
 struct PeopleSearchView: View {
     @EnvironmentObject var authService: AuthService
     @ObservedObject private var followService = FollowService.shared

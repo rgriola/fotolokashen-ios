@@ -2,6 +2,10 @@ import Foundation
 import SwiftData
 
 /// SwiftData model for locally cached locations
+///
+// REVIEW: Missing UserSave fields (isFavorite, tags, color, personalRating, caption,
+// visibility) means offline mode loses per-user customization data. Add these fields
+// and update the toLocation() converter to preserve them through cache round-trips.
 @Model
 final class CachedLocation {
     @Attribute(.unique) var id: Int

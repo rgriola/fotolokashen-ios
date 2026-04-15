@@ -2,6 +2,15 @@ import SwiftUI
 import CoreLocation
 
 /// Camera view with native-style zoom dial, tap-to-focus, exposure control, and GPS badge
+///
+// REVIEW: Missing camera features:
+// 1. No flash control toggle (referenced in AppIcons.flash but not wired up in UI).
+// 2. No front/back camera switch (referenced in AppIcons.switchCamera but not implemented).
+// 3. No "Open Library" button to allow adding photos from Photo Library alongside camera capture.
+// 4. No multi-photo capture session — each capture immediately goes to CreateLocationView.
+//    Consider allowing multiple captures before proceeding to the form.
+// 5. VoiceOver accessibility: custom controls (zoom dial, exposure slider, focus square)
+//    have no accessibility labels.
 struct CameraView: View {
 
     @StateObject private var cameraService = CameraService()
@@ -26,8 +35,12 @@ struct CameraView: View {
     // GPS
     @State private var showCoordinates = false
 
-    // Callback when photo is captured
+    // Photo Library picker
+    @State private var showLibraryPicker = false
+
+    // Callbacks
     var onPhotoCaptured: ((UIImage, CLLocation?) -> Void)?
+    var onLibraryPhotosPicked: (([PipelinePhoto]) -> Void)?
 
     var body: some View {
         GeometryReader { geo in
@@ -159,16 +172,35 @@ struct CameraView: View {
                         .transition(.scale(scale: 0.8).combined(with: .opacity))
                     }
 
-                    // Capture button
-                    Button(action: capturePhoto) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 70, height: 70)
-                            Circle()
-                                .stroke(Color.white, lineWidth: 3)
-                                .frame(width: 82, height: 82)
+                    // Bottom controls: Library | Capture | (spacer)
+                    HStack(spacing: 32) {
+                        // Library button
+                        Button {
+                            showLibraryPicker = true
+                        } label: {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 50, height: 50)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
                         }
+
+                        // Capture button
+                        Button(action: capturePhoto) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 70, height: 70)
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 3)
+                                    .frame(width: 82, height: 82)
+                            }
+                        }
+
+                        // Spacer to balance the layout
+                        Color.clear
+                            .frame(width: 50, height: 50)
                     }
                     .padding(.bottom, geo.safeAreaInsets.bottom + 20)
                 }
@@ -179,6 +211,11 @@ struct CameraView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(errorMessage)
+        }
+        .sheet(isPresented: $showLibraryPicker) {
+            PhotoPickerView(selectionLimit: 20) { photos in
+                onLibraryPhotosPicked?(photos)
+            }
         }
         .task {
             await setupCamera()

@@ -34,6 +34,9 @@ class SyncService: ObservableObject {
     
     // MARK: - Network Observer
     
+    // REVIEW: Dead code — Notification.Name("NetworkConnected") is never posted anywhere in the codebase.
+    // Either wire up NetworkMonitor to post this notification, or remove this observer and use
+    // NetworkMonitor.$isConnected.sink {} instead for reactive sync-on-reconnect.
     private func setupNetworkObserver() {
         // Sync when network becomes available
         Task {
@@ -46,6 +49,9 @@ class SyncService: ObservableObject {
     }
     
     // MARK: - Public Sync Methods
+    
+    // REVIEW: No exponential backoff on photo upload retries — all 3 retries fire immediately.
+    // Consider adding delay between retries (e.g., 1s, 3s, 9s) to handle transient network issues.
     
     /// Sync all data (locations download + photos upload)
     func syncAll() async {
