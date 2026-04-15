@@ -21,9 +21,10 @@ final class ImageCompressorTests: XCTestCase {
         // Given
         let largeImage = createTestImage(width: 4000, height: 3000)
         let maxSize: Int = 1_500_000 // 1.5MB
+        let config = ImageCompressor.Config(targetBytes: maxSize)
         
         // When
-        let result = ImageCompressor.compress(largeImage, maxSizeBytes: maxSize)
+        let result = ImageCompressor.compress(largeImage, config: config)
         
         // Then
         XCTAssertNotNil(result, "Compression should succeed")
@@ -34,9 +35,10 @@ final class ImageCompressorTests: XCTestCase {
         // Given
         let smallImage = createTestImage(width: 800, height: 600)
         let maxSize: Int = 10_000_000 // 10MB
+        let config = ImageCompressor.Config(targetBytes: maxSize)
         
         // When
-        let result = ImageCompressor.compress(smallImage, maxSizeBytes: maxSize)
+        let result = ImageCompressor.compress(smallImage, config: config)
         
         // Then
         XCTAssertNotNil(result, "Compression should succeed")
@@ -49,11 +51,12 @@ final class ImageCompressorTests: XCTestCase {
         let landscapeImage = createTestImage(width: 4000, height: 3000)
         let squareImage = createTestImage(width: 3000, height: 3000)
         let maxSize: Int = 1_500_000
+        let config = ImageCompressor.Config(targetBytes: maxSize)
         
         // When
-        let portraitResult = ImageCompressor.compress(portraitImage, maxSizeBytes: maxSize)
-        let landscapeResult = ImageCompressor.compress(landscapeImage, maxSizeBytes: maxSize)
-        let squareResult = ImageCompressor.compress(squareImage, maxSizeBytes: maxSize)
+        let portraitResult = ImageCompressor.compress(portraitImage, config: config)
+        let landscapeResult = ImageCompressor.compress(landscapeImage, config: config)
+        let squareResult = ImageCompressor.compress(squareImage, config: config)
         
         // Then
         XCTAssertNotNil(portraitResult, "Portrait compression should succeed")
@@ -70,7 +73,7 @@ final class ImageCompressorTests: XCTestCase {
         let image = createTestImage(width: 2000, height: 2000)
         
         // When
-        let result = ImageCompressor.compress(image, maxSizeBytes: 1_500_000)
+        let result = ImageCompressor.compress(image)
         
         // Then
         XCTAssertNotNil(result, "Compression should succeed")
@@ -86,9 +89,10 @@ final class ImageCompressorTests: XCTestCase {
         // Given
         let image = createTestImage(width: 2000, height: 2000)
         let tinyMaxSize: Int = 10_000 // 10KB - very small
+        let config = ImageCompressor.Config(targetBytes: tinyMaxSize)
         
         // When
-        let result = ImageCompressor.compress(image, maxSizeBytes: tinyMaxSize)
+        let result = ImageCompressor.compress(image, config: config)
         
         // Then
         XCTAssertNotNil(result, "Should still produce output even with tiny max size")

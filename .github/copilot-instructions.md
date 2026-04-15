@@ -1,6 +1,6 @@
 # Copilot Instructions for fotolokashen-ios
 
-_Last updated: February 23, 2026_
+_Last updated: April 15, 2026_
 
 You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first location scouting companion to the fotolokashen web platform.
 
@@ -11,6 +11,7 @@ You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first 
 - **Auth**: OAuth2 + PKCE via `ASWebAuthenticationSession` (in-app browser), JWT tokens in iOS Keychain
 - **Maps**: Google Maps SDK for iOS v10.8.0, GMUClusterManager
 - **Camera**: AVFoundation (AVCaptureSession, AVCapturePhotoOutput)
+- **Photo Pipeline**: PHPickerViewController (library), EXIFExtractor (ImageIO/CGImageSource), PhotoPickerViewModel, multi-photo upload
 - **Networking**: URLSession with async/await, custom `APIClient` singleton
 - **Deep Linking**: Custom URL scheme (`fotolokashen://`) + Universal Links (`applinks:fotolokashen.com`)
 - **Local Storage**: SwiftData (iOS 17+ only, feature-gated)
@@ -153,6 +154,9 @@ fotolokashen-ios/
 │   │   │   ├── PublicProfileView.swift  # Public user profile (uses unified LocationDetailView)
 │   │   │   ├── FollowListView.swift     # Paginated followers/following list
 │   │   │   ├── PeopleSearchView.swift   # People search with Discover/Following/Followers tabs
+│   │   │   ├── PhotoPickerView.swift    # PHPickerViewController wrapper (multi-select, EXIF-preserving)
+│   │   │   ├── PhotoGridView.swift      # 3-column photo grid with add/remove controls
+│   │   │   ├── PhotoPickerViewModel.swift # Pipeline state: pick → compress → upload
 │   │   │   ├── ProfileView.swift        # Profile editing with avatar/banner upload + social stats
 │   │   │   └── SettingsView.swift       # Privacy controls, account info, logout
 │   │   ├── Services/
@@ -180,7 +184,9 @@ fotolokashen-ios/
 │   │       ├── LocationManager.swift    # CLLocationManager wrapper
 │   │       ├── LocationService.swift    # CRUD + update + dual geocoding
 │   │       ├── PKCEGenerator.swift      # RFC 7636 PKCE with CryptoKit
-│   │       ├── PhotoUploadService.swift # Secure multipart upload
+│   │       ├── PhotoUploadService.swift # Secure multipart upload + EXIF metadata
+│   │       ├── PhotoPipelineModels.swift # PhotoSource, EXIFMetadata, PipelinePhoto
+│   │       ├── EXIFExtractor.swift      # ImageIO-based EXIF extraction (GPS, camera, exposure)
 │   │       └── Models/
 │   │           ├── Location.swift       # Location + API response wrappers
 │   │           ├── User.swift           # User model + profile/privacy request types
@@ -561,6 +567,17 @@ Consistent colors across iOS and web:
 - Test on both iOS 16 and iOS 17+ simulators
 
 ## Development Workflow
+
+### Xcode Project Structure (IMPORTANT)
+
+This project uses **PBXFileSystemSynchronizedRootGroup** (Xcode 16+ folder-based structure). Any `.swift` file placed on disk inside `fotolokashen/fotolokashen/` is **automatically included** in the build target.
+
+- **No manual pbxproj edits needed**: Just create the file in the correct directory and Xcode picks it up.
+- **No `xcodeproj` gem / Ruby scripts needed**: The file system IS the source of truth for project membership.
+- **Views** go in `fotolokashen/fotolokashen/Views/`
+- **Services** go in `fotolokashen/fotolokashen/Services/`
+- **Utilities & Models** go in `fotolokashen/fotolokashen/swift-utilities/` and `swift-utilities/Models/`
+- After creating new files via Copilot or terminal, **rebuild in Xcode** (`⌘+R` or `⌘+B`) — no extra import steps.
 
 ### Running Locally
 
