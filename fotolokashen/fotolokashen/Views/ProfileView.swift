@@ -283,9 +283,9 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Personal Info", icon: "person.fill")
 
-            FormField(label: "First Name", text: $firstName, placeholder: "First name")
-            FormField(label: "Last Name", text: $lastName, placeholder: "Last name")
-            FormField(label: "Bio", text: $bio, placeholder: "Tell others about yourself...", isMultiline: true)
+            FormField(label: "First Name", text: $firstName, placeholder: "First name", maxLength: 50)
+            FormField(label: "Last Name", text: $lastName, placeholder: "Last name", maxLength: 50)
+            FormField(label: "Bio", text: $bio, placeholder: "Tell others about yourself...", isMultiline: true, maxLength: 500)
         }
         .onChange(of: firstName) { _, _ in checkForChanges() }
         .onChange(of: lastName) { _, _ in checkForChanges() }
@@ -296,8 +296,8 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Location", icon: "mappin.circle.fill")
 
-            FormField(label: "City", text: $city, placeholder: "City")
-            FormField(label: "Country", text: $country, placeholder: "Country")
+            FormField(label: "City", text: $city, placeholder: "City", maxLength: 100)
+            FormField(label: "Country", text: $country, placeholder: "Country", maxLength: 100)
         }
         .onChange(of: city) { _, _ in checkForChanges() }
         .onChange(of: country) { _, _ in checkForChanges() }
@@ -307,8 +307,8 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Preferences", icon: "gearshape.fill")
 
-            FormField(label: "Language", text: $language, placeholder: "en")
-            FormField(label: "Timezone", text: $timezone, placeholder: "America/New_York")
+            FormField(label: "Language", text: $language, placeholder: "en", maxLength: 10)
+            FormField(label: "Timezone", text: $timezone, placeholder: "America/New_York", maxLength: 50)
 
             Toggle("Email Notifications", isOn: $emailNotifications)
                 .tint(.brandPurple)

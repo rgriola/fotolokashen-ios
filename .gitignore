@@ -79,3 +79,6 @@ Temporary Items
 
 # variables for web app
 .env.*
+
+# photoshop files
+.psd

@@ -181,6 +181,7 @@ struct FormField: View {
     @Binding var text: String
     var placeholder: String = ""
     var isMultiline: Bool = false
+    var maxLength: Int = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -198,9 +199,26 @@ struct FormField: View {
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(Color(.systemGray4), lineWidth: 1)
                     )
+                    .onChange(of: text) { _, newValue in
+                        if maxLength > 0 && newValue.count > maxLength {
+                            text = String(newValue.prefix(maxLength))
+                        }
+                    }
             } else {
                 TextField(placeholder, text: $text)
                     .textFieldStyle(.roundedBorder)
+                    .onChange(of: text) { _, newValue in
+                        if maxLength > 0 && newValue.count > maxLength {
+                            text = String(newValue.prefix(maxLength))
+                        }
+                    }
+            }
+
+            if maxLength > 0 {
+                Text("\(text.count)/\(maxLength)")
+                    .font(.caption2)
+                    .foregroundColor(text.count >= maxLength ? .destructive : .secondary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
     }

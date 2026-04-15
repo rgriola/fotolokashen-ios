@@ -56,6 +56,11 @@ struct EditLocationView: View {
                 Section {
                     TextField("Location Name", text: $locationName)
                         .autocapitalization(.words)
+                        .onChange(of: locationName) { _, newValue in
+                            if newValue.count > 50 {
+                                locationName = String(newValue.prefix(50))
+                            }
+                        }
 
                     Picker("Type", selection: $locationType) {
                         ForEach(LocationTypeColors.standardTypes, id: \.self) { type in
@@ -94,12 +99,32 @@ struct EditLocationView: View {
                 Section {
                     TextField("Production Notes", text: $productionNotes, axis: .vertical)
                         .lineLimit(3...6)
+                        .onChange(of: productionNotes) { _, newValue in
+                            if newValue.count > 500 {
+                                productionNotes = String(newValue.prefix(500))
+                            }
+                        }
 
                     TextField("Entry Point", text: $entryPoint)
+                        .onChange(of: entryPoint) { _, newValue in
+                            if newValue.count > 200 {
+                                entryPoint = String(newValue.prefix(200))
+                            }
+                        }
 
                     TextField("Parking", text: $parking)
+                        .onChange(of: parking) { _, newValue in
+                            if newValue.count > 200 {
+                                parking = String(newValue.prefix(200))
+                            }
+                        }
 
                     TextField("Access", text: $access)
+                        .onChange(of: access) { _, newValue in
+                            if newValue.count > 200 {
+                                access = String(newValue.prefix(200))
+                            }
+                        }
 
                     Picker("Indoor/Outdoor", selection: $indoorOutdoor) {
                         Text("Not Set").tag("")
@@ -118,8 +143,18 @@ struct EditLocationView: View {
                 Section {
                     TextField("Notes", text: $notes, axis: .vertical)
                         .lineLimit(2...5)
+                        .onChange(of: notes) { _, newValue in
+                            if newValue.count > 500 {
+                                notes = String(newValue.prefix(500))
+                            }
+                        }
 
                     TextField("Personal Caption", text: $caption)
+                        .onChange(of: caption) { _, newValue in
+                            if newValue.count > 200 {
+                                caption = String(newValue.prefix(200))
+                            }
+                        }
                 } header: {
                     Label("Notes", systemImage: "note.text")
                 }

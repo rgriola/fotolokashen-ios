@@ -61,6 +61,16 @@ struct CreateLocationView: View {
                                 .textFieldStyle(.roundedBorder)
                                 .autocapitalization(.words)
                                 .submitLabel(.done)
+                                .onChange(of: locationName) { _, newValue in
+                                    if newValue.count > 50 {
+                                        locationName = String(newValue.prefix(50))
+                                    }
+                                }
+                            if locationName.count > 40 {
+                                Text("\(locationName.count)/50")
+                                    .font(.caption)
+                                    .foregroundColor(locationName.count >= 50 ? .destructive : .secondary)
+                            }
                         }
                         
                         // Location Type
