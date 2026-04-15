@@ -30,6 +30,7 @@ struct ContentView: View {
 
 struct LoginView: View {
     @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var deepLinkManager: DeepLinkManager
     
     var body: some View {
         ZStack {
@@ -128,6 +129,15 @@ struct LoginView: View {
             .padding()
         }
         .navigationBarHidden(true)
+        // Auto-login after email verification deep link
+        .onChange(of: deepLinkManager.emailVerified) { _, verified in
+            guard verified else { return }
+            deepLinkManager.emailVerified = false
+            // Small delay so the view settles before opening the browser
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                authService.startLogin()
+            }
+        }
     }
 }
 
