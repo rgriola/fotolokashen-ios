@@ -30,12 +30,14 @@ let (verifier, challenge) = PKCEGenerator.generate()
 **Endpoint**: `POST /api/auth/oauth/authorize`
 
 **Headers**:
+
 ```
 Content-Type: application/json
 Cookie: auth_token=<existing_session_cookie>
 ```
 
 **Request Body**:
+
 ```json
 {
   "client_id": "fotolokashen-ios",
@@ -49,6 +51,7 @@ Cookie: auth_token=<existing_session_cookie>
 ```
 
 **Response** (200):
+
 ```json
 {
   "authorization_code": "abc123...",
@@ -57,6 +60,7 @@ Cookie: auth_token=<existing_session_cookie>
 ```
 
 **Error Responses**:
+
 - `401` - User not authenticated
 - `400` - Invalid client_id, redirect_uri, or scopes
 
@@ -67,6 +71,7 @@ Cookie: auth_token=<existing_session_cookie>
 **Endpoint**: `POST /api/auth/oauth/token`
 
 **Request Body**:
+
 ```json
 {
   "grant_type": "authorization_code",
@@ -78,6 +83,7 @@ Cookie: auth_token=<existing_session_cookie>
 ```
 
 **Response** (200):
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -95,6 +101,7 @@ Cookie: auth_token=<existing_session_cookie>
 ```
 
 **Error Responses**:
+
 - `400` - Invalid code, code_verifier, or expired code
 - `400` - Code already used (INVALID_GRANT)
 
@@ -105,6 +112,7 @@ Cookie: auth_token=<existing_session_cookie>
 **Endpoint**: `POST /api/auth/oauth/token`
 
 **Request Body**:
+
 ```json
 {
   "grant_type": "refresh_token",
@@ -114,6 +122,7 @@ Cookie: auth_token=<existing_session_cookie>
 ```
 
 **Response** (200):
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -130,6 +139,7 @@ Cookie: auth_token=<existing_session_cookie>
 **Endpoint**: `POST /api/auth/oauth/revoke`
 
 **Request Body**:
+
 ```json
 {
   "token": "def456...",
@@ -138,6 +148,7 @@ Cookie: auth_token=<existing_session_cookie>
 ```
 
 **Response** (200):
+
 ```json
 {
   "success": true
@@ -149,11 +160,13 @@ Cookie: auth_token=<existing_session_cookie>
 **Endpoint**: `DELETE /api/auth/delete-account`
 
 **Headers**:
+
 ```
 Authorization: Bearer <access_token>
 ```
 
 **Response** (200):
+
 ```json
 {
   "success": true,
@@ -172,17 +185,20 @@ Permanently deletes the authenticated user's account and all associated data (lo
 **Endpoint**: `GET /api/locations`
 
 **Headers**:
+
 ```
 Authorization: Bearer <access_token>
 ```
 
 **Query Parameters**:
+
 - `sort` - Sort field: `createdAt`, `name`, `rating` (default: `createdAt`)
 - `order` - Sort order: `asc`, `desc` (default: `desc`)
 - `type` - Filter by location type
 - `bounds` - Viewport filter: `lat1,lng1,lat2,lng2`
 
 **Response** (200):
+
 ```json
 {
   "locations": [
@@ -209,12 +225,14 @@ Authorization: Bearer <access_token>
 **Endpoint**: `POST /api/locations`
 
 **Headers**:
+
 ```
 Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
 
 **Request Body**:
+
 ```json
 {
   "placeId": "photo-1234567890",
@@ -229,6 +247,7 @@ Content-Type: application/json
 ```
 
 **Response** (201):
+
 ```json
 {
   "success": true,
@@ -249,6 +268,7 @@ Content-Type: application/json
 **Endpoint**: `GET /api/locations/{id}`
 
 **Response** (200):
+
 ```json
 {
   "id": 456,
@@ -272,6 +292,7 @@ Content-Type: application/json
 **Endpoint**: `PUT /api/locations/{id}`
 
 **Request Body**:
+
 ```json
 {
   "name": "Updated Name",
@@ -281,6 +302,7 @@ Content-Type: application/json
 ```
 
 **Response** (200):
+
 ```json
 {
   "success": true,
@@ -299,6 +321,7 @@ Content-Type: application/json
 **Endpoint**: `DELETE /api/locations/{id}`
 
 **Response** (200):
+
 ```json
 {
   "success": true
@@ -314,12 +337,14 @@ Content-Type: application/json
 **Endpoint**: `POST /api/locations/{id}/photos/request-upload`
 
 **Headers**:
+
 ```
 Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
 
 **Request Body**:
+
 ```json
 {
   "filename": "photo.jpg",
@@ -342,6 +367,7 @@ Content-Type: application/json
 ```
 
 **Response** (200):
+
 ```json
 {
   "photoId": 789,
@@ -356,6 +382,7 @@ Content-Type: application/json
 ```
 
 **Validation**:
+
 - Max file size: 10MB
 - Allowed types: `image/jpeg`, `image/png`, `image/heic`
 
@@ -368,6 +395,7 @@ Content-Type: application/json
 **Content-Type**: `multipart/form-data`
 
 **Form Fields**:
+
 ```
 publicKey: <from request-upload response>
 signature: <from request-upload response>
@@ -379,6 +407,7 @@ file: <binary image data>
 ```
 
 **Response** (200):
+
 ```json
 {
   "fileId": "IMAGEKIT_FILE_ID",
@@ -398,12 +427,14 @@ file: <binary image data>
 **Endpoint**: `POST /api/locations/{id}/photos/{photoId}/confirm`
 
 **Headers**:
+
 ```
 Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
 
 **Request Body**:
+
 ```json
 {
   "imagekitFileId": "IMAGEKIT_FILE_ID",
@@ -412,6 +443,7 @@ Content-Type: application/json
 ```
 
 **Response** (200):
+
 ```json
 {
   "success": true,
@@ -431,10 +463,12 @@ Content-Type: application/json
 **Endpoint**: `GET /api/locations/{id}/photos`
 
 **Query Parameters**:
+
 - `page` - Page number (default: 1)
 - `limit` - Items per page (default: 20, max: 100)
 
 **Response** (200):
+
 ```json
 {
   "photos": [
@@ -464,6 +498,7 @@ Content-Type: application/json
 ```
 
 **Response Headers**:
+
 ```
 X-Total-Count: 156
 X-Page: 1
@@ -481,6 +516,7 @@ X-RateLimit-Reset: 1705068600
 All endpoints may return the following error responses:
 
 ### 400 Bad Request
+
 ```json
 {
   "error": "Missing required parameters",
@@ -489,6 +525,7 @@ All endpoints may return the following error responses:
 ```
 
 ### 401 Unauthorized
+
 ```json
 {
   "error": "Authentication required",
@@ -497,6 +534,7 @@ All endpoints may return the following error responses:
 ```
 
 ### 403 Forbidden
+
 ```json
 {
   "error": "Insufficient permissions",
@@ -505,6 +543,7 @@ All endpoints may return the following error responses:
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "error": "Resource not found",
@@ -513,6 +552,7 @@ All endpoints may return the following error responses:
 ```
 
 ### 429 Too Many Requests
+
 ```json
 {
   "error": "Rate limit exceeded",
@@ -521,6 +561,7 @@ All endpoints may return the following error responses:
 ```
 
 ### 500 Internal Server Error
+
 ```json
 {
   "error": "Internal server error",
@@ -545,11 +586,13 @@ All endpoints may return the following error responses:
 ImageKit URLs support transformation parameters:
 
 ### Thumbnail
+
 ```
 ?tr=w-400,h-400,c-at_max,fo-auto,q-80
 ```
 
 ### Parameters
+
 - `w-{width}` - Width in pixels
 - `h-{height}` - Height in pixels
 - `c-at_max` - Maintain aspect ratio, fit within bounds
@@ -557,6 +600,7 @@ ImageKit URLs support transformation parameters:
 - `q-{quality}` - Quality (1-100)
 
 ### Examples
+
 ```
 // 400x400 thumbnail
 https://ik.imagekit.io/.../photo.jpg?tr=w-400,h-400,c-at_max,fo-auto,q-80
@@ -573,6 +617,7 @@ https://ik.imagekit.io/.../avatar.jpg?tr=w-128,h-128,c-at_max,fo-auto,q-80
 ## Swift Models
 
 ### User
+
 ```swift
 struct User: Codable {
     let id: Int
@@ -583,6 +628,7 @@ struct User: Codable {
 ```
 
 ### Location
+
 ```swift
 struct Location: Codable {
     let id: Int
@@ -600,6 +646,7 @@ struct Location: Codable {
 ```
 
 ### Photo
+
 ```swift
 struct Photo: Codable {
     let id: Int
@@ -630,6 +677,7 @@ Import the Postman collection for easy API testing:
 ### Test Credentials
 
 **Staging Environment**:
+
 - Email: `test@fotolokashen.com`
 - Password: `TestPassword123!`
 
