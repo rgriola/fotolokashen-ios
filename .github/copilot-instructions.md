@@ -8,7 +8,7 @@ You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first 
 
 - **Framework**: SwiftUI (iOS 16.0+), Swift 5.9+
 - **Architecture**: Hybrid MVVM + Shared Store (singleton `LocationStore.shared`)
-- **Auth**: OAuth2 + PKCE via Safari, JWT tokens in iOS Keychain
+- **Auth**: OAuth2 + PKCE via `ASWebAuthenticationSession` (in-app browser), JWT tokens in iOS Keychain
 - **Maps**: Google Maps SDK for iOS v10.8.0, GMUClusterManager
 - **Camera**: AVFoundation (AVCaptureSession, AVCapturePhotoOutput)
 - **Networking**: URLSession with async/await, custom `APIClient` singleton
@@ -523,12 +523,14 @@ The iOS app connects to the fotolokashen web backend at `https://fotolokashen.co
 
 ### Authentication Flow
 
-1. `AuthService.startLogin()` → opens Safari with OAuth2 params + PKCE challenge
-2. User logs in on web → redirected back via `fotolokashen://oauth-callback?code=...`
-3. `AuthService.handleCallback(url:)` → exchanges code for tokens via `/api/auth/oauth/token`
-4. Tokens saved to Keychain, `isAuthenticated = true`
-5. On token expiry: `refreshTokenIfNeeded()` auto-refreshes via same endpoint
-6. On logout: revoke refresh token via `/api/auth/oauth/revoke`, clear Keychain
+1. `AuthService.startLogin()` or `AuthService.startRegistration()` → presents `ASWebAuthenticationSession` (in-app Safari sheet) with OAuth2 params + PKCE challenge
+2. User logs in or registers on web within the in-app browser — no full Safari launch
+3. Web redirects to `fotolokashen://oauth-callback?code=...` → captured by `ASWebAuthenticationSession` completion handler
+4. `AuthService.handleCallback(url:)` → exchanges code for tokens via `/api/auth/oauth/token`
+5. Tokens saved to Keychain, `isAuthenticated = true`
+6. On token expiry: `refreshTokenIfNeeded()` auto-refreshes via same endpoint
+7. On logout: revoke refresh token via `/api/auth/oauth/revoke`, clear Keychain
+8. Account deletion: `UserService.deleteAccount()` → calls `DELETE /api/auth/delete-account`, clears Keychain + LocationStore
 
 ### Location Model Mapping
 
@@ -744,7 +746,7 @@ ImageKit transformations for OpenGraph images:
 
 ## Important Notes
 
-- **Custom OAuth2 Auth**: PKCE flow via Safari, NOT Sign in with Apple/Google
+- **Custom OAuth2 Auth**: PKCE flow via `ASWebAuthenticationSession` (in-app browser), NOT Sign in with Apple/Google — satisfies Apple App Review Guideline 4.0
 - **Session Management**: Multi-device (web + iOS) with auto-logout on invalidation
 - **iOS 16 Support**: Maintained — SwiftData features gated behind `@available(iOS 17, *)`
 - **Offline Mode**: SwiftData cache + photo queue (iOS 17+ only)

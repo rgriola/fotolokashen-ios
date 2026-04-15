@@ -52,7 +52,7 @@ The fotolokashen iOS app allows users to quickly capture photos with GPS coordin
 
 #### Authentication & Sync
 
-- 🔐 **OAuth2 with PKCE** - Secure Safari-based login
+- 🔐 **OAuth2 with PKCE** - Secure in-app browser login (`ASWebAuthenticationSession`)
 - 🔄 **Auto Sync** - Locations sync on app launch
 - 📱 **Multi-Device Support** - Auto-logout on session invalidation
 - 🔑 **Secure Storage** - Tokens stored in iOS Keychain
@@ -312,6 +312,7 @@ The app supports 15 location types with consistent colors across iOS and web:
 
 - **401 Errors**: Token expired; app will auto-logout
 - **Login fails**: Verify backend URL in Config.plist
+- **Browser sheet won't open**: Ensure `fotolokashen` URL scheme is registered in Info.plist
 
 ### Map Issues
 
@@ -402,7 +403,7 @@ View logs in Xcode console with prefixes:
 
 ### v1.0 (January 2026)
 
-- ✅ OAuth2 authentication with PKCE
+- ✅ OAuth2 authentication with PKCE (in-app browser via `ASWebAuthenticationSession`)
 - ✅ Camera capture with GPS tracking
 - ✅ Auto geocoding (Apple + Google fallback)
 - ✅ Full address component capture (street, city, state, zip)

@@ -16,6 +16,8 @@ Authorization: Bearer <access_token>
 
 ### OAuth2 Flow (PKCE)
 
+The app uses `ASWebAuthenticationSession` to present an in-app browser sheet for login and registration. Full Safari is never launched — users stay within the app context.
+
 #### 1. Generate PKCE Challenge
 
 ```swift
@@ -141,6 +143,25 @@ Cookie: auth_token=<existing_session_cookie>
   "success": true
 }
 ```
+
+#### 6. Delete Account
+
+**Endpoint**: `DELETE /api/auth/delete-account`
+
+**Headers**:
+```
+Authorization: Bearer <access_token>
+```
+
+**Response** (200):
+```json
+{
+  "success": true,
+  "message": "Account deleted successfully"
+}
+```
+
+Permanently deletes the authenticated user's account and all associated data (locations, photos, follows, sessions, CDN assets). Called from `UserService.deleteAccount()` — after success, the app clears the Keychain and resets to logged-out state.
 
 ---
 
