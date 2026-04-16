@@ -17,8 +17,12 @@ class DeepLinkManager: ObservableObject {
     @Published var deepLinkError: String?
 
     /// Set when the user verified their email from the iOS registration flow.
-    /// Observe this to auto-present the login screen after email verification.
+    /// Observe this to auto-login after email verification.
     @Published var emailVerified = false
+
+    /// One-time auto-login token received from the email verification deep link.
+    /// Used by AuthService to exchange for proper OAuth tokens without manual login.
+    @Published var autoLoginToken: String?
 
     private init() {}
 
@@ -40,12 +44,19 @@ class DeepLinkManager: ObservableObject {
                 return true
             }
             // Email verification redirect from web → app
+            // URL format: fotolokashen://email-verified?token=xxxxx
             if url.host == "email-verified" {
+                // Extract auto-login token if present
+                let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+                let token = components?.queryItems?.first(where: { $0.name == "token" })?.value
+
                 #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
-                    print("[DeepLink] Email verified — returning user to app")
+                    print("[DeepLink] Email verified — auto-login token: \(token != nil ? "present" : "missing")")
                 }
                 #endif
+
+                autoLoginToken = token
                 emailVerified = true
                 return true
             }

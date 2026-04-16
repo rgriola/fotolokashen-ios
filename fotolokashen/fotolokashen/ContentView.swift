@@ -133,9 +133,18 @@ struct LoginView: View {
         .onChange(of: deepLinkManager.emailVerified) { _, verified in
             guard verified else { return }
             deepLinkManager.emailVerified = false
-            // Small delay so the view settles before opening the browser
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                authService.startLogin()
+
+            if let token = deepLinkManager.autoLoginToken {
+                // Auto-login: exchange the one-time token for OAuth tokens directly
+                deepLinkManager.autoLoginToken = nil
+                Task {
+                    await authService.autoLoginWithToken(token)
+                }
+            } else {
+                // Fallback: no token available, prompt manual login
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    authService.startLogin()
+                }
             }
         }
     }

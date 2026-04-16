@@ -362,6 +362,86 @@ class AuthService: ObservableObject {
         codeChallenge = nil
     }
     
+    // MARK: - Auto-Login (Post Email Verification)
+    
+    /// Exchange a one-time auto-login token for OAuth tokens.
+    /// Called after the user verifies their email and is redirected back to the app
+    /// via the fotolokashen://email-verified?token=xxx deep link.
+    /// This skips the manual login step entirely.
+    func autoLoginWithToken(_ autoLoginToken: String) async {
+        isLoading = true
+        errorMessage = nil
+        
+        #if DEBUG
+        if config.enableDebugLogging {
+            print("[AuthService] Starting auto-login with verification token")
+        }
+        #endif
+        
+        do {
+            // Get device information
+            let deviceName = UIDevice.current.name
+            let systemVersion = UIDevice.current.systemVersion
+            let model = UIDevice.current.model
+            let userAgent = "fotolokashen-ios/1.0 (iOS \(systemVersion); \(model))"
+            
+            struct AutoLoginRequest: Codable {
+                let token: String
+                let clientId: String
+                let deviceName: String
+                let userAgent: String
+                let country: String?
+                
+                enum CodingKeys: String, CodingKey {
+                    case token
+                    case clientId = "client_id"
+                    case deviceName = "device_name"
+                    case userAgent = "user_agent"
+                    case country
+                }
+            }
+            
+            let request = AutoLoginRequest(
+                token: autoLoginToken,
+                clientId: config.oauthClientId,
+                deviceName: deviceName,
+                userAgent: userAgent,
+                country: Locale.current.region?.identifier
+            )
+            
+            let tokenResponse: TokenResponse = try await apiClient.post(
+                "/api/auth/auto-login",
+                body: request,
+                authenticated: false
+            )
+            
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[AuthService] Auto-login successful for user: \(tokenResponse.user.email)")
+            }
+            #endif
+            
+            // Save tokens (reuses same OAuthToken infrastructure)
+            let token = OAuthToken(from: tokenResponse)
+            try keychainService.saveToken(token)
+            
+            // Update state
+            currentUser = tokenResponse.user
+            isAuthenticated = true
+            
+        } catch {
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[AuthService] Auto-login failed: \(error)")
+            }
+            #endif
+            // If auto-login fails, fall back to manual login
+            errorMessage = "Auto-login failed. Please sign in manually."
+        }
+        
+        isLoading = false
+    }
+    
     // MARK: - Token Refresh
     
     /// Refresh access token using refresh token
