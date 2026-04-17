@@ -37,7 +37,7 @@ struct AboutView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "mappin.and.ellipse")
                         .font(.largeTitle)
-                        .foregroundStyle(.brandPurple)
+                        .foregroundStyle(Color.brandPurple)
                     Text("fotolokashen")
                         .font(.headline)
                     Text("v\(appVersion) (\(buildNumber))")
