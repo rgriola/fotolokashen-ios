@@ -16,9 +16,6 @@ struct EditProfileView: View {
     @State private var country = ""
     @State private var dateOfBirth: Date? = nil
     @State private var showDatePicker = false
-    @State private var language = ""
-    @State private var timezone = ""
-    @State private var emailNotifications = true
 
     // Image picker state
     @State private var showingAvatarPicker = false
@@ -44,7 +41,6 @@ struct EditProfileView: View {
                     profileFieldsSection
                     locationSection
                     birthdaySection
-                    preferencesSection
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical)
@@ -214,19 +210,6 @@ struct EditProfileView: View {
         }
     }
 
-    private var preferencesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Preferences", icon: "gearshape.fill")
-            FormField(label: "Language", text: $language, placeholder: "en", maxLength: 10)
-            FormField(label: "Timezone", text: $timezone, placeholder: "America/New_York", maxLength: 50)
-            Toggle("Email Notifications", isOn: $emailNotifications)
-                .tint(.brandPurple)
-                .padding(.horizontal, 4)
-        }
-        .onChange(of: language) { _, _ in checkForChanges() }
-        .onChange(of: timezone) { _, _ in checkForChanges() }
-        .onChange(of: emailNotifications) { _, _ in checkForChanges() }
-    }
 
     // MARK: - Actions
 
@@ -238,9 +221,6 @@ struct EditProfileView: View {
         city = user.city ?? ""
         state = user.state ?? ""
         country = user.country ?? ""
-        language = user.language ?? ""
-        timezone = user.timezone ?? ""
-        emailNotifications = user.emailNotifications ?? true
         // Parse DOB from YYYY-MM-DD
         if let dobString = user.dateOfBirth {
             let fmt = DateFormatter()
@@ -263,9 +243,6 @@ struct EditProfileView: View {
             || state != (user.state ?? "")
             || country != (user.country ?? "")
             || currentDOB != user.dateOfBirth
-            || language != (user.language ?? "")
-            || timezone != (user.timezone ?? "")
-            || emailNotifications != (user.emailNotifications ?? true)
     }
 
     private func saveProfile() async {
@@ -281,10 +258,7 @@ struct EditProfileView: View {
             bio: bio.isEmpty ? nil : bio,
             city: city.isEmpty ? nil : city,
             state: state.isEmpty ? nil : state,
-            country: country.isEmpty ? nil : country,
-            language: language.isEmpty ? nil : language,
-            timezone: timezone.isEmpty ? nil : timezone,
-            emailNotifications: emailNotifications
+            country: country.isEmpty ? nil : country
         )
         do {
             let updatedUser = try await userService.updateProfile(request)
