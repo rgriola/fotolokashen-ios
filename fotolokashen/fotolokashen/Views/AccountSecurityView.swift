@@ -59,13 +59,16 @@ struct AccountSecurityView: View {
                     // Email
                     DetailRow(label: "Email", value: user.email)
 
-                    // City / Country
-                    if let city = user.city, let country = user.country {
-                        DetailRow(label: "Location", value: "\(city), \(country)")
-                    } else if let city = user.city {
-                        DetailRow(label: "City", value: city)
-                    } else if let country = user.country {
-                        DetailRow(label: "Country", value: country)
+                    // City / State / Country
+                    let locationParts = [user.city, user.state, user.country]
+                        .compactMap { $0?.isEmpty == false ? $0 : nil }
+                    if !locationParts.isEmpty {
+                        DetailRow(label: "Location", value: locationParts.joined(separator: ", "))
+                    }
+
+                    // Date of birth
+                    if let dob = user.dateOfBirth {
+                        DetailRow(label: "Birthday", value: formatDateOfBirth(dob))
                     }
 
                     Divider()
@@ -158,6 +161,16 @@ struct AccountSecurityView: View {
         formatter.formatOptions = [.withInternetDateTime]
         if let date = formatter.date(from: dateString) { return formatOutput(date) }
         return dateString
+    }
+
+    private func formatDateOfBirth(_ dobString: String) -> String {
+        // Input: YYYY-MM-DD
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dobString) else { return dobString }
+        formatter.dateStyle = .long
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
 
     private func formatOutput(_ date: Date) -> String {

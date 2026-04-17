@@ -7,10 +7,12 @@ struct User: Codable, Identifiable {
     let username: String
     let firstName: String?
     let lastName: String?
+    let dateOfBirth: String?  // ISO date string YYYY-MM-DD
     let avatar: String?
     let bannerImage: String?
     let bio: String?
     let city: String?
+    let state: String?
     let country: String?
     let emailVerified: Bool?
     let isActive: Bool?
@@ -110,8 +112,10 @@ extension User: Hashable {
 struct ProfileUpdateRequest: Codable {
     var firstName: String?
     var lastName: String?
+    var dateOfBirth: String?  // ISO date string YYYY-MM-DD
     var bio: String?
     var city: String?
+    var state: String?
     var country: String?
     var language: String?
     var timezone: String?
@@ -119,9 +123,9 @@ struct ProfileUpdateRequest: Codable {
 
     /// Returns true if all fields are nil (nothing to update)
     var isEmpty: Bool {
-        firstName == nil && lastName == nil && bio == nil &&
-        city == nil && country == nil && language == nil &&
-        timezone == nil && emailNotifications == nil
+        firstName == nil && lastName == nil && dateOfBirth == nil &&
+        bio == nil && city == nil && state == nil && country == nil &&
+        language == nil && timezone == nil && emailNotifications == nil
     }
 }
 

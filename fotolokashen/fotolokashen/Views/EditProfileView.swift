@@ -12,7 +12,10 @@ struct EditProfileView: View {
     @State private var lastName = ""
     @State private var bio = ""
     @State private var city = ""
+    @State private var state = ""
     @State private var country = ""
+    @State private var dateOfBirth: Date? = nil
+    @State private var showDatePicker = false
     @State private var language = ""
     @State private var timezone = ""
     @State private var emailNotifications = true
@@ -40,6 +43,7 @@ struct EditProfileView: View {
                 VStack(spacing: 20) {
                     profileFieldsSection
                     locationSection
+                    birthdaySection
                     preferencesSection
                 }
                 .padding(.horizontal, 16)
@@ -164,10 +168,50 @@ struct EditProfileView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Location", icon: "mappin.circle.fill")
             FormField(label: "City", text: $city, placeholder: "City", maxLength: 100)
+            FormField(label: "State / Province", text: $state, placeholder: "State or Province", maxLength: 100)
             FormField(label: "Country", text: $country, placeholder: "Country", maxLength: 100)
         }
         .onChange(of: city) { _, _ in checkForChanges() }
+        .onChange(of: state) { _, _ in checkForChanges() }
         .onChange(of: country) { _, _ in checkForChanges() }
+    }
+
+    private var birthdaySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: "Birthday", icon: "calendar")
+
+            Button {
+                showDatePicker.toggle()
+            } label: {
+                HStack {
+                    Text(dateOfBirth.map { formatDOBDisplay($0) } ?? "Not set")
+                        .foregroundStyle(dateOfBirth == nil ? .secondary : .primary)
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
+            if showDatePicker {
+                DatePicker(
+                    "",
+                    selection: Binding(
+                        get: { dateOfBirth ?? Calendar.current.date(byAdding: .year, value: -25, to: Date())! },
+                        set: { dateOfBirth = $0; checkForChanges() }
+                    ),
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.graphical)
+                .tint(.brandPurple)
+                .onChange(of: dateOfBirth) { _, _ in checkForChanges() }
+            }
+        }
     }
 
     private var preferencesSection: some View {
@@ -192,30 +236,51 @@ struct EditProfileView: View {
         lastName = user.lastName ?? ""
         bio = user.bio ?? ""
         city = user.city ?? ""
+        state = user.state ?? ""
         country = user.country ?? ""
         language = user.language ?? ""
         timezone = user.timezone ?? ""
         emailNotifications = user.emailNotifications ?? true
+        // Parse DOB from YYYY-MM-DD
+        if let dobString = user.dateOfBirth {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "yyyy-MM-dd"
+            dateOfBirth = fmt.date(from: dobString)
+        }
     }
 
     private func checkForChanges() {
         guard let user = authService.currentUser else { return }
+        // Compare DOB as YYYY-MM-DD string
+        let currentDOB: String? = dateOfBirth.map {
+            let fmt = DateFormatter(); fmt.dateFormat = "yyyy-MM-dd"
+            return fmt.string(from: $0)
+        }
         hasChanges = firstName != (user.firstName ?? "")
             || lastName != (user.lastName ?? "")
             || bio != (user.bio ?? "")
             || city != (user.city ?? "")
+            || state != (user.state ?? "")
             || country != (user.country ?? "")
+            || currentDOB != user.dateOfBirth
             || language != (user.language ?? "")
             || timezone != (user.timezone ?? "")
             || emailNotifications != (user.emailNotifications ?? true)
     }
 
     private func saveProfile() async {
+        // Encode DOB as YYYY-MM-DD string
+        let dobString: String? = dateOfBirth.map {
+            let fmt = DateFormatter(); fmt.dateFormat = "yyyy-MM-dd"
+            return fmt.string(from: $0)
+        }
         let request = ProfileUpdateRequest(
             firstName: firstName.isEmpty ? nil : firstName,
             lastName: lastName.isEmpty ? nil : lastName,
+            dateOfBirth: dobString,
             bio: bio.isEmpty ? nil : bio,
             city: city.isEmpty ? nil : city,
+            state: state.isEmpty ? nil : state,
             country: country.isEmpty ? nil : country,
             language: language.isEmpty ? nil : language,
             timezone: timezone.isEmpty ? nil : timezone,
@@ -230,6 +295,13 @@ struct EditProfileView: View {
             errorText = error.localizedDescription
             showingError = true
         }
+    }
+
+    private func formatDOBDisplay(_ date: Date) -> String {
+        let fmt = DateFormatter()
+        fmt.dateStyle = .long
+        fmt.timeStyle = .none
+        return fmt.string(from: date)
     }
 
     private func uploadAvatar(_ image: UIImage) async {
