@@ -71,231 +71,166 @@ struct CreateLocationView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Photo grid (multi-photo)
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Photos")
-                                .font(.headline)
-                            Spacer()
-                            if photoViewModel.isCompressing {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                                Text("Compressing...")
+            Form {
+                // ── Photos ───────────────────────────────────────────────
+                Section {
+                    HStack {
+                        Text("Photos")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if photoViewModel.isCompressing {
+                            HStack(spacing: 4) {
+                                ProgressView().scaleEffect(0.7)
+                                Text("Compressing…")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                             }
+                        }
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
+
+                    PhotoGridView(
+                        photos: photoViewModel.photos,
+                        maxPhotos: photoViewModel.maxPhotos,
+                        onAddTapped: { photoViewModel.showPicker = true },
+                        onRemovePhoto: { id in photoViewModel.removePhoto(id: id) }
+                    )
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
+                }
+
+                // ── Location Info ─────────────────────────────────────────
+                Section("Location Info") {
+                    TextField("Location Name", text: $locationName)
+                        .autocapitalization(.words)
+                        .submitLabel(.done)
+                        .onChange(of: locationName) { _, newValue in
+                            if newValue.count > 50 {
+                                locationName = String(newValue.prefix(50))
+                            }
+                        }
+                    if locationName.count > 40 {
+                        Text("\(locationName.count)/50")
+                            .font(.caption)
+                            .foregroundStyle(locationName.count >= 50 ? .red : .secondary)
+                    }
+
+                    Picker("Type", selection: $locationType) {
+                        ForEach(locationTypes, id: \.self) { type in
+                            Text(type).tag(type)
+                        }
+                    }
+                }
+
+                // ── Production Date ───────────────────────────────────────
+                Section("Production Date") {
+                    Toggle("Set Production Date", isOn: $hasProductionDate)
+                        .tint(.brandPurple)
+                        .onChange(of: hasProductionDate) { _, newValue in
+                            if !newValue { productionDate = nil }
+                            else if productionDate == nil { productionDate = Date() }
                         }
 
-                        PhotoGridView(
-                            photos: photoViewModel.photos,
-                            maxPhotos: photoViewModel.maxPhotos,
-                            onAddTapped: {
-                                photoViewModel.showPicker = true
-                            },
-                            onRemovePhoto: { id in
-                                photoViewModel.removePhoto(id: id)
-                            }
+                    if hasProductionDate {
+                        DatePicker(
+                            "Date",
+                            selection: Binding(
+                                get: { productionDate ?? Date() },
+                                set: { productionDate = $0 }
+                            ),
+                            displayedComponents: [.date]
                         )
+                        .datePickerStyle(.compact)
                     }
-                    .padding(.horizontal)
-                    
-                    // Form fields
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Location Name
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Location Name")
-                                .font(.headline)
-                            
-                            TextField("Enter location name", text: $locationName)
-                                .textFieldStyle(.roundedBorder)
-                                .autocapitalization(.words)
-                                .submitLabel(.done)
-                                .onChange(of: locationName) { _, newValue in
-                                    if newValue.count > 50 {
-                                        locationName = String(newValue.prefix(50))
-                                    }
-                                }
-                            if locationName.count > 40 {
-                                Text("\(locationName.count)/50")
-                                    .font(.caption)
-                                    .foregroundColor(locationName.count >= 50 ? .destructive : .secondary)
-                            }
-                        }
-                        
-                        // Location Type
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Type")
-                                .font(.headline)
-                            
-                            Picker("Type", selection: $locationType) {
-                                ForEach(locationTypes, id: \.self) { type in
-                                    Text(type).tag(type)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .tint(.blue)
-                        }
-                        
-                        // Production Date (Optional)
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Production Date")
-                                .font(.headline)
-                            
-                            Toggle("Set Production Date", isOn: $hasProductionDate)
-                                .tint(.blue)
-                                .onChange(of: hasProductionDate) { _, newValue in
-                                    if !newValue {
-                                        productionDate = nil
-                                    } else if productionDate == nil {
-                                        productionDate = Date()
-                                    }
-                                }
-                            
-                            if hasProductionDate {
-                                DatePicker(
-                                    "Date",
-                                    selection: Binding(
-                                        get: { productionDate ?? Date() },
-                                        set: { productionDate = $0 }
-                                    ),
-                                    displayedComponents: [.date]
-                                )
-                                .datePickerStyle(.compact)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                        
-                        Divider()
-                        
-                        // GPS Information
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("GPS Information")
-                                .font(.headline)
-                            
-                            if let location = photoLocation {
-                                // Address
-                                HStack(alignment: .top, spacing: 8) {
-                                    Image(systemName: "mappin.and.ellipse")
-                                        .foregroundColor(.brand)
-                                        .frame(width: 20)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Address")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        
-                                        if isLoadingAddress {
-                                            ProgressView()
-                                                .scaleEffect(0.8)
-                                        } else {
-                                            Text(address)
-                                                .font(.subheadline)
-                                        }
-                                    }
-                                }
-                                .padding()
-                                .background(Color(.systemFill))
-                                .cornerRadius(8)
-                                
-                                // Coordinates
-                                HStack(alignment: .top, spacing: 8) {
-                                    Image(systemName: "location.fill")
-                                        .foregroundColor(.success)
-                                        .frame(width: 20)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Coordinates")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        
-                                        Text(String(format: "%.3f, %.3f", 
-                                                  location.coordinate.latitude,
-                                                  location.coordinate.longitude))
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                    }
-                                }
-                                .padding()
-                                .background(Color(.systemFill))
-                                .cornerRadius(8)
-                                
-                                // Accuracy
-                                HStack(spacing: 4) {
-                                    Image(systemName: "scope")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Text("Accuracy: ±\(Int(location.horizontalAccuracy))m")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
+                }
+
+                // ── GPS Information ───────────────────────────────────────
+                Section("GPS Information") {
+                    if let location = photoLocation {
+                        // Address
+                        LabeledContent {
+                            if isLoadingAddress {
+                                ProgressView().scaleEffect(0.8)
                             } else {
-                                Text("No GPS data available")
+                                Text(address)
+                                    .multilineTextAlignment(.trailing)
+                                    .foregroundStyle(.secondary)
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.warning.opacity(0.1))
-                                    .cornerRadius(8)
                             }
+                        } label: {
+                            Label("Address", systemImage: "mappin.and.ellipse")
                         }
+
+                        // Coordinates
+                        LabeledContent {
+                            Text(String(format: "%.4f, %.4f",
+                                        location.coordinate.latitude,
+                                        location.coordinate.longitude))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        } label: {
+                            Label("Coordinates", systemImage: "location.fill")
+                        }
+
+                        // Accuracy
+                        LabeledContent {
+                            Text("±\(Int(location.horizontalAccuracy))m")
+                                .foregroundStyle(.secondary)
+                        } label: {
+                            Label("Accuracy", systemImage: "scope")
+                        }
+                    } else {
+                        Label("No GPS data available", systemImage: "location.slash")
+                            .foregroundStyle(.orange)
                     }
-                    .padding()
-                    
-                    // Save button
-                    Button(action: {
-                        Task {
-                            await saveLocation()
-                        }
-                    }) {
+                }
+
+                // ── Save Button ───────────────────────────────────────────
+                Section {
+                    Button(action: { Task { await saveLocation() } }) {
                         HStack {
+                            Spacer()
                             if locationService.isLoading || photoViewModel.isUploading {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                if photoViewModel.isUploading {
-                                    Text("Uploading \(Int(photoViewModel.uploadProgress * 100))%")
-                                } else {
-                                    Text("Creating...")
-                                }
+                                    .padding(.trailing, 6)
+                                Text(photoViewModel.isUploading
+                                     ? "Uploading \(Int(photoViewModel.uploadProgress * 100))%"
+                                     : "Creating…")
                             } else {
                                 Image(systemName: AppIcons.checkmark)
+                                    .padding(.trailing, 4)
                                 Text("Create Location")
                             }
+                            Spacer()
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(canSave ? Color.brand : Color(.systemGray3))
+                        .fontWeight(.semibold)
                         .foregroundColor(.white)
-                        .cornerRadius(12)
+                        .padding(.vertical, 4)
                     }
+                    .listRowBackground(canSave ? Color.brand : Color(.systemGray3))
                     .disabled(!canSave || locationService.isLoading || photoViewModel.isUploading)
-                    .padding(.horizontal)
-                    .padding(.bottom, 20)
-                    
-                    // Error message
-                    if let error = locationService.errorMessage {
+                }
+
+                // Error message
+                if let error = locationService.errorMessage {
+                    Section {
                         Text(error)
                             .font(.caption)
-                            .foregroundColor(.destructive)
+                            .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
-                            .padding()
                     }
                 }
-                .padding(.vertical)
-                .padding(.bottom, 100)
             }
-            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Create Location")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
                 }
             }
         }
+
         .task {
             // Seed the initial camera photo into the pipeline
             if let initial = initialPhoto, photoViewModel.photos.isEmpty {
