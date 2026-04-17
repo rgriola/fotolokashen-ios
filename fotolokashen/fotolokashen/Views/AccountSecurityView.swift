@@ -13,20 +13,11 @@ struct AccountSecurityView: View {
 
     var body: some View {
         Form {
-            // ── Edit Profile ──────────────────────────────────────────────
-            Section {
-                NavigationLink {
-                    EditProfileView()
-                } label: {
-                    Label("Edit Profile", systemImage: "person.fill")
-                }
-            }
+            // ── Personal Details ──────────────────────────────────────────
+            personalDetailsSection
 
-            // ── Account Info (read-only) ──────────────────────────────────
-            accountInfoSection
-
-            // ── Change Actions ────────────────────────────────────────────
-            changeActionsSection
+            // ── Security ──────────────────────────────────────────────────
+            securitySection
 
             // ── Danger Zone ───────────────────────────────────────────────
             dangerZoneSection
@@ -50,18 +41,51 @@ struct AccountSecurityView: View {
 
     // MARK: - Sections
 
-    private var accountInfoSection: some View {
-        Section("Account Info") {
+    private var personalDetailsSection: some View {
+        Section("Personal Details") {
             if let user = authService.currentUser {
-                LabeledContent("Username", value: "@\(user.username)")
-                LabeledContent("Email", value: user.email)
-                LabeledContent("Member Since", value: formatDate(user.createdAt))
+                VStack(alignment: .leading, spacing: 10) {
+                    // Name + Username
+                    if let name = user.fullName {
+                        Text(name)
+                            .font(.headline)
+                    }
+                    Text("@\(user.username)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Divider()
+
+                    // Email
+                    DetailRow(label: "Email", value: user.email)
+
+                    // City / Country
+                    if let city = user.city, let country = user.country {
+                        DetailRow(label: "Location", value: "\(city), \(country)")
+                    } else if let city = user.city {
+                        DetailRow(label: "City", value: city)
+                    } else if let country = user.country {
+                        DetailRow(label: "Country", value: country)
+                    }
+
+                    Divider()
+
+                    // Joined date
+                    DetailRow(label: "Joined", value: formatDate(user.createdAt))
+                }
+                .padding(.vertical, 4)
             }
         }
     }
 
-    private var changeActionsSection: some View {
-        Section {
+    private var securitySection: some View {
+        Section("Security") {
+            NavigationLink {
+                EditProfileView()
+            } label: {
+                Label("Edit Profile", systemImage: "person.fill")
+            }
+
             NavigationLink {
                 ChangeEmailPlaceholderView()
             } label: {
@@ -79,8 +103,6 @@ struct AccountSecurityView: View {
             } label: {
                 Label("Change Password", systemImage: "key.fill")
             }
-        } header: {
-            Text("Security")
         }
     }
 
@@ -169,6 +191,23 @@ private struct ChangePasswordPlaceholderView: View {
         Text("Change Password")
             .navigationTitle("Change Password")
             .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Detail Row
+
+private struct DetailRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.subheadline)
+        }
     }
 }
 
