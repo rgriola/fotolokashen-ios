@@ -41,6 +41,18 @@ struct ProfileView: View {
                     } label: {
                         Label("Notification Preferences", systemImage: "bell.fill")
                     }
+
+                    NavigationLink {
+                        PreferencesView()
+                    } label: {
+                        Label("Preferences", systemImage: "gearshape.fill")
+                    }
+
+                    NavigationLink {
+                        PermissionsView()
+                    } label: {
+                        Label("Permissions", systemImage: "hand.raised.fill")
+                    }
                 }
 
                 // ── Support ───────────────────────────────────────────────
@@ -58,19 +70,13 @@ struct ProfileView: View {
                     } label: {
                         Label("Terms & Privacy Policy", systemImage: "doc.text.fill")
                     }
-                }
 
-                // ── App Version ───────────────────────────────────────────
-                Section {
-                    HStack {
-                        Spacer()
-                        Text("fotolokashen v\(appVersion) (\(buildNumber))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Spacer()
+                    NavigationLink {
+                        AboutView()
+                    } label: {
+                        Label("About", systemImage: "info.circle.fill")
                     }
                 }
-                .listRowBackground(Color.clear)
 
                 // ── Logout ────────────────────────────────────────────────
                 Section {

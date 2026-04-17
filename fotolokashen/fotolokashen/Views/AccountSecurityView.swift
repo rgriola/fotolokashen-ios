@@ -1,8 +1,4 @@
 import SwiftUI
-import CoreLocation
-import AVFoundation
-import Photos
-import UserNotifications
 
 /// Account & Security — email, username, password, and Danger Zone (Delete Account).
 /// Replaces the old SettingsView as the security-focused subview.
@@ -15,20 +11,6 @@ struct AccountSecurityView: View {
     @State private var showingError = false
     @State private var errorText = ""
 
-    // Preferences
-    @ObservedObject private var userService = UserService.shared
-    @State private var language = ""
-    @State private var timezone = ""
-    @State private var emailNotifications = true
-    @State private var prefHasChanges = false
-    @State private var showingPrefSaved = false
-
-    // Permissions (read from iOS, open Settings for changes)
-    @State private var locationStatus: CLAuthorizationStatus = .notDetermined
-    @State private var cameraStatus: AVAuthorizationStatus = .notDetermined
-    @State private var photoStatus: PHAuthorizationStatus = .notDetermined
-    @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
-
     var body: some View {
         Form {
             // ── Personal Details ──────────────────────────────────────────
@@ -37,31 +19,11 @@ struct AccountSecurityView: View {
             // ── Security ──────────────────────────────────────────────────
             securitySection
 
-            // ── Preferences ───────────────────────────────────────────────
-            preferencesSection
-
-            // ── Permissions ───────────────────────────────────────────────
-            permissionsSection
-
             // ── Danger Zone ───────────────────────────────────────────────
             dangerZoneSection
         }
         .navigationTitle("Account & Security")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            loadPreferences()
-            refreshPermissions()
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                if prefHasChanges {
-                    Button("Save") {
-                        Task { await savePreferences() }
-                    }
-                    .fontWeight(.semibold)
-                }
-            }
-        }
         .alert("Error", isPresented: $showingError) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -147,117 +109,6 @@ struct AccountSecurityView: View {
         }
     }
 
-    private var preferencesSection: some View {
-        Section("Preferences") {
-            HStack {
-                Label("Language", systemImage: "globe")
-                Spacer()
-                TextField("en", text: $language)
-                    .multilineTextAlignment(.trailing)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: 80)
-            }
-            .onChange(of: language) { _, _ in checkPrefChanges() }
-
-            HStack {
-                Label("Timezone", systemImage: "clock")
-                Spacer()
-                TextField("America/New_York", text: $timezone)
-                    .multilineTextAlignment(.trailing)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: 180)
-            }
-            .onChange(of: timezone) { _, _ in checkPrefChanges() }
-
-            Toggle(isOn: $emailNotifications) {
-                Label("Email Notifications", systemImage: "envelope")
-            }
-            .tint(.brandPurple)
-            .onChange(of: emailNotifications) { _, _ in checkPrefChanges() }
-        }
-    }
-
-    private var permissionsSection: some View {
-        Section {
-            PermissionRow(
-                icon: "location.fill",
-                label: "Location (GPS)",
-                isGranted: locationStatus == .authorizedWhenInUse || locationStatus == .authorizedAlways
-            )
-            PermissionRow(
-                icon: "camera.fill",
-                label: "Camera",
-                isGranted: cameraStatus == .authorized
-            )
-            PermissionRow(
-                icon: "photo.fill",
-                label: "Photo Library",
-                isGranted: photoStatus == .authorized || photoStatus == .limited
-            )
-            PermissionRow(
-                icon: "bell.fill",
-                label: "Notifications",
-                isGranted: notificationStatus == .authorized || notificationStatus == .provisional
-            )
-        } header: {
-            Text("Permissions")
-        } footer: {
-            Text("Tap a permission to open iOS Settings and change it there.")
-        }
-    }
-
-    // MARK: - Preferences Actions
-
-    private func loadPreferences() {
-        guard let user = authService.currentUser else { return }
-        language = user.language ?? ""
-        timezone = user.timezone ?? ""
-        emailNotifications = user.emailNotifications ?? true
-    }
-
-    private func checkPrefChanges() {
-        guard let user = authService.currentUser else { return }
-        prefHasChanges = language != (user.language ?? "")
-            || timezone != (user.timezone ?? "")
-            || emailNotifications != (user.emailNotifications ?? true)
-    }
-
-    private func savePreferences() async {
-        let user = authService.currentUser
-        let request = ProfileUpdateRequest(
-            firstName: user?.firstName,
-            lastName: user?.lastName,
-            dateOfBirth: user?.dateOfBirth,
-            bio: user?.bio,
-            city: user?.city,
-            state: user?.state,
-            country: user?.country,
-            language: language.isEmpty ? nil : language,
-            timezone: timezone.isEmpty ? nil : timezone,
-            emailNotifications: emailNotifications
-        )
-        do {
-            let updated = try await userService.updateProfile(request)
-            authService.currentUser = updated
-            prefHasChanges = false
-            showingPrefSaved = true
-        } catch {
-            errorText = error.localizedDescription
-            showingError = true
-        }
-    }
-
-    // MARK: - Permissions
-
-    private func refreshPermissions() {
-        locationStatus = CLLocationManager().authorizationStatus
-        cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
-        photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-        Task {
-            let settings = await UNUserNotificationCenter.current().notificationSettings()
-            await MainActor.run { notificationStatus = settings.authorizationStatus }
-        }
-    }
 
     private var dangerZoneSection: some View {
         Section {
@@ -357,39 +208,7 @@ private struct ChangePasswordPlaceholderView: View {
     }
 }
 
-// MARK: - Permission Row
 
-private struct PermissionRow: View {
-    let icon: String
-    let label: String
-    let isGranted: Bool
-
-    var body: some View {
-        Button {
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                UIApplication.shared.open(url)
-            }
-        } label: {
-            HStack {
-                Label(label, systemImage: icon)
-                    .foregroundStyle(.primary)
-                Spacer()
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(isGranted ? Color.green : Color.red)
-                        .frame(width: 8, height: 8)
-                    Text(isGranted ? "On" : "Off")
-                        .font(.subheadline)
-                        .foregroundStyle(isGranted ? .green : .red)
-                }
-                Image(systemName: "arrow.up.right.square")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 4)
-            }
-        }
-    }
-}
 
 // MARK: - Profile Detail Row
 
