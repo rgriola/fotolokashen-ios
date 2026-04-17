@@ -318,7 +318,18 @@ struct CreateLocationView: View {
         return s
     }
 
-    /// Returns only the 5-digit base ZIP, dropping any "-XXXX" extension.
+    /// Strips http://, https://, and www. URLs from a string.
+    /// Complements server-side sanitizeUserInput — defense in depth.
+    private func stripURLs(_ text: String) -> String {
+        guard let regex = try? NSRegularExpression(
+            pattern: #"https?://\S+|www\.\S+"#,
+            options: .caseInsensitive
+        ) else { return text }
+        let range = NSRange(text.startIndex..., in: text)
+        return regex.stringByReplacingMatches(in: text, range: range, withTemplate: "")
+            .trimmingCharacters(in: .whitespaces)
+    }
+
     private func shortZip(_ zip: String?) -> String? {
         guard let z = zip, !z.isEmpty else { return nil }
         // Strip anything after a hyphen, then take first 5 digits
@@ -355,18 +366,22 @@ struct CreateLocationView: View {
     private func saveLocation() async {
         // ── Sanitize inputs before saving ─────────────────────────────────
         // Trim leading/trailing whitespace, collapse multiple internal spaces
-        let sanitizedName = locationName
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .components(separatedBy: .whitespaces)
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
+        let sanitizedName = stripURLs(
+            locationName
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .components(separatedBy: .whitespaces)
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+        )
 
-        let sanitizedDetails = locationDetails
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n")
+        let sanitizedDetails = stripURLs(
+            locationDetails
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+                .joined(separator: "\n")
+        )
 
         // Guard: both fields must be non-empty after sanitization
         guard !sanitizedName.isEmpty, !sanitizedDetails.isEmpty else { return }
