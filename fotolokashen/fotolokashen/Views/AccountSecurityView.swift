@@ -57,24 +57,24 @@ struct AccountSecurityView: View {
                     Divider()
 
                     // Email
-                    DetailRow(label: "Email", value: user.email)
+                    ProfileDetailRow(label: "Email", value: user.email)
 
                     // City / State / Country
                     let locationParts = [user.city, user.state, user.country]
                         .compactMap { $0?.isEmpty == false ? $0 : nil }
                     if !locationParts.isEmpty {
-                        DetailRow(label: "Location", value: locationParts.joined(separator: ", "))
+                        ProfileDetailRow(label: "Location", value: locationParts.joined(separator: ", "))
                     }
 
                     // Date of birth
                     if let dob = user.dateOfBirth {
-                        DetailRow(label: "Birthday", value: formatDateOfBirth(dob))
+                        ProfileDetailRow(label: "Birthday", value: formatDateOfBirth(dob))
                     }
 
                     Divider()
 
                     // Joined date
-                    DetailRow(label: "Joined", value: formatDate(user.createdAt))
+                    ProfileDetailRow(label: "Joined", value: formatDate(user.createdAt))
                 }
                 .padding(.vertical, 4)
             }
@@ -207,9 +207,9 @@ private struct ChangePasswordPlaceholderView: View {
     }
 }
 
-// MARK: - Detail Row
+// MARK: - Profile Detail Row
 
-private struct DetailRow: View {
+private struct ProfileDetailRow: View {
     let label: String
     let value: String
 
