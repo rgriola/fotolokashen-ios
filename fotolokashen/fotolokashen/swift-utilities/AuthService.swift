@@ -425,6 +425,10 @@ class AuthService: ObservableObject {
             let token = OAuthToken(from: tokenResponse)
             try keychainService.saveToken(token)
             
+            // Dismiss the registration browser if it's still open
+            webAuthSession?.cancel()
+            webAuthSession = nil
+            
             // Update state
             currentUser = tokenResponse.user
             isAuthenticated = true
