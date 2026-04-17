@@ -170,14 +170,14 @@ struct LoggedInView: View {
                 .tabItem {
                     Label("Locations", systemImage: "list.bullet")
                 }
-                .tag(0)
+                .tag(1)
 
             // Map
             MapView()
                 .tabItem {
                     Label("Map", systemImage: "map")
                 }
-                .tag(1)
+                .tag(0)
 
             // Center camera tab - placeholder that triggers camera
             Color.clear

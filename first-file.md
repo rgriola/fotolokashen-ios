@@ -25,3 +25,20 @@
 - Force user first and last names to be a minimum 3 letters
   - no B E > yes Be En (this may not be their name but we don't do initials. Although I know there are people with 2 letter names. )
 - Force user name ie; Richard Griola - first letter of each to be Capitalized. no richard griola > yes Richard Griola
+
+
+*** task ***
+- Create Account in the iOS flow for "create account" the attached UI message to check email did not show up, there was a small toast alert instead. 
+
+-- username should force lowercase letters only and remove space at the end of a username automatically - user does not need to know; this is a common typing issues with users hitting the space bar at the end of their username. 
+
+Date of Birth works much better;  In the Month, Day Year menus scoll the wheel with choice centered in the view port and highlighted, limit the menu to 10 choices at once ie 1980, 1981, 1982, 1983, [1984], 1985, 1986, 1987, 1988, 1989 in this example 1984 is centered and the user can scroll up or down to select the year, one click down would make 1983 centered and the highlighted choice. Apply to Month, Day and Year. 
+
+
+*** issue *** 
+- When the user creates an account starting with iOS, at the point they verify the email through the emailed link, they are redirected back to the web app rather than the iOS app. Is this a simple fix?  So if they create an account on iOS they should be redirected back to the iOS app or through the web app back to the web app. 
+
+... Apr 17 2026
+*** Issue *** 
+- working on iOS create account flow.
+- The attached images show the current UI for the flow in order. The last step "Open fotolokashen app? " should log in the user and skip any more Auth steps. This was found during testing.  
