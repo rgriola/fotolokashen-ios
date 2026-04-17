@@ -13,6 +13,15 @@ struct AccountSecurityView: View {
 
     var body: some View {
         Form {
+            // ── Edit Profile ──────────────────────────────────────────────
+            Section {
+                NavigationLink {
+                    EditProfileView()
+                } label: {
+                    Label("Edit Profile", systemImage: "person.fill")
+                }
+            }
+
             // ── Account Info (read-only) ──────────────────────────────────
             accountInfoSection
 

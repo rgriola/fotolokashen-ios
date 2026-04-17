@@ -22,15 +22,6 @@ struct ProfileView: View {
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
 
-                // ── My Profile ────────────────────────────────────────────
-                Section("My Profile") {
-                    NavigationLink {
-                        EditProfileView()
-                    } label: {
-                        Label("Edit Profile", systemImage: "person.fill")
-                    }
-                }
-
                 // ── App Settings ──────────────────────────────────────────
                 Section("App Settings") {
                     NavigationLink {
