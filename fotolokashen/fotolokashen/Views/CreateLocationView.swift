@@ -188,7 +188,7 @@ struct CreateLocationView: View {
                             // Postal address layout
                             HStack(alignment: .top, spacing: 10) {
                                 Image(systemName: "mappin.and.ellipse")
-                                    .foregroundStyle(.brand)
+                                    .foregroundStyle(Color.brandPurple)
                                     .frame(width: 20)
                                     .padding(.top, 2)
 

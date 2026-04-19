@@ -13,6 +13,8 @@ class AuthService: ObservableObject {
     @Published var currentUser: User?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var awaitingVerification = false
+    @Published var awaitingPasswordReset = false
     
     // MARK: - Properties
     
@@ -177,27 +179,18 @@ class AuthService: ObservableObject {
     
     /// Start OAuth registration flow via in-app browser (ASWebAuthenticationSession)
     func startRegistration() {
-        // Generate PKCE (user will register, then login in the same browser session)
-        let (verifier, challenge) = PKCEGenerator.generate()
-        self.codeVerifier = verifier
-        self.codeChallenge = challenge
-        
         #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Starting registration flow")
         }
         #endif
         
-        // Build register URL with OAuth parameters
+        // Build register URL with source=ios for explicit platform detection
         var components = URLComponents(url: config.backendURL, resolvingAgainstBaseURL: false)!
         components.path = "/register"
         components.queryItems = [
+            URLQueryItem(name: "source", value: "ios"),
             URLQueryItem(name: "client_id", value: config.oauthClientId),
-            URLQueryItem(name: "redirect_uri", value: config.oauthRedirectUri),
-            URLQueryItem(name: "code_challenge", value: challenge),
-            URLQueryItem(name: "code_challenge_method", value: "S256"),
-            URLQueryItem(name: "scope", value: config.oauthScopesString),
-            URLQueryItem(name: "response_type", value: "code")
         ]
         
         guard let registerURL = components.url else {
@@ -212,6 +205,35 @@ class AuthService: ObservableObject {
         #endif
         
         startWebAuthSession(url: registerURL)
+    }
+
+    /// Start forgot password flow via in-app browser (ASWebAuthenticationSession)
+    func startForgotPassword() {
+        #if DEBUG
+        if config.enableDebugLogging {
+            print("[AuthService] Starting forgot password flow")
+        }
+        #endif
+
+        // Build forgot-password URL with source=ios
+        var components = URLComponents(url: config.backendURL, resolvingAgainstBaseURL: false)!
+        components.path = "/forgot-password"
+        components.queryItems = [
+            URLQueryItem(name: "source", value: "ios"),
+        ]
+
+        guard let forgotURL = components.url else {
+            errorMessage = "Failed to build forgot password URL"
+            return
+        }
+
+        #if DEBUG
+        if config.enableDebugLogging {
+            print("[AuthService] Opening in-app browser for forgot password: \(forgotURL.absoluteString)")
+        }
+        #endif
+
+        startWebAuthSession(url: forgotURL)
     }
     
     /// Present ASWebAuthenticationSession for OAuth flow (login or registration)
@@ -271,43 +293,96 @@ class AuthService: ObservableObject {
         }
     }
     
-    /// Handle OAuth callback with authorization code
+    /// Handle callback URL from ASWebAuthenticationSession.
+    /// Routes by URL host to support multiple deep link types.
     func handleCallback(url: URL) async {
         isLoading = true
         errorMessage = nil
-        
+
         #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Handling callback: \(url.absoluteString)")
         }
         #endif
-        
-        // Parse authorization code from URL
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
-            errorMessage = "No authorization code in callback"
+
+        guard let host = url.host else {
+            errorMessage = "Invalid callback URL"
             isLoading = false
             return
         }
-        
-        #if DEBUG
-        if config.enableDebugLogging {
-            print("[AuthService] Authorization code received: \(code)")
-        }
-        #endif
-        
-        do {
-            // Exchange code for tokens
-            try await exchangeCodeForTokens(code: code)
-        } catch {
+
+        switch host {
+        case "oauth-callback":
+            // Standard OAuth PKCE code exchange
+            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
+                errorMessage = "No authorization code in callback"
+                isLoading = false
+                return
+            }
+
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Token exchange error: \(error)")
+                print("[AuthService] Authorization code received")
             }
             #endif
-            errorMessage = error.localizedDescription
+
+            do {
+                try await exchangeCodeForTokens(code: code)
+            } catch {
+                #if DEBUG
+                if config.enableDebugLogging {
+                    print("[AuthService] Token exchange error: \(error)")
+                }
+                #endif
+                errorMessage = error.localizedDescription
+            }
+
+        case "await-verification":
+            // Registration success — panel closed, show native "check email" UI
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[AuthService] Registration complete — awaiting email verification")
+            }
+            #endif
+            awaitingVerification = true
+
+        case "await-password-reset":
+            // Forgot password submitted — panel closed, show native "check email" UI
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[AuthService] Forgot password submitted — awaiting reset email")
+            }
+            #endif
+            awaitingPasswordReset = true
+
+        case "auth-redirect":
+            // Error redirect from web — parse action and reason
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let action = components?.queryItems?.first(where: { $0.name == "action" })?.value
+            let reason = components?.queryItems?.first(where: { $0.name == "reason" })?.value
+
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[AuthService] Auth redirect — action: \(action ?? "nil"), reason: \(reason ?? "nil")")
+            }
+            #endif
+
+            if action == "login" && reason == "account_exists" {
+                errorMessage = "You already have an account. Please log in."
+            } else {
+                errorMessage = reason ?? "Authentication error"
+            }
+
+        default:
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[AuthService] Unhandled callback host: \(host)")
+            }
+            #endif
+            break
         }
-        
+
         isLoading = false
     }
     

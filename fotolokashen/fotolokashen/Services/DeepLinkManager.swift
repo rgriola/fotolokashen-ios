@@ -24,6 +24,10 @@ class DeepLinkManager: ObservableObject {
     /// Used by AuthService to exchange for proper OAuth tokens without manual login.
     @Published var autoLoginToken: String?
 
+    /// Set when the user completed a password reset in Safari.
+    /// Observe this to prompt the user to log in with their new password.
+    @Published var passwordResetComplete = false
+
     private init() {}
 
     // MARK: - URL Handling
@@ -58,6 +62,17 @@ class DeepLinkManager: ObservableObject {
 
                 autoLoginToken = token
                 emailVerified = true
+                return true
+            }
+            // Password reset completed in Safari → return to app
+            // URL format: fotolokashen://password-reset-complete
+            if url.host == "password-reset-complete" {
+                #if DEBUG
+                if ConfigLoader.shared.enableDebugLogging {
+                    print("[DeepLink] Password reset complete — prompting login")
+                }
+                #endif
+                passwordResetComplete = true
                 return true
             }
             // OAuth callback — not a deep link

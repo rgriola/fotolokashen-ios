@@ -42,3 +42,9 @@ Date of Birth works much better;  In the Month, Day Year menus scoll the wheel w
 *** Issue *** 
 - working on iOS create account flow.
 - The attached images show the current UI for the flow in order. The last step "Open fotolokashen app? " should log in the user and skip any more Auth steps. This was found during testing.  
+
+...  
+Create Account flow:
+User already has account >> redirect to login in iOS case redirect back to app for login.
+
+
