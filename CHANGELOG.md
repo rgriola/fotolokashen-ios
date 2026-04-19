@@ -2,7 +2,86 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
+## [1.5.0] - 2026-04-19
+
+### ✨ Profile & Settings Restructure
+
+#### Navigation Redesign
+- **App Settings** section added directly to `ProfileView` — Preferences and Permissions now visible one level up, without needing to navigate into Account & Security
+- **Preferences** (language, timezone, notifications) moved from Edit Profile → Account & Security up to Profile → App Settings
+- **Permissions** section added to App Settings with live on/off toggles for:
+  - GPS / Location
+  - Camera
+  - Photo Library
+  - Notifications
+- **App Version** moved out of Profile into the new dedicated **About** screen
+
+#### About Screen (`AboutView`)
+- New `AboutView` accessible from Profile tab
+- Displays app version, build number, legal links, and brand info
+- Fixed `Color.brandPurple` usage in `foregroundStyle` for consistent theming
+
+#### Account & Security (`AccountSecurityView`)
+- **Personal Details** card with display-only fields (name, username, email, DOB)
+- **Edit Profile** sheet accessible from Account & Security (name, bio, city, country, language, timezone, notifications)
+- Added `state` and `dateOfBirth` to iOS `User` model and all profile forms
+- Fixed Swift compiler error: renamed `DetailRow` → `ProfileDetailRow` to resolve redeclaration conflict
+
+#### Profile Tab
+- Restructured as a top-level navigation hub with clearly separated subviews
+- Preferences and Permissions now surfaced at Profile level under **App Settings**
+
+---
+
+### 📍 Create Location — Full Form Overhaul
+
+- **Removed** "Photos" section header (implied by context)
+- **Increased** photo strip margins to `12pt` for better visual breathing room
+- **Added** required **Location Name** field (50-character limit with live counter)
+- **Added** required **Location Details** field (500-character limit, multiline, with live counter)
+- **Postal address layout**: Street on line 1, City/State abbreviated on line 2, 5-digit ZIP only (strips +4 extension)
+- **Removed** GPS accuracy row from address display
+- **Renamed** "Set Production Date" → "Production Date"
+- Real-time validation: Save button disabled until both required fields are non-empty after trimming
+- Pre-save sanitization: trims whitespace, collapses internal spaces, removes blank lines
+
+---
+
+### 🔒 Security Hardening
+
+#### URL Injection Prevention
+- Added `stripURLs()` helper using `NSRegularExpression` — strips `http://`, `https://`, and `www.` patterns from user text
+- Applied to **Location Name** and **Location Details** in `saveLocation()` before API submission
+- Complements server-side `sanitizeUserInput()` as defense-in-depth
+
+#### Authentication Flow
+- Fixed: Registration browser dismissed automatically on successful auto-login after email verification
+- Added auto-login trigger after email verification deep link — skips manual login step
+- Implemented deep link handler for `fotolokashen://email-verified?token=` scheme
+
+---
+
+### 🐛 Bug Fixes
+
+- Fixed `ContentView` default tab set to Map (was previously showing wrong first tab)
+- Fixed `Color.brandPurple` theming in `AboutView` and `CreateLocationView` (explicit `Color.brandPurple` instead of `.brand`)
+- Fixed `AboutView` compile error: `ShapeStyle` has no member `brandPurple` → corrected to `Color.brandPurple`
+
+---
+
+### 📁 Files Changed
+
+- **`CreateLocationView.swift`**: Full overhaul — Form layout, Location Name/Details fields, postal address formatting, sanitization/validation, `stripURLs()` helper
+- **`ProfileView.swift`**: Restructured as navigation hub; App Settings section with Preferences + Permissions
+- **`AccountSecurityView.swift`**: Personal Details card, Edit Profile integration, `ProfileDetailRow` rename
+- **`AboutView.swift`** (NEW): Dedicated About screen with version, build, and brand info
+- **`ContentView.swift`**: Updated tab default and tab structure
+- **User model**: Added `state`, `dateOfBirth` fields
+
+---
+
 ## [1.4.1] - 2026-02-23
+
 
 ### 🔧 Architecture Improvements & UI Enhancements
 
