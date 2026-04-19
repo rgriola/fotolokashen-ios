@@ -31,7 +31,13 @@ struct ContentView: View {
 struct LoginView: View {
     @EnvironmentObject var authService: AuthService
     @EnvironmentObject var deepLinkManager: DeepLinkManager
-    
+
+    // Native UI states for auth flow feedback
+    @State private var showAwaitingVerification = false
+    @State private var showAwaitingPasswordReset = false
+    @State private var showAccountExistsAlert = false
+    @State private var showPasswordResetComplete = false
+
     var body: some View {
         ZStack {
             // Brand purple background
@@ -99,6 +105,15 @@ struct LoginView: View {
                         )
                     }
                     .disabled(authService.isLoading)
+
+                    Button(action: {
+                        authService.startForgotPassword()
+                    }) {
+                        Text("Forgot Password?")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .disabled(authService.isLoading)
                     
                     Text("Secure sign-in via fotolokashen.com")
                         .font(.caption)
@@ -147,6 +162,136 @@ struct LoginView: View {
                 }
             }
         }
+        // Registration success — panel closed, show native "Check Your Email"
+        .onChange(of: authService.awaitingVerification) { _, awaiting in
+            if awaiting {
+                authService.awaitingVerification = false
+                showAwaitingVerification = true
+            }
+        }
+        // Forgot password submitted — panel closed, show native "Check Your Email"
+        .onChange(of: authService.awaitingPasswordReset) { _, awaiting in
+            if awaiting {
+                authService.awaitingPasswordReset = false
+                showAwaitingPasswordReset = true
+            }
+        }
+        // Password reset completed via deep link from Safari
+        .onChange(of: deepLinkManager.passwordResetComplete) { _, complete in
+            if complete {
+                deepLinkManager.passwordResetComplete = false
+                showPasswordResetComplete = true
+            }
+        }
+        // Account already exists — auth-redirect with reason
+        .onChange(of: authService.errorMessage) { _, message in
+            if message == "You already have an account. Please log in." {
+                authService.errorMessage = nil
+                showAccountExistsAlert = true
+            }
+        }
+        // MARK: - Native Sheets & Alerts
+        .sheet(isPresented: $showAwaitingVerification) {
+            CheckEmailSheet(
+                title: "Check Your Email",
+                message: "We sent a verification link to your email address. Tap the link to verify your account, then you'll be logged in automatically.",
+                icon: "envelope.badge",
+                buttonTitle: "Got It",
+                onDismiss: { showAwaitingVerification = false }
+            )
+            .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showAwaitingPasswordReset) {
+            CheckEmailSheet(
+                title: "Check Your Email",
+                message: "If an account exists with that email, you'll receive a password reset link. The link expires in 15 minutes.",
+                icon: "envelope.open",
+                buttonTitle: "Got It",
+                onDismiss: { showAwaitingPasswordReset = false }
+            )
+            .presentationDetents([.medium])
+        }
+        .alert("Account Already Exists", isPresented: $showAccountExistsAlert) {
+            Button("Log In") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    authService.startLogin()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You already have an account with this email. Would you like to log in instead?")
+        }
+        .alert("Password Updated", isPresented: $showPasswordResetComplete) {
+            Button("Log In") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    authService.startLogin()
+                }
+            }
+        } message: {
+            Text("Your password has been updated successfully. Please log in with your new password.")
+        }
+    }
+}
+
+// MARK: - Check Email Sheet
+
+/// Reusable native sheet for "check your email" states (post-registration, post-forgot-password)
+private struct CheckEmailSheet: View {
+    let title: String
+    let message: String
+    let icon: String
+    let buttonTitle: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: icon)
+                .font(.system(size: 56))
+                .foregroundColor(.brandPurple)
+
+            Text(title)
+                .font(.title2)
+                .fontWeight(.bold)
+
+            Text(message)
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: "tray")
+                        .foregroundColor(.brandPurple)
+                    Text("Check your spam or junk folder")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                }
+                HStack(spacing: 8) {
+                    Image(systemName: "clock")
+                        .foregroundColor(.brandPurple)
+                    Text("Wait a few minutes if it hasn't arrived")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Button(action: onDismiss) {
+                Text(buttonTitle)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.brandPurple)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 40)
+
+            Spacer()
+        }
+        .padding()
     }
 }
 
