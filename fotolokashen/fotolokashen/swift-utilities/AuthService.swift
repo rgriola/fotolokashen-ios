@@ -152,11 +152,20 @@ class AuthService: ObservableObject {
         #endif
         
         // Build login URL with OAuth parameters
+        // iOS 17.4+: Use Universal Link (HTTPS) redirect URI — domain-verified, cannot be hijacked
+        // iOS 17.0-17.3: Fall back to custom URL scheme
+        let redirectUri: String
+        if #available(iOS 17.4, *) {
+            redirectUri = "\(config.backendBaseURL)/app/auth-callback"
+        } else {
+            redirectUri = config.oauthRedirectUri
+        }
+
         var components = URLComponents(url: config.backendURL, resolvingAgainstBaseURL: false)!
         components.path = "/login"
         components.queryItems = [
             URLQueryItem(name: "client_id", value: config.oauthClientId),
-            URLQueryItem(name: "redirect_uri", value: config.oauthRedirectUri),
+            URLQueryItem(name: "redirect_uri", value: redirectUri),
             URLQueryItem(name: "code_challenge", value: challenge),
             URLQueryItem(name: "code_challenge_method", value: "S256"),
             URLQueryItem(name: "scope", value: config.oauthScopesString),
@@ -236,19 +245,22 @@ class AuthService: ObservableObject {
         startWebAuthSession(url: forgotURL)
     }
     
-    /// Present ASWebAuthenticationSession for OAuth flow (login or registration)
+    /// Present ASWebAuthenticationSession for OAuth flow (login, registration, or forgot password)
+    ///
+    /// iOS 17.4+: Uses `.https()` callback for OAuth login (Universal Link — domain-verified, cannot be hijacked).
+    /// iOS 17.0-17.3: Falls back to `.customScheme()` callback.
+    /// Non-OAuth flows (registration, forgot-password) always use the custom scheme since they
+    /// redirect to `fotolokashen://await-verification` etc., not a Universal Link.
     private func startWebAuthSession(url: URL) {
         isLoading = true
         errorMessage = nil
-        
-        let session = ASWebAuthenticationSession(
-            url: url,
-            callbackURLScheme: "fotolokashen"
-        ) { [weak self] callbackURL, error in
+
+        // Shared completion handler for both API versions
+        let completionHandler: (URL?, Error?) -> Void = { [weak self] callbackURL, error in
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
                 self.webAuthSession = nil
-                
+
                 if let error = error as? ASWebAuthenticationSessionError,
                    error.code == .canceledLogin {
                     // User dismissed the browser — not an error
@@ -260,7 +272,7 @@ class AuthService: ObservableObject {
                     #endif
                     return
                 }
-                
+
                 if let error = error {
                     self.isLoading = false
                     self.errorMessage = error.localizedDescription
@@ -271,17 +283,48 @@ class AuthService: ObservableObject {
                     #endif
                     return
                 }
-                
+
                 guard let callbackURL = callbackURL else {
                     self.isLoading = false
                     self.errorMessage = "No callback URL received"
                     return
                 }
-                
+
                 await self.handleCallback(url: callbackURL)
             }
         }
-        
+
+        let session: ASWebAuthenticationSession
+        if #available(iOS 17.4, *) {
+            // iOS 17.4+: Use the modern callback API.
+            // .https() intercepts the Universal Link redirect directly in the session.
+            // .customScheme() handles non-OAuth redirects (await-verification, auth-redirect, etc.)
+            //
+            // We use .https for OAuth login and .customScheme for everything else.
+            // Detect login by checking the URL path — login URLs always go to /login.
+            let isLoginFlow = url.path == "/login"
+            if isLoginFlow {
+                session = ASWebAuthenticationSession(
+                    url: url,
+                    callback: .https(host: "fotolokashen.com", path: "/app/auth-callback"),
+                    completionHandler: completionHandler
+                )
+            } else {
+                session = ASWebAuthenticationSession(
+                    url: url,
+                    callback: .customScheme("fotolokashen"),
+                    completionHandler: completionHandler
+                )
+            }
+        } else {
+            // iOS 17.0-17.3: Use the legacy API with custom URL scheme only
+            session = ASWebAuthenticationSession(
+                url: url,
+                callbackURLScheme: "fotolokashen",
+                completionHandler: completionHandler
+            )
+        }
+
         session.presentationContextProvider = presentationContextProvider
         session.prefersEphemeralWebBrowserSession = false
         
@@ -305,7 +348,18 @@ class AuthService: ObservableObject {
         }
         #endif
 
-        guard let host = url.host else {
+        // Route by scheme + host to handle both Universal Links (HTTPS) and custom scheme
+        let host: String?
+        if url.scheme == "https" {
+            // Universal Link callback: https://fotolokashen.com/app/auth-callback?code=xxx
+            // Treat this the same as fotolokashen://oauth-callback
+            host = url.path == "/app/auth-callback" ? "oauth-callback" : url.host
+        } else {
+            // Custom scheme: fotolokashen://oauth-callback, fotolokashen://await-verification, etc.
+            host = url.host
+        }
+
+        guard let host else {
             errorMessage = "Invalid callback URL"
             isLoading = false
             return
@@ -400,12 +454,20 @@ class AuthService: ObservableObject {
         let model = UIDevice.current.model
         let userAgent = "fotolokashen-ios/1.0 (iOS \(systemVersion); \(model))"
         
+        // redirect_uri must match what was used in the authorize request
+        let redirectUri: String
+        if #available(iOS 17.4, *) {
+            redirectUri = "\(config.backendBaseURL)/app/auth-callback"
+        } else {
+            redirectUri = config.oauthRedirectUri
+        }
+
         let tokenRequest = TokenRequest(
             grantType: "authorization_code",
             code: code,
             codeVerifier: verifier,
             clientId: config.oauthClientId,
-            redirectUri: config.oauthRedirectUri,
+            redirectUri: redirectUri,
             deviceName: deviceName,
             userAgent: userAgent,
             ipAddress: nil, // Server will detect from headers
