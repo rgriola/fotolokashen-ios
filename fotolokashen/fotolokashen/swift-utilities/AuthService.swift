@@ -151,15 +151,12 @@ class AuthService: ObservableObject {
         }
         #endif
         
-        // Build login URL with OAuth parameters
-        // iOS 17.4+: Use Universal Link (HTTPS) redirect URI — domain-verified, cannot be hijacked
-        // iOS 17.0-17.3: Fall back to custom URL scheme
-        let redirectUri: String
-        if #available(iOS 17.4, *) {
-            redirectUri = "\(config.backendBaseURL)/app/auth-callback"
-        } else {
-            redirectUri = config.oauthRedirectUri
-        }
+        // Always use custom URL scheme for OAuth redirect.
+        // The .https() ASWebAuthenticationSession callback requires the AASA file to be
+        // cached on-device, which is unreliable on fresh installs and device restarts.
+        // The custom scheme is intercepted directly by ASWebAuthenticationSession and
+        // works consistently across all iOS versions.
+        let redirectUri = config.oauthRedirectUri
 
         var components = URLComponents(url: config.backendURL, resolvingAgainstBaseURL: false)!
         components.path = "/login"
@@ -296,28 +293,16 @@ class AuthService: ObservableObject {
 
         let session: ASWebAuthenticationSession
         if #available(iOS 17.4, *) {
-            // iOS 17.4+: Use the modern callback API.
-            // .https() intercepts the Universal Link redirect directly in the session.
-            // .customScheme() handles non-OAuth redirects (await-verification, auth-redirect, etc.)
-            //
-            // We use .https for OAuth login and .customScheme for everything else.
-            // Detect login by checking the URL path — login URLs always go to /login.
-            let isLoginFlow = url.path == "/login"
-            if isLoginFlow {
-                session = ASWebAuthenticationSession(
-                    url: url,
-                    callback: .https(host: "fotolokashen.com", path: "/app/auth-callback"),
-                    completionHandler: completionHandler
-                )
-            } else {
-                session = ASWebAuthenticationSession(
-                    url: url,
-                    callback: .customScheme("fotolokashen"),
-                    completionHandler: completionHandler
-                )
-            }
+            // iOS 17.4+: Use the modern callback API with custom scheme.
+            // Note: .https() callback is intentionally NOT used because it requires the AASA
+            // file to be cached on-device, which fails on fresh installs and device restarts.
+            session = ASWebAuthenticationSession(
+                url: url,
+                callback: .customScheme("fotolokashen"),
+                completionHandler: completionHandler
+            )
         } else {
-            // iOS 17.0-17.3: Use the legacy API with custom URL scheme only
+            // iOS 17.0-17.3: Use the legacy API with custom URL scheme
             session = ASWebAuthenticationSession(
                 url: url,
                 callbackURLScheme: "fotolokashen",
