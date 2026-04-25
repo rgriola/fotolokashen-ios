@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Kingfisher
 
 // MARK: - Profile Banner
 
@@ -16,21 +17,17 @@ struct ProfileBannerView: View {
     var body: some View {
         Group {
             if let bannerURL {
-                AsyncImage(url: bannerURL) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 120)
-                            .clipped()
-                    case .failure:
-                        bannerPlaceholder
-                    default:
+                KFImage(bannerURL)
+                    .resizable()
+                    .placeholder {
                         bannerPlaceholder
                             .overlay(ProgressView())
                     }
-                }
+                    .onFailureImage(nil)
+                    .fade(duration: 0.2)
+                    .scaledToFill()
+                    .frame(height: 120)
+                    .clipped()
             } else {
                 bannerPlaceholder
             }
@@ -83,21 +80,17 @@ struct ProfileAvatarView<MenuContent: View>: View {
         let avatarContent = ZStack(alignment: .bottomTrailing) {
             Group {
                 if let avatarURL {
-                    AsyncImage(url: avatarURL) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 68, height: 68)
-                                .clipped()
-                        case .failure:
-                            avatarPlaceholder
-                        default:
+                    KFImage(avatarURL)
+                        .resizable()
+                        .placeholder {
                             avatarPlaceholder
                                 .overlay(ProgressView())
                         }
-                    }
+                        .onFailureImage(nil)
+                        .fade(duration: 0.2)
+                        .scaledToFill()
+                        .frame(width: 68, height: 68)
+                        .clipped()
                 } else {
                     avatarPlaceholder
                 }

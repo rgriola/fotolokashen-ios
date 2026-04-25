@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 /// People search and discovery view with tabs for Followers, Following, and Discover
 ///
@@ -171,15 +172,16 @@ private struct SearchUserRow: View {
         HStack(spacing: 12) {
             // Avatar
             if let avatarURL = user.avatarURL {
-                AsyncImage(url: avatarURL) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    avatarPlaceholder
-                }
-                .frame(width: 48, height: 48)
-                .clipShape(Circle())
+                KFImage(avatarURL)
+                    .resizable()
+                    .placeholder {
+                        avatarPlaceholder
+                    }
+                    .onFailureImage(nil)
+                    .fade(duration: 0.2)
+                    .scaledToFill()
+                    .frame(width: 48, height: 48)
+                    .clipShape(Circle())
             } else {
                 avatarPlaceholder
             }

@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 /// Edit view for an existing location with all editable fields
 ///
@@ -231,15 +232,9 @@ struct EditLocationView: View {
                     } else {
                         ForEach(photos) { photo in
                             HStack(spacing: 12) {
-                                AsyncImage(url: URL(string: photo.thumbnailUrl)) { phase in
-                                    switch phase {
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 60, height: 60)
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    default:
+                                KFImage(URL(string: photo.thumbnailUrl))
+                                    .resizable()
+                                    .placeholder {
                                         RoundedRectangle(cornerRadius: 8)
                                             .fill(Color(.systemGray5))
                                             .frame(width: 60, height: 60)
@@ -248,7 +243,11 @@ struct EditLocationView: View {
                                                     .foregroundColor(.secondary)
                                             }
                                     }
-                                }
+                                    .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                                    .fade(duration: 0.2)
+                                    .scaledToFill()
+                                    .frame(width: 60, height: 60)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
 
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(photo.caption ?? "No caption")

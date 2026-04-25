@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 /// Public profile view for viewing another user's profile
 /// Shows banner, avatar, bio, follow button, follower/following counts, and public locations
@@ -289,20 +290,21 @@ struct PublicProfileView: View {
             // Thumbnail
             if let thumbnailUrl = socialLocation.location.thumbnailUrl,
                let url = URL(string: thumbnailUrl) {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color(.systemGray5))
-                        .overlay(
-                            Image(systemName: "photo")
-                                .foregroundColor(.secondary)
-                        )
-                }
-                .frame(height: 88)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                KFImage(url)
+                    .resizable()
+                    .placeholder {
+                        Rectangle()
+                            .fill(Color(.systemGray5))
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .foregroundColor(.secondary)
+                            )
+                    }
+                    .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                    .fade(duration: 0.2)
+                    .scaledToFill()
+                    .frame(height: 88)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             } else if let staticMapUrl = StaticMapHelper.thumbnailMapURL(
                 latitude: socialLocation.location.lat,
                 longitude: socialLocation.location.lng

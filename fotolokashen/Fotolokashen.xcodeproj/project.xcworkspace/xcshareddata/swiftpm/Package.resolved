@@ -1,5 +1,5 @@
 {
-  "originHash" : "65b6c9c760e5eae045a7ae8c29007954d243328f7fd21b11c3960b0f589099a8",
+  "originHash" : "087a1217115e2e91b4027d3ec6ab8b8a8e5a965ec168b4450518546ada5dad2b",
   "pins" : [
     {
       "identity" : "google-maps-ios-utils",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "84e546727d66f1adc5439debad16270d0fdd04e7",
         "version" : "4.2.2"
+      }
+    },
+    {
+      "identity" : "kingfisher",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/onevcat/Kingfisher.git",
+      "state" : {
+        "revision" : "c152c1915f60c51e4afa0752656993ee5b3c63db",
+        "version" : "8.8.1"
       }
     }
   ],

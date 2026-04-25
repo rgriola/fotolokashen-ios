@@ -10,6 +10,7 @@
 		676F6BDB2F19744700CEBBE4 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BDA2F19744700CEBBE4 /* KeychainAccess */; };
 		676F6BDE2F19748D00CEBBE4 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BDD2F19748D00CEBBE4 /* GoogleMaps */; };
 		677061772F1B0BE500E97608 /* GoogleMapsUtils in Frameworks */ = {isa = PBXBuildFile; productRef = 677061762F1B0BE500E97608 /* GoogleMapsUtils */; };
+		785FFC3E2F9D198C00A995C4 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 785FFC3F2F9D198C00A995C4 /* Kingfisher */; };
 		78EFEEE52F44DC0200C8B53E /* Debug.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 78EFEEE42F44DC0200C8B53E /* Debug.xcconfig */; };
 /* End PBXBuildFile section */
 
@@ -77,6 +78,7 @@
 				676F6BDE2F19748D00CEBBE4 /* GoogleMaps in Frameworks */,
 				676F6BDB2F19744700CEBBE4 /* KeychainAccess in Frameworks */,
 				677061772F1B0BE500E97608 /* GoogleMapsUtils in Frameworks */,
+				785FFC3E2F9D198C00A995C4 /* Kingfisher in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -142,6 +144,7 @@
 				676F6BDA2F19744700CEBBE4 /* KeychainAccess */,
 				676F6BDD2F19748D00CEBBE4 /* GoogleMaps */,
 				677061762F1B0BE500E97608 /* GoogleMapsUtils */,
+				785FFC3F2F9D198C00A995C4 /* Kingfisher */,
 			);
 			productName = fotolokashen;
 			productReference = 676F6B882F196B7600CEBBE4 /* fotolokashen.app */;
@@ -229,6 +232,7 @@
 				676F6BD92F19744700CEBBE4 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				676F6BDC2F19748D00CEBBE4 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */,
 				677061752F1B0BE500E97608 /* XCRemoteSwiftPackageReference "google-maps-ios-utils" */,
+				785FFC3D2F9D198C00A995C4 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 676F6B892F196B7600CEBBE4 /* Products */;
@@ -685,6 +689,14 @@
 				minimumVersion = 7.0.0;
 			};
 		};
+		785FFC3D2F9D198C00A995C4 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.8.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -702,6 +714,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 677061752F1B0BE500E97608 /* XCRemoteSwiftPackageReference "google-maps-ios-utils" */;
 			productName = GoogleMapsUtils;
+		};
+		785FFC3F2F9D198C00A995C4 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 785FFC3D2F9D198C00A995C4 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

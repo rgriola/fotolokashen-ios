@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 /// Reusable view for displaying followers or following list with pagination
 struct FollowListView: View {
@@ -162,15 +163,16 @@ struct UserRowView: View {
         HStack(spacing: 12) {
             // Avatar
             if let avatarURL = user.avatarURL {
-                AsyncImage(url: avatarURL) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    avatarPlaceholder
-                }
-                .frame(width: 44, height: 44)
-                .clipShape(Circle())
+                KFImage(avatarURL)
+                    .resizable()
+                    .placeholder {
+                        avatarPlaceholder
+                    }
+                    .onFailureImage(nil)
+                    .fade(duration: 0.2)
+                    .scaledToFill()
+                    .frame(width: 44, height: 44)
+                    .clipShape(Circle())
             } else {
                 avatarPlaceholder
             }

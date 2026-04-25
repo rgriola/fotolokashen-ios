@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 /// Individual location card component matching the web app's photo-prominent design.
 /// Vertical layout: photo carousel on top, name/address/badge below, three-dot menu.
@@ -124,45 +125,35 @@ struct LocationRow: View {
             // Multiple photos — swipeable carousel with tap-through for navigation
             TabView(selection: $currentPhotoIndex) {
                 ForEach(Array(photoURLs.enumerated()), id: \.offset) { index, url in
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(maxWidth: .infinity, maxHeight: 180)
-                                .clipped()
-                                .allowsHitTesting(false) // Allow taps to pass through for NavigationLink
-                        case .failure:
-                            photoErrorPlaceholder
-                                .allowsHitTesting(false)
-                        default:
+                    KFImage(url)
+                        .resizable()
+                        .placeholder {
                             Rectangle()
                                 .fill(Color(.systemFill))
                                 .overlay { ProgressView() }
-                                .allowsHitTesting(false)
                         }
-                    }
-                    .tag(index)
+                        .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                        .fade(duration: 0.2)
+                        .aspectRatio(contentMode: .fill)
+                        .frame(maxWidth: .infinity, maxHeight: 180)
+                        .clipped()
+                        .allowsHitTesting(false)
+                        .tag(index)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
         } else if let firstURL = photoURLs.first {
             // Single photo
-            AsyncImage(url: firstURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    staticMapImage
-                default:
+            KFImage(firstURL)
+                .resizable()
+                .placeholder {
                     Rectangle()
                         .fill(Color(.systemFill))
                         .overlay { ProgressView() }
                 }
-            }
+                .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                .fade(duration: 0.2)
+                .aspectRatio(contentMode: .fill)
         } else {
             // No photos — static map fallback
             staticMapImage

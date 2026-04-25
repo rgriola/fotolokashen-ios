@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Photo Gallery Section
 
@@ -42,35 +43,23 @@ struct PhotoGallerySection: View {
             VStack(spacing: 0) {
                 TabView(selection: $selectedPhotoIndex) {
                     ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
-                        AsyncImage(url: URL(string: photo.url)) { phase in
-                            switch phase {
-                            case .empty:
+                        KFImage(URL(string: photo.url))
+                            .resizable()
+                            .placeholder {
                                 ZStack {
                                     Rectangle()
                                         .fill(Color(.systemGray5))
                                     ProgressView()
                                 }
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .onTapGesture {
-                                        selectedPhotoIndex = index
-                                        showingFullScreenGallery = true
-                                    }
-                            case .failure:
-                                ZStack {
-                                    Rectangle()
-                                        .fill(Color(.systemGray5))
-                                    Image(systemName: "photo")
-                                        .font(.largeTitle)
-                                        .foregroundColor(Color(.tertiaryLabel))
-                                }
-                            @unknown default:
-                                EmptyView()
                             }
-                        }
-                        .tag(index)
+                            .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                            .fade(duration: 0.2)
+                            .scaledToFill()
+                            .onTapGesture {
+                                selectedPhotoIndex = index
+                                showingFullScreenGallery = true
+                            }
+                            .tag(index)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .automatic))
@@ -197,24 +186,17 @@ struct PhotoGalleryFullScreen: View {
 
             TabView(selection: $selectedIndex) {
                 ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
-                    AsyncImage(url: URL(string: photo.url)) { phase in
-                        switch phase {
-                        case .empty:
+                    // Full-screen uses the full variant URL for highest quality
+                    KFImage(ImageKitURL.url(for: photo.imagekitFilePath, variant: .full))
+                        .resizable()
+                        .placeholder {
                             ProgressView()
                                 .tint(.white)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFit()
-                        case .failure:
-                            Image(systemName: "photo")
-                                .font(.largeTitle)
-                                .foregroundColor(.white)
-                        @unknown default:
-                            EmptyView()
                         }
-                    }
-                    .tag(index)
+                        .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                        .fade(duration: 0.2)
+                        .scaledToFit()
+                        .tag(index)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
