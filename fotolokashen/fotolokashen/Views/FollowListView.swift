@@ -168,7 +168,9 @@ struct UserRowView: View {
                     .placeholder {
                         avatarPlaceholder
                     }
-                    .onFailureImage(nil)
+                    .onFailureView {
+                        EmptyView()
+                    }
                     .fade(duration: 0.2)
                     .scaledToFill()
                     .frame(width: 44, height: 44)

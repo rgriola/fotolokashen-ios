@@ -23,7 +23,9 @@ struct ProfileBannerView: View {
                         bannerPlaceholder
                             .overlay(ProgressView())
                     }
-                    .onFailureImage(nil)
+                    .onFailureView {
+                        EmptyView()
+                    }
                     .fade(duration: 0.2)
                     .scaledToFill()
                     .frame(height: 120)
@@ -86,7 +88,9 @@ struct ProfileAvatarView<MenuContent: View>: View {
                             avatarPlaceholder
                                 .overlay(ProgressView())
                         }
-                        .onFailureImage(nil)
+                        .onFailureView {
+                        EmptyView()
+                    }
                         .fade(duration: 0.2)
                         .scaledToFill()
                         .frame(width: 68, height: 68)

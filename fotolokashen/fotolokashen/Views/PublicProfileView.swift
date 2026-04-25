@@ -300,7 +300,10 @@ struct PublicProfileView: View {
                                     .foregroundColor(.secondary)
                             )
                     }
-                    .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                    .onFailureView {
+                        Image(systemName: "photo")
+                            .foregroundColor(.secondary)
+                    }
                     .fade(duration: 0.2)
                     .scaledToFill()
                     .frame(height: 88)

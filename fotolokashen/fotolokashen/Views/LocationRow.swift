@@ -132,7 +132,10 @@ struct LocationRow: View {
                                 .fill(Color(.systemFill))
                                 .overlay { ProgressView() }
                         }
-                        .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                        .onFailureView {
+                            Image(systemName: "photo")
+                                .foregroundColor(.secondary)
+                        }
                         .fade(duration: 0.2)
                         .aspectRatio(contentMode: .fill)
                         .frame(maxWidth: .infinity, maxHeight: 180)
@@ -151,7 +154,10 @@ struct LocationRow: View {
                         .fill(Color(.systemFill))
                         .overlay { ProgressView() }
                 }
-                .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                .onFailureView {
+                    Image(systemName: "photo")
+                        .foregroundColor(.secondary)
+                }
                 .fade(duration: 0.2)
                 .aspectRatio(contentMode: .fill)
         } else {

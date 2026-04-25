@@ -243,7 +243,10 @@ struct EditLocationView: View {
                                                     .foregroundColor(.secondary)
                                             }
                                     }
-                                    .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                                    .onFailureView {
+                                        Image(systemName: "photo")
+                                            .foregroundColor(.secondary)
+                                    }
                                     .fade(duration: 0.2)
                                     .scaledToFill()
                                     .frame(width: 60, height: 60)

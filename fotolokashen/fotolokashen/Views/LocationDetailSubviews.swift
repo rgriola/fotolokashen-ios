@@ -52,7 +52,10 @@ struct PhotoGallerySection: View {
                                     ProgressView()
                                 }
                             }
-                            .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                            .onFailureView {
+                                Image(systemName: "photo")
+                                    .foregroundColor(.secondary)
+                            }
                             .fade(duration: 0.2)
                             .scaledToFill()
                             .onTapGesture {
@@ -193,7 +196,10 @@ struct PhotoGalleryFullScreen: View {
                             ProgressView()
                                 .tint(.white)
                         }
-                        .onFailureImage(KFCrossPlatformImage(systemName: "photo"))
+                        .onFailureView {
+                            Image(systemName: "photo")
+                                .foregroundColor(.secondary)
+                        }
                         .fade(duration: 0.2)
                         .scaledToFit()
                         .tag(index)
