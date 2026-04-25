@@ -295,8 +295,10 @@ struct DetailPhoto: Codable, Identifiable {
             DetailPhoto(
                 id: photo.id,
                 imagekitFilePath: photo.imagekitFilePath,
-                url: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)",
-                thumbnailUrl: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)?tr=w-400,h-400",
+                url: ImageKitURL.url(for: photo.imagekitFilePath, variant: .gallery)?.absoluteString
+                    ?? "\(ImageKitURL.baseURL)\(photo.imagekitFilePath)",
+                thumbnailUrl: ImageKitURL.url(for: photo.imagekitFilePath, variant: .thumbnail)?.absoluteString
+                    ?? "\(ImageKitURL.baseURL)\(photo.imagekitFilePath)",
                 caption: nil,
                 width: nil,
                 height: nil,

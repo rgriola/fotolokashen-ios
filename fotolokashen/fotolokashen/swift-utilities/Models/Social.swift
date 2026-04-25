@@ -246,10 +246,11 @@ struct SocialLocationDetail: Equatable, Hashable {
         LocationType(rawValue: type?.uppercased() ?? "") ?? .other
     }
 
-    /// Thumbnail URL from first photo
+    /// Thumbnail URL from first photo (optimized for list display)
     var thumbnailUrl: String? {
         guard let firstPhoto = photos?.first else { return nil }
-        return "https://ik.imagekit.io/rgriola\(firstPhoto.imagekitFilePath)"
+        return ImageKitURL.url(for: firstPhoto.imagekitFilePath, variant: .thumbnail)?.absoluteString
+            ?? "\(ImageKitURL.baseURL)\(firstPhoto.imagekitFilePath)"
     }
 
     static func == (lhs: SocialLocationDetail, rhs: SocialLocationDetail) -> Bool {

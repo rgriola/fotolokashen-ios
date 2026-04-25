@@ -1,8 +1,8 @@
 # Copilot Instructions for fotolokashen-ios
 
-_Last updated: April 15, 2026_
+_Last updated: April 25, 2026_
 
-You are assisting with the **fotolokashen iOS app** (v1.4.1) — a camera-first location scouting companion to the fotolokashen web platform.
+You are assisting with the **fotolokashen iOS app** (v1.5.0) — a camera-first location scouting companion to the fotolokashen web platform.
 
 ## Tech Stack
 
@@ -146,6 +146,7 @@ fotolokashen-ios/
 │   │   │   ├── CameraPreview.swift    # AVCaptureVideoPreviewLayer wrapper
 │   │   │   ├── CreateLocationView.swift # New location form
 │   │   │   ├── LocationDetailView.swift # UNIFIED: owner mode + read-only mode (two initializers)
+│   │   │   ├── LocationDetailSubviews.swift # Reusable detail sections (header, photos, metadata)
 │   │   │   ├── LocationListView.swift   # Searchable/sortable list with type filter chips
 │   │   │   ├── LocationRow.swift        # List row component with share button
 │   │   │   ├── LocationClusterItem.swift # GMUClusterItem + renderer + SocialLocationClusterItem
@@ -157,8 +158,16 @@ fotolokashen-ios/
 │   │   │   ├── PhotoPickerView.swift    # PHPickerViewController wrapper (multi-select, EXIF-preserving)
 │   │   │   ├── PhotoGridView.swift      # 3-column photo grid with add/remove controls
 │   │   │   ├── PhotoPickerViewModel.swift # Pipeline state: pick → compress → upload
-│   │   │   ├── ProfileView.swift        # Profile editing with avatar/banner upload + social stats
-│   │   │   └── SettingsView.swift       # Privacy controls, account info, logout
+│   │   │   ├── ProfileView.swift        # Profile hub: avatar/banner, social stats, App Settings, About link
+│   │   │   ├── ProfileHeaderComponents.swift # Reusable avatar/banner/stats components
+│   │   │   ├── EditProfileView.swift    # Edit profile sheet (name, bio, city, country, language, timezone)
+│   │   │   ├── AccountSecurityView.swift # Personal details + Edit Profile entry + security
+│   │   │   ├── AboutView.swift          # App version, build, legal links, brand info
+│   │   │   ├── PreferencesView.swift    # Language, timezone, notification toggles
+│   │   │   ├── PermissionsView.swift    # Live on/off toggles for GPS, Camera, Photos, Notifications
+│   │   │   ├── NotificationPreferencesView.swift # Granular notification controls
+│   │   │   ├── PrivacySettingsView.swift # profileVisibility, showInSearch, showLocation, showSavedLocations
+│   │   │   └── SettingsView.swift       # Settings hub (logout, account info)
 │   │   ├── Services/
 │   │   │   ├── AppColors.swift          # Centralized semantic color tokens (brand, destructive, etc.)
 │   │   │   ├── AppIcons.swift           # Centralized SF Symbol icon names (45+ constants)
@@ -167,6 +176,7 @@ fotolokashen-ios/
 │   │   │   ├── MarkerIconGenerator.swift # Custom camera-icon + social person-icon markers
 │   │   │   ├── NetworkMonitor.swift     # NWPathMonitor connectivity
 │   │   │   ├── PlacesService.swift      # CLGeocoder reverse geocoding
+│   │   │   ├── GeocodingService.swift   # Google Geocoding API wrapper (primary; Apple is fallback)
 │   │   │   ├── SyncService.swift        # Download locations + upload queued photos
 │   │   │   ├── UserService.swift        # Profile CRUD, avatar/banner upload
 │   │   │   ├── FollowService.swift      # Follow/unfollow, profiles, search, social locations
@@ -644,12 +654,22 @@ When adding new features, verify:
 - ✅ Profile social stats (followers/following counts) with tappable navigation
 - ✅ 5-tab layout updated: Locations | Map | Capture | People | Profile (Settings via gear icon)
 
-### Phase 4: Search & Onboarding
+### Phase 4: Profile & Settings Restructure ✅ (v1.5.0)
+
+- ✅ Profile tab restructured as a top-level navigation hub
+- ✅ App Settings section surfaced at Profile level (Preferences + Permissions one tap away)
+- ✅ Permissions view with live on/off toggles (GPS, Camera, Photo Library, Notifications)
+- ✅ Dedicated `AboutView` (version, build, legal links, brand info)
+- ✅ `AccountSecurityView` with personal details card + Edit Profile sheet
+- ✅ `User` model expanded with `state` and `dateOfBirth`
+- ✅ Create Location form overhaul (required Name field with 50-char limit)
+
+### Phase 5: Search & Onboarding (planned)
 
 - Terms of Service acceptance (blocking modal, scroll-to-bottom requirement)
 - Onboarding walkthrough (page-style SwiftUI tabs)
 
-### Phase 5: AI & Support
+### Phase 6: AI & Support (planned)
 
 - AI description improvement (improve, extract, rewrite modes)
 - AI tag suggestions from production notes

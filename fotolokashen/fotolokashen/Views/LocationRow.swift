@@ -9,11 +9,11 @@ struct LocationRow: View {
 
     // MARK: - Photo URLs
 
-    /// All photo URLs from the location's photos array
+    /// All photo URLs from the location's photos array — optimized for card display
     private var photoURLs: [URL] {
         guard let photos = location.photos, !photos.isEmpty else { return [] }
         return photos.compactMap { photo in
-            URL(string: "https://ik.imagekit.io/rgriola\(photo.imagekitFilePath)")
+            ImageKitURL.url(for: photo.imagekitFilePath, variant: .card)
         }
     }
 

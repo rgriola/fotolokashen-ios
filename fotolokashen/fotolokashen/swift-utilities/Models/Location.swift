@@ -152,11 +152,11 @@ struct Location: Codable, Identifiable {
         photos?.count
     }
 
-    /// Thumbnail URL (computed from first photo)
+    /// Thumbnail URL (computed from first photo, optimized for list display)
     var thumbnailUrl: String? {
         guard let firstPhoto = photos?.first else { return nil }
-        // Construct ImageKit URL from file path
-        return "https://ik.imagekit.io/rgriola\(firstPhoto.imagekitFilePath)"
+        return ImageKitURL.url(for: firstPhoto.imagekitFilePath, variant: .thumbnail)?.absoluteString
+            ?? "\(ImageKitURL.baseURL)\(firstPhoto.imagekitFilePath)"
     }
 
     /// Coordinate for use with MapKit/Google Maps
