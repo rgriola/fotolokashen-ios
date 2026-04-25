@@ -92,15 +92,9 @@ struct PreferencesView: View {
     }
 
     private func savePreferences() async {
-        let user = authService.currentUser
+        // Only send the fields this view manages — not the entire profile.
+        // Sending all fields risked overwriting concurrent edits from other devices.
         let request = ProfileUpdateRequest(
-            firstName: user?.firstName,
-            lastName: user?.lastName,
-            dateOfBirth: user?.dateOfBirth,
-            bio: user?.bio,
-            city: user?.city,
-            state: user?.state,
-            country: user?.country,
             language: language.isEmpty ? nil : language,
             timezone: timezone.isEmpty ? nil : timezone,
             emailNotifications: emailNotifications

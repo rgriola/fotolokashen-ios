@@ -251,14 +251,15 @@ struct EditProfileView: View {
             let fmt = DateFormatter(); fmt.dateFormat = "yyyy-MM-dd"
             return fmt.string(from: $0)
         }
+        // Sanitize: strip URLs from free-text fields (matches server-side sanitizeUserInput)
         let request = ProfileUpdateRequest(
-            firstName: firstName.isEmpty ? nil : firstName,
-            lastName: lastName.isEmpty ? nil : lastName,
+            firstName: firstName.isEmpty ? nil : stripURLs(firstName),
+            lastName: lastName.isEmpty ? nil : stripURLs(lastName),
             dateOfBirth: dobString,
-            bio: bio.isEmpty ? nil : bio,
-            city: city.isEmpty ? nil : city,
-            state: state.isEmpty ? nil : state,
-            country: country.isEmpty ? nil : country
+            bio: bio.isEmpty ? nil : stripURLs(bio),
+            city: city.isEmpty ? nil : stripURLs(city),
+            state: state.isEmpty ? nil : stripURLs(state),
+            country: country.isEmpty ? nil : stripURLs(country)
         )
         do {
             let updatedUser = try await userService.updateProfile(request)
@@ -269,6 +270,14 @@ struct EditProfileView: View {
             errorText = error.localizedDescription
             showingError = true
         }
+    }
+
+    /// Strip URLs from user input to prevent link injection.
+    /// Matches the server-side sanitizeUserInput() behavior.
+    private func stripURLs(_ text: String) -> String {
+        let pattern = #"https?://\S+"#
+        return text.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func formatDOBDisplay(_ date: Date) -> String {
