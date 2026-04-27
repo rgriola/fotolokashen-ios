@@ -57,16 +57,8 @@ struct ProfileView: View {
 
                 // ── Support ───────────────────────────────────────────────
                 Section("Support") {
-                    Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/support")!) {
+                    Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/help")!) {
                         Label("Help & FAQ", systemImage: "questionmark.circle.fill")
-                    }
-
-                    Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/privacy")!) {
-                        Label("Privacy Policy", systemImage: "hand.raised.fill")
-                    }
-
-                    Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/terms")!) {
-                        Label("Terms of Service", systemImage: "doc.text.fill")
                     }
 
                     NavigationLink {

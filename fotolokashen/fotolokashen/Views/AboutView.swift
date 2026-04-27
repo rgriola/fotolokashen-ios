@@ -22,11 +22,11 @@ struct AboutView: View {
 
             // ── Links ─────────────────────────────────────────────────────
             Section("Legal") {
-                Link(destination: URL(string: "https://fotolokashen.com/privacy")!) {
+                Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/privacy-policy")!) {
                     Label("Privacy Policy", systemImage: "hand.raised.fill")
                         .foregroundStyle(.primary)
                 }
-                Link(destination: URL(string: "https://fotolokashen.com/terms")!) {
+                Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/terms")!) {
                     Label("Terms of Service", systemImage: "doc.text.fill")
                         .foregroundStyle(.primary)
                 }
