@@ -58,7 +58,7 @@ struct LoginView: View {
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                 
-                Text("Location Scouting Made Simple")
+                Text("Location Scouting")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
                 

@@ -11,13 +11,18 @@
 ```
 LoginView → AuthService.startLogin()
   → ASWebAuthenticationSession opens fotolokashen.com/login
+    (ephemeral session — no Safari cookies shared)
   → User logs in on web
   → OAuth redirect: fotolokashen://oauth-callback?code=xxx
   → AuthService.handleCallback()
-  → POST /api/auth/oauth/token (code exchange)
+  → POST /api/auth/oauth/token (code exchange, redirect_uri: fotolokashen://oauth-callback)
   → access_token + refresh_token saved to Keychain
   → isAuthenticated = true
 ```
+
+> **Note (fixed 2026-04-26):** `prefersEphemeralWebBrowserSession` is set to `true` so each OAuth
+> session starts with a clean cookie jar. Previously `false` caused stale Safari web-session cookies
+> to bleed into the in-app browser, producing a reload/redirect loop on sign-in.
 
 ---
 
@@ -99,9 +104,13 @@ The token is **single-use** (cleared immediately on first use) and expires after
 
 ## How Platform Detection Works
 
-The web backend detects iOS via the `User-Agent` header during registration and appends `&platform=ios` to the verification email link. This lets the `verify-email` web page trigger `fotolokashen://email-verified` instead of the web login redirect.
+`AuthService.startRegistration()` appends `?source=ios` to the registration URL. The `RegisterForm`
+web component reads this query param and, on successful registration, redirects to
+`fotolokashen://await-verification` to close the panel and show the native "check your email" UI.
 
-> **Limitation:** User-Agent sniffing can fail on non-standard browsers. A future improvement is for `AuthService.startRegistration()` to append `?source=ios` explicitly to the registration URL, making detection reliable and explicit.
+The web backend also detects iOS via the `User-Agent` header and appends `&platform=ios` to the
+verification email link, so the `verify-email` page triggers `fotolokashen://email-verified`
+instead of the standard web login redirect.
 
 ---
 

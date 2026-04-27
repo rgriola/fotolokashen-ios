@@ -311,7 +311,7 @@ class AuthService: ObservableObject {
         }
 
         session.presentationContextProvider = presentationContextProvider
-        session.prefersEphemeralWebBrowserSession = false
+        session.prefersEphemeralWebBrowserSession = true
         
         webAuthSession = session
         
@@ -439,13 +439,10 @@ class AuthService: ObservableObject {
         let model = UIDevice.current.model
         let userAgent = "fotolokashen-ios/1.0 (iOS \(systemVersion); \(model))"
         
-        // redirect_uri must match what was used in the authorize request
-        let redirectUri: String
-        if #available(iOS 17.4, *) {
-            redirectUri = "\(config.backendBaseURL)/app/auth-callback"
-        } else {
-            redirectUri = config.oauthRedirectUri
-        }
+        // redirect_uri must match what was used in the authorize request.
+        // startLogin() always uses the custom scheme (fotolokashen://oauth-callback),
+        // so the token exchange must use the same URI.
+        let redirectUri = config.oauthRedirectUri
 
         let tokenRequest = TokenRequest(
             grantType: "authorization_code",

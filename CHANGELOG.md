@@ -2,6 +2,24 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
+## [1.5.1] - 2026-04-26
+
+### 🐛 Bug Fixes
+
+#### OAuth Login & Register Redirect Loop (AuthService.swift)
+
+- **Fixed**: Tapping Sign In or Create Account on iOS opened the browser but caused a visual reload/loop instead of presenting the login or registration form cleanly
+- **Root cause 1 — stale shared cookies**: `ASWebAuthenticationSession` was configured with `prefersEphemeralWebBrowserSession = false`, causing it to share the Safari cookie jar. If the user had a previous (potentially expired) web session from browsing `fotolokashen.com` in Safari, that stale `auth_token` cookie was injected into every OAuth browser session, creating a conflict between the web app's auth state and the OAuth flow
+- **Root cause 2 — `redirect_uri` mismatch**: `exchangeCodeForTokens()` sent `https://fotolokashen.com/app/auth-callback` as the `redirect_uri` on iOS 17.4+, but `startLogin()` always registered `fotolokashen://oauth-callback` with the authorize endpoint. The OAuth server rejected the mismatch, silently failing the code exchange while leaving the browser open
+- **Fix 1**: Set `prefersEphemeralWebBrowserSession = true` — every auth session now starts with a clean, isolated cookie jar with no Safari state leakage
+- **Fix 2**: Removed the iOS 17.4+ `redirect_uri` branch from `exchangeCodeForTokens()` — both the authorize request and token exchange now consistently use `fotolokashen://oauth-callback`
+
+#### UI
+
+- Shortened splash/login subtitle from "Location Scouting Made Simple" → "Location Scouting" (`ContentView.swift`)
+
+---
+
 ## [1.5.0] - 2026-04-19
 
 ### ✨ Profile & Settings Restructure
