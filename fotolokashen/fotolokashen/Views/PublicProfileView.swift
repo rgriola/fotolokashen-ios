@@ -96,22 +96,17 @@ struct PublicProfileView: View {
     // MARK: - Header Section
 
     private var headerSection: some View {
-        ZStack(alignment: .bottomLeading) {
+        ZStack(alignment: .leading) {
             // Banner
             ProfileBannerView(bannerURL: profile?.bannerURL)
 
             // Avatar
-            HStack {
-                ProfileAvatarView(
-                    avatarURL: profile?.avatarURL,
-                    initials: profile?.initials ?? String(username.prefix(1)).uppercased()
-                )
-                .offset(y: 24)
-                .padding(.leading, 16)
-                Spacer()
-            }
+            ProfileAvatarView(
+                avatarURL: profile?.avatarURL,
+                initials: profile?.initials ?? String(username.prefix(1)).uppercased()
+            )
+            .padding(.leading, 16)
         }
-        .padding(.bottom, 28)
     }
 
     // MARK: - Profile Info Section
@@ -119,7 +114,7 @@ struct PublicProfileView: View {
     private func profileInfoSection(_ profile: PublicUser) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(profile.name)
-                .font(.headline)
+                .font(.title3)
                 .fontWeight(.bold)
 
             Text("@\(profile.username)")
@@ -147,14 +142,19 @@ struct PublicProfileView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
+        .padding(.top, 12)
     }
 
     // MARK: - Stats Section
 
     private var statsSection: some View {
         VStack(spacing: 10) {
-            HStack {
-                Spacer()
+            HStack(spacing: 16) {
+                // Spots
+                ProfileStatItem(count: profile?.publicLocationCount ?? 0, label: "Spots")
+
+                Divider().frame(height: 28)
+
                 // Followers
                 Button {
                     showFollowers = true
@@ -163,12 +163,7 @@ struct PublicProfileView: View {
                 }
                 .buttonStyle(.plain)
 
-                Spacer()
-
-                // Divider
                 Divider().frame(height: 28)
-
-                Spacer()
 
                 // Following
                 Button {
@@ -177,21 +172,10 @@ struct PublicProfileView: View {
                     ProfileStatItem(count: followingCount, label: "Following")
                 }
                 .buttonStyle(.plain)
-
-                Spacer()
-
-                // Divider
-                Divider().frame(height: 28)
-
-                Spacer()
-
-                // Locations
-                ProfileStatItem(count: profile?.publicLocationCount ?? 0, label: "Locations")
-
-                Spacer()
             }
-            .padding(.top, 10)
             .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             // Follow Button
             if followStatus != nil {
@@ -450,12 +434,23 @@ struct PublicProfileView: View {
     // MARK: - Helpers
 
     private func formatJoinDate(_ dateString: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        guard let date = formatter.date(from: dateString) else {
-            return dateString
+        // Try ISO8601 with fractional seconds first
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = isoFormatter.date(from: dateString) {
+            return joinDateDisplay(date)
         }
-        let displayFormatter = DateFormatter()
-        displayFormatter.dateFormat = "MMMM yyyy"
-        return displayFormatter.string(from: date)
+        // Fallback to standard ISO8601
+        isoFormatter.formatOptions = [.withInternetDateTime]
+        if let date = isoFormatter.date(from: dateString) {
+            return joinDateDisplay(date)
+        }
+        return dateString
+    }
+
+    private func joinDateDisplay(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: date)
     }
 }

@@ -191,10 +191,12 @@ struct ClusteredMapView: UIViewRepresentable {
     let onSocialMarkerTap: (MapSocialLocation) -> Void
     
     func makeUIView(context: Context) -> GMSMapView {
+        // Start with a timezone-based fallback position
+        let fallback = Self.timezoneDefaultCoordinate()
         let camera = GMSCameraPosition.camera(
-            withLatitude: 40.7128,
-            longitude: -74.0060,
-            zoom: 15.0
+            withLatitude: fallback.latitude,
+            longitude: fallback.longitude,
+            zoom: 12.0
         )
         let mapView = GMSMapView()
         mapView.camera = camera
@@ -206,6 +208,9 @@ struct ClusteredMapView: UIViewRepresentable {
         mapView.settings.scrollGestures = true
         
         context.coordinator.gmsMapView = mapView
+
+        // Observe myLocation so we can center on the user's GPS once available
+        context.coordinator.observeMyLocation(on: mapView)
         
         return mapView
     }
@@ -310,17 +315,79 @@ struct ClusteredMapView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
+
+    // MARK: - Timezone-based default coordinate
+
+    /// Returns a coordinate based on the device's current timezone.
+    /// Used as the initial camera position before GPS kicks in.
+    static func timezoneDefaultCoordinate() -> CLLocationCoordinate2D {
+        let tz = TimeZone.current.identifier
+        switch tz {
+        // US timezones
+        case let id where id.contains("New_York"):
+            return CLLocationCoordinate2D(latitude: 40.7128, longitude: -74.0060)   // NYC
+        case let id where id.contains("Chicago"):
+            return CLLocationCoordinate2D(latitude: 41.8781, longitude: -87.6298)   // Chicago
+        case let id where id.contains("Denver"):
+            return CLLocationCoordinate2D(latitude: 39.7392, longitude: -104.9903)  // Denver
+        case let id where id.contains("Los_Angeles"):
+            return CLLocationCoordinate2D(latitude: 34.0522, longitude: -118.2437)  // LA
+        case let id where id.contains("Phoenix"):
+            return CLLocationCoordinate2D(latitude: 33.4484, longitude: -112.0740)  // Phoenix
+        case let id where id.contains("Anchorage"):
+            return CLLocationCoordinate2D(latitude: 61.2181, longitude: -149.9003)  // Anchorage
+        case let id where id.contains("Honolulu"):
+            return CLLocationCoordinate2D(latitude: 21.3069, longitude: -157.8583)  // Honolulu
+        // International
+        case let id where id.contains("London"):
+            return CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278)
+        case let id where id.contains("Paris"):
+            return CLLocationCoordinate2D(latitude: 48.8566, longitude: 2.3522)
+        case let id where id.contains("Tokyo"):
+            return CLLocationCoordinate2D(latitude: 35.6762, longitude: 139.6503)
+        case let id where id.contains("Sydney"):
+            return CLLocationCoordinate2D(latitude: -33.8688, longitude: 151.2093)
+        default:
+            // Fallback: NYC
+            return CLLocationCoordinate2D(latitude: 40.7128, longitude: -74.0060)
+        }
+    }
     
     // MARK: - Coordinator
     
     class Coordinator: NSObject, GMSMapViewDelegate {
         var parent: ClusteredMapView
         var hasPerformedInitialFit = false
+        var hasCenteredOnUserGPS = false
         var gmsMapView: GMSMapView?
         var markers: [GMSMarker] = []
+        private var locationObservation: NSKeyValueObservation?
         
         init(_ parent: ClusteredMapView) {
             self.parent = parent
+        }
+
+        /// KVO observer on GMSMapView.myLocation — fires once the GPS fix arrives.
+        /// If the user has locations (initial fit handles it), skip.
+        /// Otherwise animate to their GPS position.
+        func observeMyLocation(on mapView: GMSMapView) {
+            locationObservation = mapView.observe(\.myLocation, options: [.new]) { [weak self] mapView, _ in
+                guard let self,
+                      !self.hasCenteredOnUserGPS,
+                      !self.hasPerformedInitialFit,
+                      let location = mapView.myLocation else { return }
+
+                self.hasCenteredOnUserGPS = true
+                let camera = GMSCameraPosition.camera(
+                    withLatitude: location.coordinate.latitude,
+                    longitude: location.coordinate.longitude,
+                    zoom: 14.0
+                )
+                mapView.animate(to: camera)
+                #if DEBUG
+                print("[MapView] GPS fix → centered on user: \(location.coordinate)")
+                #endif
+            }
         }
         
         // Handle marker tap

@@ -43,7 +43,7 @@ struct AboutView: View {
                     Text("v\(appVersion) (\(buildNumber))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text("© \(currentYear) fotolokashen. All rights reserved.")
+                    Text("© \(currentYear) Sea Lion Media LLC. All rights reserved.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

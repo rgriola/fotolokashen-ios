@@ -37,9 +37,9 @@ struct LocationListView: View {
                     }
                 }
             }
-            .navigationTitle("My Locations")
+            .navigationTitle("My Spots")
             .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $searchText, prompt: "Search locations")
+            .searchable(text: $searchText, prompt: "Search")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {

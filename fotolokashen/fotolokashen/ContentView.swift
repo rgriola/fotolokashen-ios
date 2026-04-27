@@ -312,7 +312,7 @@ struct LoggedInView: View {
             // Locations list
             LocationListView()
                 .tabItem {
-                    Label("Locations", systemImage: "list.bullet")
+                    Label("Spots", systemImage: "list.bullet")
                 }
                 .tag(1)
 

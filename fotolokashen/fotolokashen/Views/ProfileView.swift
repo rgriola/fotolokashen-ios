@@ -4,6 +4,7 @@ import SwiftUI
 /// Replaces the old dense edit-form approach with a clean list-style hub.
 struct ProfileView: View {
     @EnvironmentObject var authService: AuthService
+    @ObservedObject private var locationStore = LocationStore.shared
 
     // Social stats
     @State private var followersCount: Int = 0
@@ -137,9 +138,9 @@ struct ProfileView: View {
     // MARK: - Header Row
 
     private var profileHeaderRow: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             // Banner + Avatar
-            ZStack(alignment: .bottomLeading) {
+            ZStack(alignment: .leading) {
                 ProfileBannerView(
                     bannerURL: authService.currentUser?.bannerURL,
                     hasBannerImage: authService.currentUser?.bannerImage != nil
@@ -149,14 +150,12 @@ struct ProfileView: View {
                     avatarURL: authService.currentUser?.avatarURL,
                     initials: authService.currentUser?.initials ?? "?"
                 )
-                .offset(y: 24)
                 .padding(.leading, 16)
             }
-            .padding(.bottom, 28)
 
             // Name + Username
             if let user = authService.currentUser {
-                VStack(spacing: 4) {
+                VStack(alignment: .leading, spacing: 4) {
                     if let first = user.firstName, let last = user.lastName {
                         Text("\(first) \(last)")
                             .font(.title3)
@@ -170,27 +169,32 @@ struct ProfileView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                .frame(maxWidth: .infinity)
+                .padding(.leading, 16)
+                .padding(.top, 12)
                 .padding(.bottom, 12)
             }
 
             // Stats bar
-            HStack(spacing: 0) {
-                Spacer()
+            HStack(spacing: 16) {
+                ProfileStatItem(count: locationStore.locations.count, label: "Spots")
+
+                Divider().frame(height: 28)
+
                 Button { showFollowers = true } label: {
                     ProfileStatItem(count: followersCount, label: "Followers")
                 }
                 .buttonStyle(.plain)
-                Spacer()
+
                 Divider().frame(height: 28)
-                Spacer()
+
                 Button { showFollowing = true } label: {
                     ProfileStatItem(count: followingCount, label: "Following")
                 }
                 .buttonStyle(.plain)
-                Spacer()
             }
+            .padding(.horizontal, 16)
             .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Divider()
         }

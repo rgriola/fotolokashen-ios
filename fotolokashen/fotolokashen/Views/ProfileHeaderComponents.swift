@@ -93,13 +93,13 @@ struct ProfileAvatarView<MenuContent: View>: View {
                     }
                         .fade(duration: 0.2)
                         .scaledToFill()
-                        .frame(width: 68, height: 68)
+                        .frame(width: 85, height: 85)
                         .clipped()
                 } else {
                     avatarPlaceholder
                 }
             }
-            .frame(width: 68, height: 68)
+            .frame(width: 85, height: 85)
             .clipShape(Circle())
             .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 3))
 
@@ -130,7 +130,7 @@ struct ProfileAvatarView<MenuContent: View>: View {
     private var avatarPlaceholder: some View {
         Circle()
             .fill(Color.brandPurple)
-            .frame(width: 68, height: 68)
+            .frame(width: 85, height: 85)
             .overlay(
                 Text(initials)
                     .font(.title3)
