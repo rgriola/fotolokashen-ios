@@ -25,10 +25,19 @@ class ConfigLoader {
         self.config = dict
     }
     
-    // MARK: - Backend Configuration
-    
+    /// Backend URL, resolved in priority order:
+    /// 1. Info.plist `BackendBaseURL` (injected from Debug/Release.xcconfig)
+    /// 2. Config.plist `backendBaseURL` (static fallback)
+    /// 3. Hardcoded default
     var backendBaseURL: String {
-        getString(forKey: "backendBaseURL") ?? "https://fotolokashen.com"
+        // Prefer xcconfig-injected value from Info.plist
+        if let infoPlistURL = Bundle.main.infoDictionary?["BackendBaseURL"] as? String,
+           !infoPlistURL.isEmpty,
+           infoPlistURL != "$(BACKEND_BASE_URL)" { // Not substituted = variable missing
+            return infoPlistURL
+        }
+        // Fall back to Config.plist
+        return getString(forKey: "backendBaseURL") ?? "https://fotolokashen.com"
     }
     
     var backendURL: URL {
