@@ -83,6 +83,15 @@ class APIClient {
         try await request(path: path, method: "DELETE", body: nil as String?, authenticated: authenticated)
     }
 
+    /// DELETE with request body
+    func delete<T: Decodable, B: Encodable>(
+        _ path: String,
+        body: B,
+        authenticated: Bool = true
+    ) async throws -> T {
+        try await request(path: path, method: "DELETE", body: body, authenticated: authenticated)
+    }
+
     // MARK: - User API
 
     /// Get the current authenticated user via /api/v1/users/me

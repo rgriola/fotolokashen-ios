@@ -58,6 +58,11 @@ struct Location: Codable, Identifiable {
     /// User's visibility setting for this save
     var visibility: String?
 
+    // MARK: - Group Association
+
+    /// Group ID — links this location to a LocationGroup (event/route/story)
+    var groupId: Int?
+
     // MARK: - Creator (Owner)
     struct Creator: Codable {
         let id: Int?

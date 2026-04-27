@@ -252,9 +252,11 @@ struct ClusteredMapView: UIViewRepresentable {
             }
         }
         
-        // Clear existing markers
+        // Clear existing markers and polylines
         context.coordinator.markers.forEach { $0.map = nil }
         context.coordinator.markers.removeAll()
+        context.coordinator.polylines.forEach { $0.map = nil }
+        context.coordinator.polylines.removeAll()
         
         // Add markers directly to map at exact GPS locations (no clustering)
         var bounds = GMSCoordinateBounds()
@@ -310,6 +312,9 @@ struct ClusteredMapView: UIViewRepresentable {
             
             context.coordinator.hasPerformedInitialFit = true
         }
+
+        // Draw polylines for grouped locations
+        drawGroupPolylines(locations: locations, on: mapView, coordinator: context.coordinator)
     }
     
     func makeCoordinator() -> Coordinator {
@@ -352,6 +357,56 @@ struct ClusteredMapView: UIViewRepresentable {
             return CLLocationCoordinate2D(latitude: 40.7128, longitude: -74.0060)
         }
     }
+
+    // MARK: - Group Polylines
+
+    /// Colors assigned per group (cycling through palette)
+    private static let groupColors: [UIColor] = [
+        UIColor(red: 0.56, green: 0.27, blue: 0.68, alpha: 1),   // purple
+        UIColor(red: 0.20, green: 0.60, blue: 0.86, alpha: 1),   // blue
+        UIColor(red: 0.90, green: 0.49, blue: 0.13, alpha: 1),   // orange
+        UIColor(red: 0.15, green: 0.68, blue: 0.38, alpha: 1),   // green
+        UIColor(red: 0.91, green: 0.30, blue: 0.24, alpha: 1),   // red
+        UIColor(red: 0.95, green: 0.77, blue: 0.06, alpha: 1),   // yellow
+    ]
+
+    /// Draws polylines connecting locations within the same group.
+    private func drawGroupPolylines(
+        locations: [Location],
+        on mapView: GMSMapView,
+        coordinator: Coordinator
+    ) {
+        // Group locations by groupId (skip ungrouped)
+        var groups: [Int: [Location]] = [:]
+        for loc in locations {
+            guard let gid = loc.groupId else { continue }
+            groups[gid, default: []].append(loc)
+        }
+
+        var colorIndex = 0
+        for (_, groupLocations) in groups {
+            guard groupLocations.count >= 2 else { continue }
+
+            // Sort by createdAt for chronological path
+            let sorted = groupLocations.sorted {
+                ($0.createdDate ?? .distantPast) < ($1.createdDate ?? .distantPast)
+            }
+
+            let path = GMSMutablePath()
+            for loc in sorted {
+                path.add(CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+            }
+
+            let polyline = GMSPolyline(path: path)
+            polyline.strokeWidth = 3.0
+            polyline.strokeColor = Self.groupColors[colorIndex % Self.groupColors.count]
+            polyline.geodesic = true
+            polyline.map = mapView
+
+            coordinator.polylines.append(polyline)
+            colorIndex += 1
+        }
+    }
     
     // MARK: - Coordinator
     
@@ -361,6 +416,7 @@ struct ClusteredMapView: UIViewRepresentable {
         var hasCenteredOnUserGPS = false
         var gmsMapView: GMSMapView?
         var markers: [GMSMarker] = []
+        var polylines: [GMSPolyline] = []
         private var locationObservation: NSKeyValueObservation?
         
         init(_ parent: ClusteredMapView) {

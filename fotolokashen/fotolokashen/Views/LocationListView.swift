@@ -17,6 +17,11 @@ struct LocationListView: View {
     @State private var isDeleting = false
     @State private var showingDeleteError = false
     @State private var deleteErrorMessage = ""
+
+    // Group accordion state
+    @State private var groups: [LocationGroup] = []
+    @State private var expandedGroupIds: Set<Int> = []
+    @State private var showGroupsOnly = false
     
     var body: some View {
         NavigationStack {
@@ -64,6 +69,7 @@ struct LocationListView: View {
         }
         .task {
             await locationStore.fetchLocations()
+            await loadGroups()
         }
     }
 
@@ -145,22 +151,68 @@ struct LocationListView: View {
     
     private var locationList: some View {
         List {
-            ForEach(filteredAndSortedLocations) { location in
-                NavigationLink {
-                    LocationDetailView(location: location)
-                } label: {
-                    LocationRow(location: location)
-                }
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button(role: .destructive) {
-                        locationToDelete = location
-                        showingDeleteConfirmation = true
-                    } label: {
-                        Label("Delete", systemImage: "trash")
+            // ── Grouped locations (accordion sections) ────────────────
+            if !groups.isEmpty {
+                ForEach(displayedGroups) { group in
+                    Section {
+                        if expandedGroupIds.contains(group.id) {
+                            let groupLocations = locationsForGroup(group.id)
+                            ForEach(groupLocations) { location in
+                                NavigationLink {
+                                    LocationDetailView(location: location)
+                                } label: {
+                                    LocationRow(location: location)
+                                }
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 32, bottom: 4, trailing: 16))
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
+                                        locationToDelete = location
+                                        showingDeleteConfirmation = true
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                    .disabled(isDeleting)
+                                }
+                            }
+                        }
+                    } header: {
+                        GroupAccordionHeader(
+                            group: group,
+                            locationCount: locationsForGroup(group.id).count,
+                            isExpanded: expandedGroupIds.contains(group.id)
+                        ) {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                if expandedGroupIds.contains(group.id) {
+                                    expandedGroupIds.remove(group.id)
+                                } else {
+                                    expandedGroupIds.insert(group.id)
+                                }
+                            }
+                        }
                     }
-                    .disabled(isDeleting)
+                }
+            }
+
+            // ── Ungrouped locations ───────────────────────────────────
+            if !showGroupsOnly {
+                ForEach(ungroupedLocations) { location in
+                    NavigationLink {
+                        LocationDetailView(location: location)
+                    } label: {
+                        LocationRow(location: location)
+                    }
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            locationToDelete = location
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        .disabled(isDeleting)
+                    }
                 }
             }
             
@@ -224,6 +276,35 @@ struct LocationListView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Group Helpers
+
+    private func loadGroups() async {
+        do {
+            groups = try await LocationGroupService.shared.fetchGroups()
+        } catch {
+            #if DEBUG
+            print("[LocationListView] Failed to load groups: \(error)")
+            #endif
+        }
+    }
+
+    /// Groups that match current search/type filters
+    private var displayedGroups: [LocationGroup] {
+        groups.filter { group in
+            !locationsForGroup(group.id).isEmpty
+        }
+    }
+
+    /// Locations belonging to a specific group (filtered + sorted)
+    private func locationsForGroup(_ groupId: Int) -> [Location] {
+        filteredAndSortedLocations.filter { $0.groupId == groupId }
+    }
+
+    /// Locations NOT in any group
+    private var ungroupedLocations: [Location] {
+        filteredAndSortedLocations.filter { $0.groupId == nil }
     }
     
     // MARK: - Empty State
