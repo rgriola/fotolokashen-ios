@@ -4,12 +4,8 @@ import CoreLocation
 /// Form for creating a new location with captured photo
 ///
 // REVIEW: Missing features compared to web app's create-with-photo flow:
-// 1. No Photo Library picker — only accepts camera-captured UIImage. Add PHPickerViewController.
-// 2. No multi-photo support — single photo only. Web supports up to 20 photos at creation.
-// 3. No caption field — web app supports captions at creation time.
-// 4. No UserSave fields (tags, personalRating, isFavorite, color) — must edit post-create.
-// 5. GPS source is always device CLLocation — should also extract GPS from photo EXIF
-//    (like web does) and prefer photo GPS when available.
+// 1. No caption field — web app supports captions at creation time.
+// 2. No UserSave fields (tags, personalRating, isFavorite, color) — must edit post-create.
 struct CreateLocationView: View {
     
     @StateObject private var locationService = LocationService()
@@ -18,6 +14,8 @@ struct CreateLocationView: View {
     
     /// Initial photo from the camera (optional — user can also add from library)
     let initialPhoto: UIImage?
+    let initialLibraryPhotos: [PipelinePhoto]?
+    let initialSessionCaptures: [SessionCapture]?
     let photoLocation: CLLocation?
     var onLocationCreated: ((Location) -> Void)?
     
@@ -28,16 +26,46 @@ struct CreateLocationView: View {
         onLocationCreated: ((Location) -> Void)? = nil
     ) {
         self.initialPhoto = photo
+        self.initialLibraryPhotos = nil
+        self.initialSessionCaptures = nil
         self.photoLocation = photoLocation
         self.onLocationCreated = onLocationCreated
     }
 
-    /// New initializer: start with Photo Library (no initial photo)
+    /// Initializer: start with Photo Library photos
+    init(
+        libraryPhotos: [PipelinePhoto],
+        photoLocation: CLLocation?,
+        onLocationCreated: ((Location) -> Void)? = nil
+    ) {
+        self.initialPhoto = nil
+        self.initialLibraryPhotos = libraryPhotos
+        self.initialSessionCaptures = nil
+        self.photoLocation = photoLocation
+        self.onLocationCreated = onLocationCreated
+    }
+
+    /// Initializer: start with multi-photo camera session captures
+    init(
+        sessionCaptures: [SessionCapture],
+        photoLocation: CLLocation?,
+        onLocationCreated: ((Location) -> Void)? = nil
+    ) {
+        self.initialPhoto = nil
+        self.initialLibraryPhotos = nil
+        self.initialSessionCaptures = sessionCaptures
+        self.photoLocation = photoLocation
+        self.onLocationCreated = onLocationCreated
+    }
+
+    /// Initializer: no initial photo (opens with empty grid + picker)
     init(
         photoLocation: CLLocation?,
         onLocationCreated: ((Location) -> Void)? = nil
     ) {
         self.initialPhoto = nil
+        self.initialLibraryPhotos = nil
+        self.initialSessionCaptures = nil
         self.photoLocation = photoLocation
         self.onLocationCreated = onLocationCreated
     }
@@ -274,9 +302,19 @@ struct CreateLocationView: View {
         }
 
         .task {
-            // Seed the initial camera photo into the pipeline
-            if let initial = initialPhoto, photoViewModel.photos.isEmpty {
-                photoViewModel.addCameraPhoto(image: initial, location: photoLocation)
+            // Seed initial photos into the pipeline
+            if photoViewModel.photos.isEmpty {
+                if let initial = initialPhoto {
+                    // Single camera capture path (legacy)
+                    photoViewModel.addCameraPhoto(image: initial, location: photoLocation)
+                } else if let captures = initialSessionCaptures, !captures.isEmpty {
+                    // Multi-photo camera session — convert disk-backed captures to pipeline photos
+                    let pipelinePhotos = captures.compactMap { $0.toPipelinePhoto() }
+                    photoViewModel.addPhotos(pipelinePhotos)
+                } else if let libraryPhotos = initialLibraryPhotos, !libraryPhotos.isEmpty {
+                    // Library picker path — seed all selected photos
+                    photoViewModel.addPhotos(libraryPhotos)
+                }
             }
             await loadAddress()
         }

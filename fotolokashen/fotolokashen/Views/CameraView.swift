@@ -1,17 +1,12 @@
 import SwiftUI
 import CoreLocation
 
-/// Camera view with native-style zoom dial, tap-to-focus, exposure control, and GPS badge
-///
-// REVIEW: Missing camera features:
-// 1. No flash control toggle (referenced in AppIcons.flash but not wired up in UI).
-// 2. No front/back camera switch (referenced in AppIcons.switchCamera but not implemented).
-// 3. No "Open Library" button to allow adding photos from Photo Library alongside camera capture.
-// 4. No multi-photo capture session — each capture immediately goes to CreateLocationView.
-//    Consider allowing multiple captures before proceeding to the form.
-// 5. VoiceOver accessibility: custom controls (zoom dial, exposure slider, focus square)
-//    have no accessibility labels.
+/// Camera view with native-style zoom dial, tap-to-focus, exposure control, GPS badge,
+/// and multi-photo session support with disk-backed storage.
 struct CameraView: View {
+
+    /// Maximum photos per session (disk-backed, memory stays flat)
+    static let maxSessionPhotos = 50
 
     @StateObject private var cameraService = CameraService()
     @StateObject private var locationManager = LocationManager()
@@ -38,8 +33,13 @@ struct CameraView: View {
     // Photo Library picker
     @State private var showLibraryPicker = false
 
+    // Multi-photo session (disk-backed)
+    @State private var sessionCaptures: [SessionCapture] = []
+    @State private var isWritingToDisk = false
+    @State private var captureFlash = false  // white flash animation
+
     // Callbacks
-    var onPhotoCaptured: ((UIImage, CLLocation?) -> Void)?
+    var onSessionComplete: (([SessionCapture]) -> Void)?
     var onLibraryPhotosPicked: (([PipelinePhoto]) -> Void)?
 
     var body: some View {
@@ -132,9 +132,89 @@ struct CameraView: View {
                     Spacer()
                 }
 
+                // Done button — top-right below GPS badge (visible when photos captured)
+                if !sessionCaptures.isEmpty {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Button {
+                                finishSession()
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text("Done")
+                                        .font(.headline)
+                                    Text("(\(sessionCaptures.count))")
+                                        .font(.subheadline)
+                                        .fontWeight(.bold)
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.brandPurple)
+                                .clipShape(Capsule())
+                            }
+                        }
+                        .padding(.top, geo.safeAreaInsets.top + 48)
+                        .padding(.trailing, geo.safeAreaInsets.trailing + 16)
+                        Spacer()
+                    }
+                }
+
+                // Capture flash overlay
+                if captureFlash {
+                    Color.white
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
+
                 // Bottom controls stack
                 VStack(spacing: 0) {
                     Spacer()
+
+                    // Thumbnail strip — shows captured photos
+                    if !sessionCaptures.isEmpty {
+                        ScrollViewReader { proxy in
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(sessionCaptures) { capture in
+                                        ZStack(alignment: .topTrailing) {
+                                            Image(uiImage: capture.thumbnail)
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: 56, height: 56)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .stroke(Color.white.opacity(0.4), lineWidth: 1)
+                                                )
+                                            // Delete button
+                                            Button {
+                                                removeCapture(capture)
+                                            } label: {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.system(size: 16))
+                                                    .foregroundColor(.white)
+                                                    .background(Color.black.opacity(0.6))
+                                                    .clipShape(Circle())
+                                            }
+                                            .offset(x: 4, y: -4)
+                                        }
+                                        .id(capture.id)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                            }
+                            .frame(height: 64)
+                            .padding(.bottom, 8)
+                            .onChange(of: sessionCaptures.count) { _, _ in
+                                if let last = sessionCaptures.last {
+                                    withAnimation {
+                                        proxy.scrollTo(last.id, anchor: .trailing)
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     // Zoom dial or zoom pill
                     if showZoomDial {
@@ -172,7 +252,7 @@ struct CameraView: View {
                         .transition(.scale(scale: 0.8).combined(with: .opacity))
                     }
 
-                    // Bottom controls: Library | Capture | (spacer)
+                    // Bottom controls: Library | Capture (with count badge) | (spacer)
                     HStack(spacing: 32) {
                         // Library button
                         Button {
@@ -186,15 +266,30 @@ struct CameraView: View {
                                 .clipShape(Circle())
                         }
 
-                        // Capture button
-                        Button(action: capturePhoto) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 70, height: 70)
-                                Circle()
-                                    .stroke(Color.white, lineWidth: 3)
-                                    .frame(width: 82, height: 82)
+                        // Capture button with count badge
+                        ZStack(alignment: .topTrailing) {
+                            Button(action: capturePhoto) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 70, height: 70)
+                                    Circle()
+                                        .stroke(Color.white, lineWidth: 3)
+                                        .frame(width: 82, height: 82)
+                                }
+                            }
+                            .disabled(isWritingToDisk || sessionCaptures.count >= Self.maxSessionPhotos)
+                            .opacity(isWritingToDisk ? 0.6 : 1.0)
+
+                            // Photo count badge
+                            if !sessionCaptures.isEmpty {
+                                Text("\(sessionCaptures.count)")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(minWidth: 22, minHeight: 22)
+                                    .background(Color.brandPurple)
+                                    .clipShape(Circle())
+                                    .offset(x: 6, y: -4)
                             }
                         }
 
@@ -358,9 +453,93 @@ struct CameraView: View {
         cameraService.capturePhoto()
     }
 
+    /// Handle a captured photo — write to disk, generate thumbnail, add to session.
     private func handleCapturedPhoto(_ image: UIImage) {
-        onPhotoCaptured?(image, locationManager.location)
+        isWritingToDisk = true
+
+        // Flash animation
+        withAnimation(.easeIn(duration: 0.05)) { captureFlash = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.easeOut(duration: 0.15)) { captureFlash = false }
+        }
+
+        let location = locationManager.location
+
+        // Write to disk on a background queue to keep UI responsive
+        Task.detached(priority: .userInitiated) {
+            // Compress to JPEG
+            guard let jpegData = image.jpegData(compressionQuality: 0.85) else {
+                await MainActor.run { isWritingToDisk = false }
+                return
+            }
+
+            // Write to temp directory
+            let filename = "capture_\(UUID().uuidString).jpg"
+            let tempDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("fotolokashen_session", isDirectory: true)
+
+            try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            let fileURL = tempDir.appendingPathComponent(filename)
+
+            do {
+                try jpegData.write(to: fileURL)
+            } catch {
+                #if DEBUG
+                print("[Camera] Failed to write capture to disk: \(error)")
+                #endif
+                await MainActor.run { isWritingToDisk = false }
+                return
+            }
+
+            // Generate small thumbnail (150×150)
+            let thumbnailSize = CGSize(width: 150, height: 150)
+            let thumbnail: UIImage
+            let renderer = UIGraphicsImageRenderer(size: thumbnailSize)
+            thumbnail = renderer.image { _ in
+                image.draw(in: CGRect(origin: .zero, size: thumbnailSize))
+            }
+
+            let capture = SessionCapture(
+                fileURL: fileURL,
+                thumbnail: thumbnail,
+                location: location,
+                capturedAt: Date()
+            )
+
+            await MainActor.run {
+                sessionCaptures.append(capture)
+                isWritingToDisk = false
+                // Clear the capturedImage so cameraService is ready for next
+                cameraService.capturedImage = nil
+            }
+
+            #if DEBUG
+            print("[Camera] Session capture \(sessionCaptures.count) saved to \(fileURL.lastPathComponent)")
+            #endif
+        }
+    }
+
+    /// Remove a capture and delete its temp file.
+    private func removeCapture(_ capture: SessionCapture) {
+        sessionCaptures.removeAll { $0.id == capture.id }
+        try? FileManager.default.removeItem(at: capture.fileURL)
+    }
+
+    /// Finish the session — hand captures to callback and dismiss.
+    private func finishSession() {
+        guard !sessionCaptures.isEmpty else {
+            dismiss()
+            return
+        }
+        onSessionComplete?(sessionCaptures)
         dismiss()
+    }
+
+    /// Clean up temp files for any captures not handed off.
+    static func cleanupTempFiles() {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fotolokashen_session", isDirectory: true)
+        try? FileManager.default.removeItem(at: tempDir)
     }
 }
 
