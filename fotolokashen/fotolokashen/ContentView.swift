@@ -40,9 +40,13 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            // Brand purple background
-            Color.brandPurple
-                .ignoresSafeArea()
+            // Purple to black gradient background
+            LinearGradient(
+                gradient: Gradient(colors: [Color.brandPurple, Color.black]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
             VStack(spacing: 30) {
                 Spacer()
@@ -58,7 +62,7 @@ struct LoginView: View {
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                 
-                Text("Production Location Intelligence")
+                Text("Location Intel for Production")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
                 
@@ -134,12 +138,7 @@ struct LoginView: View {
                 
                 Spacer()
                 
-                VStack(spacing: 4) {
-                    Text("Backend: \(ConfigLoader.shared.backendBaseURL)")
-                        .font(.caption2)
-                        .foregroundColor(.white.opacity(0.5))
-                }
-                .padding(.bottom)
+
             }
             .padding()
         }
