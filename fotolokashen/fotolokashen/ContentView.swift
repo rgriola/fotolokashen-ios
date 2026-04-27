@@ -119,7 +119,7 @@ struct LoginView: View {
                     }
                     .disabled(authService.isLoading)
                     
-                    Text("Secure sign-in via fotolokashen.com")
+                    Text("Secure sign-in via \(ConfigLoader.shared.backendBaseURL.replacingOccurrences(of: "https://", with: ""))")
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.7))
                 }
