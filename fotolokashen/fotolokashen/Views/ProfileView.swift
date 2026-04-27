@@ -62,6 +62,13 @@ struct ProfileView: View {
                     }
 
                     NavigationLink {
+                        MemberSupportView()
+                            .environmentObject(authService)
+                    } label: {
+                        Label("Contact Support", systemImage: "envelope.fill")
+                    }
+
+                    NavigationLink {
                         AboutView()
                     } label: {
                         Label("About", systemImage: "info.circle.fill")
