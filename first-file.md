@@ -49,4 +49,5 @@ User already has account >> redirect to login in iOS case redirect back to app f
 
 ...
 *** Task ***
-- 
+- The iOS app sign in view goes to safari for login, and the page appears to try to repeatedly reload, or login in a loop. This also happend with the create account flow. 
+- The page opens to fotolokashen.com but repeats. 
