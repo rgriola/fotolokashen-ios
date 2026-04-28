@@ -51,3 +51,19 @@ User already has account >> redirect to login in iOS case redirect back to app f
 *** Task ***
 - The iOS app sign in view goes to safari for login, and the page appears to try to repeatedly reload, or login in a loop. This also happend with the create account flow. 
 - The page opens to fotolokashen.com but repeats. 
+
+*** Task ***
+- I want to improve the Capture Function. 
+- Currenly a user can create a location with the camera, one photo only I believe or use photos from their library. The later feature does not work well - when I select photos they do not show un the create location panel, the form acts like a separate event. 
+- Using the Camera to create a location needs to allow multiple photos from the camera. 
+- there is also an issue with a location having multiple photos but over a larger distance. ie I was covering a marching crowd over several miles I took multiple photos, but this would be a same event. If I went back later I could not see the multiple locations within the same event over several miles, one photo would summarize the event. 
+- There needs to a way to decipher and check when location had spaced out locations. Creating individual locations for each photo would not work well. 
+- can you review the capture funtion in iOS and show me a plan to improve this function. Consider the web app as well since this new approach to locations and photos would need to be applied there as well. 
+- do not code just show a plan and what I may have missed. 
+
+*** Task ***
+- Lets review how the iOS capture process works.
+- There are two workflows 1) ios camera 2) using photo library. 
+- We were also trying to add a feature to group photos by distance.  This may be a bit over our skis right now. 
+- Lets get the multiple photo capture working first for both Camera and Photo Library. 
+- Once this is solid and working we can move onto the Group photos by distance feature.

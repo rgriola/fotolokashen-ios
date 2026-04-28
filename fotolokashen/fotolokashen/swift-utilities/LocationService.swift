@@ -58,27 +58,16 @@ class LocationService: ObservableObject {
         errorMessage = nil
         
         do {
-            print("💾 [LocationService.createLocation] ========== START ==========")
-            print("💾 [LocationService.createLocation] Input parameters:")
-            print("   name: \(name)")
-            print("   type: \(type)")
-            print("   latitude: \(latitude)")
-            print("   longitude: \(longitude)")
-            print("💾 [LocationService.createLocation] GeocodedAddress data:")
-            print("   placeId: \(geocodedAddress.placeId)")
-            print("   formattedAddress: \(geocodedAddress.formattedAddress)")
-            print("   fullStreet: \(geocodedAddress.fullStreet ?? "nil")")
-            print("   city: \(geocodedAddress.city ?? "nil")")
-            print("   state: \(geocodedAddress.state ?? "nil")")
-            print("   zipcode: \(geocodedAddress.zipcode ?? "nil")")
-            
+            #if DEBUG
+            print("[LocationService] Creating '\(name)' at (\(latitude), \(longitude))")
+            #endif
+
             // Convert production date to ISO string if provided
             var productionDateString: String? = nil
             if let date = productionDate {
                 let formatter = ISO8601DateFormatter()
                 formatter.formatOptions = [.withFullDate]  // YYYY-MM-DD only
                 productionDateString = formatter.string(from: date)
-                print("   productionDate: \(productionDateString ?? "nil")")
             }
             
             // Step 1: Create location with full address data
@@ -99,20 +88,6 @@ class LocationService: ObservableObject {
                 zipcode: geocodedAddress.zipcode
             )
             
-            print("💾 [LocationService.createLocation] CreateLocationRequest built:")
-            print("   placeId: \(createRequest.placeId)")
-            print("   name: \(createRequest.name)")
-            print("   address: \(createRequest.address)")
-            print("   latitude: \(createRequest.latitude)")
-            print("   longitude: \(createRequest.longitude)")
-            print("   type: \(createRequest.type ?? "nil")")
-            print("   street: \(createRequest.street ?? "nil")")
-            print("   city: \(createRequest.city ?? "nil")")
-            print("   state: \(createRequest.state ?? "nil")")
-            print("   zipcode: \(createRequest.zipcode ?? "nil")")
-            
-            print("💾 [LocationService.createLocation] Sending POST to /api/locations...")
-            
             let response: CreateLocationResponse = try await apiClient.post(
                 "/api/locations",
                 body: createRequest
@@ -122,14 +97,12 @@ class LocationService: ObservableObject {
             let userSaveId = response.userSave.id  // Store UserSave ID for fetching later
             location.userSaveId = userSaveId  // Set userSaveId for delete operations
             
-            print("✅ [LocationService.createLocation] Location created successfully!")
-            print("   Location ID: \(location.id)")
-            print("   UserSave ID: \(userSaveId)")
-            print("   Returned address: \(location.address ?? "nil")")
+            #if DEBUG
+            print("[LocationService] Location \(location.id) created (userSave: \(userSaveId))")
+            #endif
             
             // Step 2: Upload photo to the location
             do {
-                print("📷 [LocationService.createLocation] Uploading photo...")
                 let uploadedPhoto = try await photoUploadService.uploadPhoto(
                     image: photo,
                     locationId: location.id,
@@ -137,23 +110,19 @@ class LocationService: ObservableObject {
                     caption: nil
                 )
                 
-                if config.enableDebugLogging {
-                    print("[LocationService] Photo uploaded with ID: \(uploadedPhoto.id)")
-                }
+                #if DEBUG
+                print("[LocationService] Photo \(uploadedPhoto.id) uploaded")
+                #endif
                 
                 // Step 3: Fetch the updated location using UserSave ID to get the photo data
                 var updatedLocation = try await fetchLocation(userSaveId: userSaveId)
                 updatedLocation.userSaveId = userSaveId  // Preserve userSaveId
                 location = updatedLocation
-                
-                if config.enableDebugLogging {
-                    print("[LocationService] Fetched updated location with \(location.photos?.count ?? 0) photos")
-                }
             } catch {
                 // Photo upload failed, but location was created
-                if config.enableDebugLogging {
-                    print("[LocationService] Photo upload failed: \(error)")
-                }
+                #if DEBUG
+                print("[LocationService] Photo upload failed: \(error)")
+                #endif
                 // Continue anyway - location exists
             }
             

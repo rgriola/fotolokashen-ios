@@ -312,6 +312,10 @@ struct LoggedInView: View {
     @State private var deepLinkLocation: Location?
     @State private var showDeepLinkDetail = false
 
+    // Holds library photos until the camera fullScreenCover is fully dismissed,
+    // preventing the SwiftUI race condition where both transitions fire simultaneously.
+    @State private var pendingLibraryPhotos: [PipelinePhoto]?
+
     var body: some View {
         TabView(selection: $selectedTab) {
             // Locations list
@@ -359,15 +363,23 @@ struct LoggedInView: View {
                 previousTab = newTab
             }
         }
-        .fullScreenCover(isPresented: $showingCamera) {
+        .fullScreenCover(isPresented: $showingCamera, onDismiss: {
+            // Camera has fully dismissed — now safe to present the library sheet
+            if let pending = pendingLibraryPhotos {
+                libraryPhotos = pending
+                pendingLibraryPhotos = nil
+            }
+        }) {
             CameraView { captures in
                 // Multi-photo session complete
                 guard !captures.isEmpty else { return }
                 sessionCaptures = captures
             } onLibraryPhotosPicked: { photos in
                 guard !photos.isEmpty else { return }
+                // Stash photos and dismiss camera — the onDismiss callback
+                // will present CreateLocationView after the animation completes
+                pendingLibraryPhotos = photos
                 showingCamera = false
-                libraryPhotos = photos
             }
         }
         // Camera session → CreateLocationView
@@ -392,7 +404,8 @@ struct LoggedInView: View {
             set: { if !$0 { libraryPhotos = nil } }
         )) {
             if let photos = libraryPhotos {
-                let gps = photos.first?.gpsCoordinate
+                // Use GPS from the first photo that has it, not just the first photo
+                let gps = photos.compactMap({ $0.gpsCoordinate }).first
                 let clLocation: CLLocation? = if let gps {
                     CLLocation(latitude: gps.lat, longitude: gps.lng)
                 } else {

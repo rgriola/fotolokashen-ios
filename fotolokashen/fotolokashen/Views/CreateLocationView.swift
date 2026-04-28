@@ -271,9 +271,13 @@ struct CreateLocationView: View {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                     .padding(.trailing, 6)
-                                Text(photoViewModel.isUploading
-                                     ? "Uploading \(Int(photoViewModel.uploadProgress * 100))%"
-                                     : "Creating…")
+                                if photoViewModel.isUploading {
+                                    let uploaded = Int(photoViewModel.uploadProgress * Double(photoViewModel.photos.count - 1))
+                                    let total = photoViewModel.photos.count - 1
+                                    Text("Uploading \(uploaded + 1)/\(total)…")
+                                } else {
+                                    Text("Creating…")
+                                }
                             } else {
                                 Image(systemName: AppIcons.checkmark)
                                     .padding(.trailing, 4)
@@ -456,7 +460,6 @@ struct CreateLocationView: View {
     
     private func saveLocation() async {
         // ── Sanitize inputs before saving ─────────────────────────────────
-        // Trim leading/trailing whitespace, collapse multiple internal spaces
         let sanitizedName = stripURLs(
             locationName
                 .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -474,13 +477,10 @@ struct CreateLocationView: View {
                 .joined(separator: "\n")
         )
 
-        // Guard: both fields must be non-empty after sanitization
         guard !sanitizedName.isEmpty, !sanitizedDetails.isEmpty else { return }
 
         #if DEBUG
-        if ConfigLoader.shared.enableDebugLogging {
-            print("[CreateLocation] Saving '\(sanitizedName)' with \(photoViewModel.photos.count) photo(s)")
-        }
+        print("[CreateLocation] Saving '\(sanitizedName)' with \(photoViewModel.photos.count) photo(s)")
         #endif
 
         guard let location = photoLocation else { return }
@@ -507,6 +507,7 @@ struct CreateLocationView: View {
         }
 
         do {
+            // Step 1: Create location with the first photo
             let createdLoc = try await locationService.createLocation(
                 name: sanitizedName,
                 type: locationType,
@@ -519,32 +520,20 @@ struct CreateLocationView: View {
                 productionDate: productionDate
             )
 
-            // Upload remaining photos (index 1+) individually
+            // Step 2: Upload remaining photos (2..N) using the ViewModel pipeline
+            // This updates isUploading and uploadProgress, driving the save button UI
             if photoViewModel.photos.count > 1 {
-                let uploader = PhotoUploadService()
-                for pipelinePhoto in photoViewModel.photos.dropFirst() {
-                    do {
-                        _ = try await uploader.uploadPhoto(
-                            image: pipelinePhoto.originalImage,
-                            locationId: createdLoc.id,
-                            location: location,
-                            caption: pipelinePhoto.caption,
-                            exifMetadata: pipelinePhoto.exifMetadata
-                        )
-                    } catch {
-                        #if DEBUG
-                        if ConfigLoader.shared.enableDebugLogging {
-                            print("[CreateLocation] Failed to upload extra photo: \(error)")
-                        }
-                        #endif
-                    }
-                }
+                // Build a temporary ViewModel with just the remaining photos
+                let remainingPhotos = Array(photoViewModel.photos.dropFirst())
+                let _ = try await uploadRemainingPhotos(
+                    remainingPhotos,
+                    locationId: createdLoc.id,
+                    location: location
+                )
             }
 
             #if DEBUG
-            if ConfigLoader.shared.enableDebugLogging {
-                print("[CreateLocation] ✅ Created location \(createdLoc.id) with \(photoViewModel.photos.count) photo(s)")
-            }
+            print("[CreateLocation] ✅ Created location \(createdLoc.id) with \(photoViewModel.photos.count) photo(s)")
             #endif
 
             createdLocation = createdLoc
@@ -552,11 +541,49 @@ struct CreateLocationView: View {
 
         } catch {
             #if DEBUG
-            if ConfigLoader.shared.enableDebugLogging {
-                print("[CreateLocation] ❌ Failed: \(error)")
-            }
+            print("[CreateLocation] ❌ Failed: \(error)")
             #endif
         }
+    }
+
+    /// Upload remaining photos sequentially, updating the ViewModel's progress state.
+    private func uploadRemainingPhotos(
+        _ photos: [PipelinePhoto],
+        locationId: Int,
+        location: CLLocation
+    ) async throws -> [Photo] {
+        photoViewModel.isUploading = true
+        photoViewModel.uploadProgress = 0.0
+        defer { photoViewModel.isUploading = false }
+
+        let uploader = PhotoUploadService()
+        var uploaded: [Photo] = []
+        let total = Double(photos.count)
+
+        for (index, pipelinePhoto) in photos.enumerated() {
+            do {
+                let photo = try await uploader.uploadPhoto(
+                    image: pipelinePhoto.originalImage,
+                    locationId: locationId,
+                    location: location,
+                    caption: pipelinePhoto.caption,
+                    exifMetadata: pipelinePhoto.exifMetadata
+                )
+                uploaded.append(photo)
+                photoViewModel.uploadProgress = Double(index + 1) / total
+
+                #if DEBUG
+                print("[CreateLocation] Uploaded photo \(index + 1)/\(Int(total))")
+                #endif
+            } catch {
+                #if DEBUG
+                print("[CreateLocation] Failed to upload photo \(index + 1): \(error)")
+                #endif
+                // Continue uploading remaining photos
+            }
+        }
+
+        return uploaded
     }
 
     // MARK: - Group Save Flow
