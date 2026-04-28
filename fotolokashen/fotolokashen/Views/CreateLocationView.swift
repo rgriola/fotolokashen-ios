@@ -370,11 +370,6 @@ struct CreateLocationView: View {
                 // Show group creation sheet, then create child locations per photo
                 showCreateGroupSheet = true
             }
-            Button("Create Individual Locations") {
-                // TODO: Phase 3E — create one location per photo
-                // For now, fall through to single location
-                spreadHandled = true
-            }
             Button("Cancel", role: .cancel) {
                 spreadHandled = true
             }
