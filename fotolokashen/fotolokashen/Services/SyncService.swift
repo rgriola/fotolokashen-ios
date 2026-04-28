@@ -96,38 +96,41 @@ class SyncService: ObservableObject {
     /// Sync locations from API to local cache
     func syncLocationsFromAPI() async {
         guard networkMonitor.isConnected else { return }
-        
+
         do {
-            if config.enableDebugLogging {
-                print("[Sync] Fetching locations from API...")
+            // If LocationStore already fetched locations (from view .task), reuse them
+            // instead of making a duplicate API call
+            let locations: [Location]
+            if !LocationStore.shared.locations.isEmpty {
+                locations = LocationStore.shared.locations
+                if config.enableDebugLogging {
+                    print("[Sync] Reusing \(locations.count) locations from LocationStore (skipping duplicate API call)")
+                }
+            } else {
+                if config.enableDebugLogging {
+                    print("[Sync] Fetching locations from API...")
+                }
+                locations = try await locationService.fetchLocations()
+
+                // Update the shared LocationStore so all views stay in sync
+                LocationStore.shared.locations = locations
+
+                if config.enableDebugLogging {
+                    print("[Sync] LocationStore updated with \(locations.count) locations")
+                }
             }
-            
-            // Fetch from API
-            let locations = try await locationService.fetchLocations()
-            
-            if config.enableDebugLogging {
-                print("[Sync] Fetched \(locations.count) locations")
-            }
-            
+
             // Save to local cache
             try dataManager.saveLocations(locations)
-            
+
             if config.enableDebugLogging {
-                print("[Sync] Locations saved to cache")
+                print("[Sync] \(locations.count) locations saved to cache")
             }
-            
-            // Update the shared LocationStore so all views stay in sync
-            LocationStore.shared.locations = locations
-            
-            if config.enableDebugLogging {
-                print("[Sync] LocationStore updated with \(locations.count) locations")
-            }
-            
+
         } catch {
             if config.enableDebugLogging {
                 print("[Sync] Location sync error: \(error)")
             }
-            // Error already logged, don't rethrow
         }
     }
     

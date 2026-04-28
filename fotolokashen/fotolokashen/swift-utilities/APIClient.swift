@@ -223,7 +223,8 @@ class APIClient {
                 #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
                     if let jsonString = String(data: data, encoding: .utf8) {
-                        print("[APIClient] Response data: \(jsonString)")
+                        let preview = jsonString.prefix(500)
+                        print("[APIClient] Response data (\(data.count) bytes): \(preview)\(jsonString.count > 500 ? "…[truncated]" : "")")
                     }
                 }
                 #endif
