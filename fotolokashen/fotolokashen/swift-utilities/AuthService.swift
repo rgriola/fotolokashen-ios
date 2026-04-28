@@ -33,8 +33,18 @@ class AuthService: ObservableObject {
     // MARK: - Initialization
     
     init() {
+        #if DEBUG
+        let t0 = CFAbsoluteTimeGetCurrent()
+        #endif
         checkAuthStatus()
+        #if DEBUG
+        let t1 = CFAbsoluteTimeGetCurrent()
+        print("[⏱️ AuthService] checkAuthStatus() took \(Int((t1 - t0) * 1000))ms")
+        #endif
         setupSessionInvalidationObserver()
+        #if DEBUG
+        print("[⏱️ AuthService] init() total: \(Int((CFAbsoluteTimeGetCurrent() - t0) * 1000))ms")
+        #endif
     }
     
     // MARK: - Session Invalidation Observer

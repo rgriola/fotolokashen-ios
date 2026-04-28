@@ -143,6 +143,11 @@ struct LoginView: View {
             .padding()
         }
         .navigationBarHidden(true)
+        .onAppear {
+            #if DEBUG
+            LaunchTimer.mark("LoginView.onAppear — LOGIN SCREEN VISIBLE")
+            #endif
+        }
         // Auto-login after email verification deep link
         .onChange(of: deepLinkManager.emailVerified) { _, verified in
             guard verified else { return }
