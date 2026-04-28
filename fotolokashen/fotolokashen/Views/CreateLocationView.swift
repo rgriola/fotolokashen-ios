@@ -515,6 +515,7 @@ struct CreateLocationView: View {
                 geocodedAddress: geocodedAddress,
                 photo: firstPhoto ?? UIImage(),
                 photoLocation: location,
+                details: sanitizedDetails,
                 productionDate: productionDate
             )
 
@@ -596,6 +597,7 @@ struct CreateLocationView: View {
                 geocodedAddress: geocoded,
                 photo: photoViewModel.photos.first?.originalImage ?? UIImage(),
                 photoLocation: photoLocation,
+                details: sanitizedDetails,
                 productionDate: productionDate
             )
 

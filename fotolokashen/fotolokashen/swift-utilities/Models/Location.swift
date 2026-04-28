@@ -325,6 +325,7 @@ struct CreateLocationRequest: Codable {
     let notes: String?
     let rating: Double?
     let productionDate: String?  // ISO date string (YYYY-MM-DD)
+    let details: String?         // Location details (free-text notes from iOS form)
     // Address components for database
     let street: String?
     let city: String?

@@ -51,7 +51,8 @@ class LocationService: ObservableObject {
         geocodedAddress: GeocodedAddress,
         photo: UIImage,
         photoLocation: CLLocation?,
-        productionDate: Date? = nil  // Optional production/filming date
+        details: String? = nil,          // Location details (free-text from iOS form)
+        productionDate: Date? = nil      // Optional production/filming date
     ) async throws -> Location {
         isLoading = true
         errorMessage = nil
@@ -91,6 +92,7 @@ class LocationService: ObservableObject {
                 notes: nil,
                 rating: nil,
                 productionDate: productionDateString,
+                details: details,
                 street: geocodedAddress.fullStreet,
                 city: geocodedAddress.city,
                 state: geocodedAddress.state,
