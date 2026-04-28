@@ -78,7 +78,7 @@ class DataManager: ObservableObject {
         if let existing = existing {
             // Update existing
             existing.name = location.name
-            existing.placeId = location.placeId
+            existing.placeId = location.placeId ?? existing.placeId
             existing.lat = location.lat
             existing.lng = location.lng
             existing.address = location.address

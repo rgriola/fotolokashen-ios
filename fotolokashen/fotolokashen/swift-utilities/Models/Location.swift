@@ -12,7 +12,7 @@ struct Location: Codable, Identifiable {
         let permitRequired: Bool?
         let restrictions: String?
     let id: Int
-    let placeId: String
+    let placeId: String?
     let name: String
     let address: String?
     let lat: Double
@@ -81,7 +81,7 @@ struct Location: Codable, Identifiable {
         latitude: Double,
         longitude: Double,
         type: String,
-        placeId: String,
+        placeId: String? = nil,
         createdAt: String,
         photosCount: Int?,
         thumbnailUrl: String?,

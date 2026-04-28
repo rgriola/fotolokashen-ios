@@ -72,7 +72,7 @@ final class CachedLocation {
     static func from(_ location: Location) -> CachedLocation {
         return CachedLocation(
             id: location.id,
-            placeId: location.placeId,
+            placeId: location.placeId ?? "",
             name: location.name,
             address: location.address,
             lat: location.lat,

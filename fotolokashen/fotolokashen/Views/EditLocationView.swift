@@ -311,7 +311,7 @@ struct EditLocationView: View {
                     DetailRow(label: "Address", value: location.address ?? "N/A")
                     DetailRow(label: "Latitude", value: String(format: "%.6f", location.latitude))
                     DetailRow(label: "Longitude", value: String(format: "%.6f", location.longitude))
-                    DetailRow(label: "Place ID", value: location.placeId)
+                    DetailRow(label: "Place ID", value: location.placeId ?? "N/A")
                 } header: {
                     Label("Location Info (Read-Only)", systemImage: "mappin.and.ellipse")
                 }

@@ -50,7 +50,7 @@ struct LocationDetailView: View {
     // MARK: - Environment & State
     // =========================================================================
 
-    @EnvironmentObject var networkMonitor: NetworkMonitor
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @Environment(\.dismiss) private var dismiss
 
     /// Photos fetched from API (owner mode) or converted from inline (read-only)
@@ -774,6 +774,6 @@ struct LocationDetailView: View {
             thumbnailUrl: nil,
             userSaveId: 1
         ))
-        .environmentObject(NetworkMonitor.shared)
+
     }
 }
