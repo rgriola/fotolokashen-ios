@@ -80,12 +80,9 @@ struct CreateLocationView: View {
     @State private var createdLocation: Location?
     @State private var geocodedAddressData: GeocodedAddress?
 
-    // MARK: - GPS Spread Detection State
+    // MARK: - GPS Spread Detection
 
     @State private var spreadResult: GPSSpreadAnalyzer.SpreadResult?
-    @State private var showSpreadOptions = false
-    @State private var showCreateGroupSheet = false
-    @State private var spreadHandled = false  // true once user picks an option
     
     // Location types (matching web app)
     private let locationTypes = [
@@ -126,6 +123,23 @@ struct CreateLocationView: View {
                         onRemovePhoto: { id in photoViewModel.removePhoto(id: id) }
                     )
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+
+                    // GPS Spread Info Banner
+                    if let spread = spreadResult, spread.exceedsThreshold {
+                        HStack(spacing: 8) {
+                            Image(systemName: "mappin.and.ellipse")
+                                .foregroundStyle(.orange)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Photos span \(spread.spreadDescription)")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                Text("Using first photo's location. You can change this in Edit mode.")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
                 }
 
                 // ── Location Info ─────────────────────────────────────────
@@ -329,12 +343,8 @@ struct CreateLocationView: View {
             }
 
             // Run GPS spread detection after photos are loaded
-            if !spreadHandled && photoViewModel.photos.count >= 2 {
-                if let result = GPSSpreadAnalyzer.analyze(photos: photoViewModel.photos),
-                   result.exceedsThreshold {
-                    spreadResult = result
-                    showSpreadOptions = true
-                }
+            if photoViewModel.photos.count >= 2 {
+                spreadResult = GPSSpreadAnalyzer.analyze(photos: photoViewModel.photos)
             }
 
             await loadAddress()
@@ -344,37 +354,6 @@ struct CreateLocationView: View {
             PhotoPickerView(selectionLimit: max(remaining, 1)) { newPhotos in
                 photoViewModel.addPhotos(newPhotos)
             }
-        }
-        .sheet(isPresented: $showCreateGroupSheet) {
-            CreateGroupSheet(
-                onGroupCreated: { group in
-                    showCreateGroupSheet = false
-                    spreadHandled = true
-                    Task { await saveAsGroup(group: group) }
-                },
-                onCancel: {
-                    showCreateGroupSheet = false
-                }
-            )
-        }
-        .confirmationDialog(
-            "Your photos span \(spreadResult?.spreadDescription ?? "a large area")",
-            isPresented: $showSpreadOptions,
-            titleVisibility: .visible
-        ) {
-            Button("Create Single Location (centroid)") {
-                // Use centroid as the location GPS, all photos on one location
-                spreadHandled = true
-            }
-            Button("Create Event Group") {
-                // Show group creation sheet, then create child locations per photo
-                showCreateGroupSheet = true
-            }
-            Button("Cancel", role: .cancel) {
-                spreadHandled = true
-            }
-        } message: {
-            Text("\(spreadResult?.photosWithGPS ?? 0) of your photos have GPS data spread across \(spreadResult?.spreadDescription ?? "a wide area"). How would you like to save them?")
         }
         .alert("Success!", isPresented: $showingSuccess) {
             Button("OK") {
@@ -583,102 +562,6 @@ struct CreateLocationView: View {
 
     // MARK: - Group Save Flow
 
-    /// Create child locations within a group — one location per GPS-distinct photo.
-    private func saveAsGroup(group: LocationGroup) async {
-        guard let geocoded = geocodedAddressData ?? fallbackGeocodedAddress() else { return }
-
-        let sanitizedName = stripURLs(
-            locationName
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .components(separatedBy: .whitespaces)
-                .filter { !$0.isEmpty }
-                .joined(separator: " ")
-        )
-
-        let sanitizedDetails = stripURLs(
-            locationDetails
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .components(separatedBy: .newlines)
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty }
-                .joined(separator: "\n")
-        )
-
-        #if DEBUG
-        print("[CreateLocation] Creating group child locations for group \(group.id)")
-        #endif
-
-        do {
-            // Create the first location with all photos (simplest MVP behavior).
-            // Future: split photos by proximity clusters.
-            let createdLoc = try await locationService.createLocation(
-                name: sanitizedName.isEmpty ? group.name : sanitizedName,
-                type: locationType,
-                latitude: spreadResult?.centroid?.latitude ?? photoLocation?.coordinate.latitude ?? 0,
-                longitude: spreadResult?.centroid?.longitude ?? photoLocation?.coordinate.longitude ?? 0,
-                geocodedAddress: geocoded,
-                photo: photoViewModel.photos.first?.originalImage ?? UIImage(),
-                photoLocation: photoLocation,
-                details: sanitizedDetails,
-                productionDate: productionDate
-            )
-
-            // Link this location to the group
-            try await LocationGroupService.shared.addLocationToGroup(
-                locationId: createdLoc.id,
-                groupId: group.id
-            )
-
-            // Upload remaining photos
-            if photoViewModel.photos.count > 1 {
-                let uploader = PhotoUploadService()
-                for pipelinePhoto in photoViewModel.photos.dropFirst() {
-                    do {
-                        _ = try await uploader.uploadPhoto(
-                            image: pipelinePhoto.originalImage,
-                            locationId: createdLoc.id,
-                            location: photoLocation,
-                            caption: pipelinePhoto.caption,
-                            exifMetadata: pipelinePhoto.exifMetadata
-                        )
-                    } catch {
-                        #if DEBUG
-                        print("[CreateLocation] Failed to upload group photo: \(error)")
-                        #endif
-                    }
-                }
-            }
-
-            #if DEBUG
-            print("[CreateLocation] ✅ Group location created — ID \(createdLoc.id) in group \(group.id)")
-            #endif
-
-            createdLocation = createdLoc
-            showingSuccess = true
-
-        } catch {
-            #if DEBUG
-            print("[CreateLocation] ❌ Group save failed: \(error)")
-            #endif
-        }
-    }
-
-    /// Fallback geocoded address when geocoding hasn't been performed.
-    private func fallbackGeocodedAddress() -> GeocodedAddress? {
-        guard let location = photoLocation else { return nil }
-        let coordinateString = String(format: "%.6f, %.6f",
-                                      location.coordinate.latitude,
-                                      location.coordinate.longitude)
-        return GeocodedAddress(
-            placeId: "photo-\(Date().timeIntervalSince1970)",
-            formattedAddress: coordinateString,
-            streetNumber: nil,
-            street: nil,
-            city: nil,
-            state: nil,
-            zipcode: nil
-        )
-    }
 }
 
 // MARK: - Preview

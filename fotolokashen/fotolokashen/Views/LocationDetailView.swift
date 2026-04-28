@@ -194,6 +194,21 @@ struct LocationDetailView: View {
                     }
 
                     // ---------------------------------------------------------
+                    // Photo Spread Map (OWNER MODE ONLY)
+                    // Shows where each photo was taken on a mini-map
+                    // ---------------------------------------------------------
+                    if !isReadOnly && !isLoadingPhotos {
+                        let spreadMap = PhotoSpreadMapView(
+                            locationCoordinate: currentLocation.coordinate,
+                            photos: photos
+                        )
+                        if spreadMap.hasSpread {
+                            Divider()
+                            spreadMap
+                        }
+                    }
+
+                    // ---------------------------------------------------------
                     // "Saved by" Section (READ-ONLY MODE ONLY)
                     // Shows who saved this location
                     // ---------------------------------------------------------
