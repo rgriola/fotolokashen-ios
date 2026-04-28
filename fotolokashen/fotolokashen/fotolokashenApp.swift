@@ -15,9 +15,12 @@ struct FotolokashenApp: App {
     @StateObject private var networkMonitor = NetworkMonitor.shared
     
     init() {
-        // Initialize Google Maps SDK
-        let config = ConfigLoader.shared
-        GMSServices.provideAPIKey(config.googleMapsAPIKey)
+        // Defer Google Maps SDK init off the main thread — it takes 200-500ms
+        // and isn't needed until MapView appears.
+        let apiKey = ConfigLoader.shared.googleMapsAPIKey
+        DispatchQueue.global(qos: .userInitiated).async {
+            GMSServices.provideAPIKey(apiKey)
+        }
     }
     
     var body: some Scene {
@@ -62,11 +65,11 @@ struct AppRootView: View {
                 _ = deepLinkManager.handleURL(url)
             }
             .task(priority: .utility) {
-                // Let the UI settle before syncing
-                try? await Task.sleep(for: .milliseconds(500))
-                if networkMonitor.isConnected {
-                    await syncService.syncAll()
-                }
+                // Only sync when authenticated — no point hitting the API
+                // if there's no token (it will just fail with 401)
+                guard authService.isAuthenticated,
+                      networkMonitor.isConnected else { return }
+                await syncService.syncAll()
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {

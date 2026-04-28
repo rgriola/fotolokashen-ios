@@ -62,6 +62,14 @@ class SyncService: ObservableObject {
             return
         }
         
+        // Don't attempt sync if not authenticated — API calls will just fail with 401
+        guard KeychainService.shared.getAccessToken() != nil else {
+            if config.enableDebugLogging {
+                print("[Sync] Skipping sync - no auth token")
+            }
+            return
+        }
+        
         guard !isSyncing else {
             if config.enableDebugLogging {
                 print("[Sync] Already syncing")
