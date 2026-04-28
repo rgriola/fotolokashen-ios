@@ -53,7 +53,7 @@ struct ImageCompressor {
     ///   - image: The UIImage to compress
     ///   - config: Compression configuration (uses default if not provided)
     /// - Returns: Compressed JPEG data, or nil if compression failed
-    static func compress(_ image: UIImage, config: Config = .default) -> Data? {
+    nonisolated static func compress(_ image: UIImage, config: Config = .default) -> Data? {
         // Step 1: Resize image if needed
         let resized = resize(image, maxDimension: config.maxDimension)
         
