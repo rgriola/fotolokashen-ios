@@ -91,15 +91,22 @@ class PhotoPickerViewModel: ObservableObject {
     // MARK: - Compression
 
     /// Compress any photos that haven't been compressed yet.
+    /// Runs compression on a background thread to avoid blocking the main thread / touch events.
     private func compressUncompressedPhotos() async {
         isCompressing = true
         defer { isCompressing = false }
 
         for index in photos.indices {
             if photos[index].compressedData == nil {
-                photos[index].compressedData = ImageCompressor.compress(
-                    photos[index].originalImage
-                )
+                let image = photos[index].originalImage
+                // Dispatch heavy compression to a background thread
+                let compressed = await Task.detached(priority: .userInitiated) {
+                    ImageCompressor.compress(image)
+                }.value
+                // Write result back on MainActor (we're already on it)
+                if index < photos.count {
+                    photos[index].compressedData = compressed
+                }
             }
         }
     }

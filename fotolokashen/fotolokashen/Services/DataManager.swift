@@ -68,8 +68,8 @@ class DataManager: ObservableObject {
         return try modelContext.fetch(descriptor)
     }
     
-    /// Save or update location in cache
-    func saveLocation(_ location: Location) throws {
+    /// Save or update location in cache (does NOT flush to disk — caller decides when to save)
+    private func upsertLocation(_ location: Location) throws {
         // Check if already exists
         let predicate = #Predicate<CachedLocation> { $0.id == location.id }
         let descriptor = FetchDescriptor<CachedLocation>(predicate: predicate)
@@ -92,15 +92,21 @@ class DataManager: ObservableObject {
             let cached = CachedLocation.from(location)
             modelContext.insert(cached)
         }
-        
+    }
+
+    /// Save or update a single location in cache (flushes immediately)
+    func saveLocation(_ location: Location) throws {
+        try upsertLocation(location)
         try modelContext.save()
     }
     
-    /// Save multiple locations (batch)
+    /// Save multiple locations (batch) — single flush at the end
     func saveLocations(_ locations: [Location]) throws {
         for location in locations {
-            try saveLocation(location)
+            try upsertLocation(location)
         }
+        // One disk write instead of N
+        try modelContext.save()
     }
     
     /// Delete location from cache

@@ -61,7 +61,9 @@ struct AppRootView: View {
                 guard let url = activity.webpageURL else { return }
                 _ = deepLinkManager.handleURL(url)
             }
-            .task {
+            .task(priority: .utility) {
+                // Let the UI settle before syncing
+                try? await Task.sleep(for: .milliseconds(500))
                 if networkMonitor.isConnected {
                     await syncService.syncAll()
                 }
