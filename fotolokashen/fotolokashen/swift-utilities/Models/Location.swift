@@ -32,6 +32,7 @@ struct Location: Codable, Identifiable {
     let access: String?
     let indoorOutdoor: String?
     let isPermanent: Bool?
+    let details: String?         // Location details (free-text from iOS Create form)
 
     // MARK: - Address Components
 
@@ -93,6 +94,7 @@ struct Location: Codable, Identifiable {
         access: String? = nil,
         indoorOutdoor: String? = nil,
         isPermanent: Bool? = nil,
+        details: String? = nil,
         street: String? = nil,
         number: String? = nil,
         city: String? = nil,
@@ -125,6 +127,7 @@ struct Location: Codable, Identifiable {
         self.access = access
         self.indoorOutdoor = indoorOutdoor
         self.isPermanent = isPermanent
+        self.details = details
         self.street = street
         self.number = number
         self.city = city

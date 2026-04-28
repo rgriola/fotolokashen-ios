@@ -444,6 +444,9 @@ struct LocationDetailView: View {
             if let date = currentLocation.productionDate {
                 DetailRow(label: "Production Date", value: formatProductionDate(date))
             }
+            if let details = currentLocation.details, !details.isEmpty {
+                DetailRow(label: "Location Details", value: details)
+            }
             if let notes = currentLocation.productionNotes, !notes.isEmpty {
                 DetailRow(label: "Production Notes", value: notes)
             }
