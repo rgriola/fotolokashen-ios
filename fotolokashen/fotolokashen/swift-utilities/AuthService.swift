@@ -139,6 +139,9 @@ class AuthService: ObservableObject {
     
     /// Start OAuth login flow via in-app browser (ASWebAuthenticationSession)
     func startLogin() {
+        // Guard against double-tap — if already loading, ignore
+        guard !isLoading else { return }
+
         // Generate PKCE
         let (verifier, challenge) = PKCEGenerator.generate()
         self.codeVerifier = verifier
@@ -185,6 +188,9 @@ class AuthService: ObservableObject {
     
     /// Start OAuth registration flow via in-app browser (ASWebAuthenticationSession)
     func startRegistration() {
+        // Guard against double-tap
+        guard !isLoading else { return }
+
         #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Starting registration flow")
@@ -215,6 +221,9 @@ class AuthService: ObservableObject {
 
     /// Start forgot password flow via in-app browser (ASWebAuthenticationSession)
     func startForgotPassword() {
+        // Guard against double-tap
+        guard !isLoading else { return }
+
         #if DEBUG
         if config.enableDebugLogging {
             print("[AuthService] Starting forgot password flow")
