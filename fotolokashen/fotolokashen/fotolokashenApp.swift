@@ -24,41 +24,21 @@ enum LaunchTimer {
 
 @main
 struct FotolokashenApp: App {
-    @StateObject private var authService: AuthService
-    @StateObject private var networkMonitor: NetworkMonitor
+    @StateObject private var authService = AuthService()
+    @StateObject private var networkMonitor = NetworkMonitor.shared
     
     init() {
         #if DEBUG
         LaunchTimer.mark("FotolokashenApp.init() START")
         #endif
 
-        // Create StateObjects manually so we can time them
-        #if DEBUG
-        let t0 = CFAbsoluteTimeGetCurrent()
-        #endif
-        let auth = AuthService()
-        #if DEBUG
-        LaunchTimer.mark("AuthService() created (\(Int((CFAbsoluteTimeGetCurrent() - t0) * 1000))ms)")
-        #endif
-        
-        _authService = StateObject(wrappedValue: auth)
-        _networkMonitor = StateObject(wrappedValue: NetworkMonitor.shared)
-
-        #if DEBUG
-        let t1 = CFAbsoluteTimeGetCurrent()
-        #endif
         // Defer Google Maps SDK init off the main thread
         let apiKey = ConfigLoader.shared.googleMapsAPIKey
-        #if DEBUG
-        LaunchTimer.mark("ConfigLoader.shared accessed (\(Int((CFAbsoluteTimeGetCurrent() - t1) * 1000))ms)")
-        #endif
-        
         DispatchQueue.global(qos: .userInitiated).async {
-            let t = CFAbsoluteTimeGetCurrent()
             GMSServices.provideAPIKey(apiKey)
             #if DEBUG
             DispatchQueue.main.async {
-                print("[⏱️ BG] GMSServices.provideAPIKey() took \(Int((CFAbsoluteTimeGetCurrent() - t) * 1000))ms")
+                LaunchTimer.mark("GMSServices.provideAPIKey() completed (background)")
             }
             #endif
         }
@@ -90,10 +70,11 @@ struct AppRootView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @ObservedObject private var deepLinkManager = DeepLinkManager.shared
+    @State private var hasAppearedOnce = false
 
     var body: some View {
         #if DEBUG
-        let _ = LaunchTimer.mark("AppRootView.body evaluated (isAuthenticated=\(authService.isAuthenticated))")
+        let _ = LaunchTimer.mark("AppRootView.body evaluated (isAuth=\(authService.isAuthenticated), isLoading=\(authService.isLoading), error=\(authService.errorMessage ?? "nil"), user=\(authService.currentUser?.username ?? "nil"))")
         #endif
         Group {
             if authService.isAuthenticated {
@@ -120,8 +101,17 @@ struct AppRootView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                // Skip the first activation — AuthService.init() already checked auth.
+                // Only re-check when returning from background.
+                guard hasAppearedOnce else {
+                    hasAppearedOnce = true
+                    #if DEBUG
+                    LaunchTimer.mark("Scene became active (initial — skipping duplicate checkAuthStatus)")
+                    #endif
+                    return
+                }
                 #if DEBUG
-                LaunchTimer.mark("Scene became active - checking auth status")
+                LaunchTimer.mark("Scene became active (from background) — re-checking auth")
                 #endif
                 authService.checkAuthStatus()
             }

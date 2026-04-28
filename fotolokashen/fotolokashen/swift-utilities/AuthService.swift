@@ -86,10 +86,18 @@ class AuthService: ObservableObject {
     /// Check if user is authenticated
     func checkAuthStatus() {
         Task {
+            #if DEBUG
+            LaunchTimer.mark("checkAuthStatus() Task started")
+            #endif
+            
             // Check if we have any tokens at all
             guard keychainService.getRefreshToken() != nil else {
-                isAuthenticated = false
-                currentUser = nil
+                // Only update if values actually changed — avoid unnecessary @Published re-renders
+                if isAuthenticated { isAuthenticated = false }
+                if currentUser != nil { currentUser = nil }
+                #if DEBUG
+                LaunchTimer.mark("checkAuthStatus() — no refresh token, done")
+                #endif
                 return
             }
             
@@ -98,27 +106,29 @@ class AuthService: ObservableObject {
                 do {
                     try await refreshToken()
                     #if DEBUG
-                    if config.enableDebugLogging {
-                        print("[AuthService] Token refreshed on app launch")
-                    }
+                    LaunchTimer.mark("checkAuthStatus() — token refreshed")
                     #endif
                 } catch {
                     #if DEBUG
                     if config.enableDebugLogging {
                         print("[AuthService] Token refresh failed on launch: \(error)")
                     }
+                    LaunchTimer.mark("checkAuthStatus() — token refresh FAILED")
                     #endif
-                    isAuthenticated = false
-                    currentUser = nil
+                    if isAuthenticated { isAuthenticated = false }
+                    if currentUser != nil { currentUser = nil }
                     try? keychainService.clearTokens()
                     return
                 }
             }
             
             // Token is valid
-            isAuthenticated = true
+            if !isAuthenticated { isAuthenticated = true }
             // Fetch current user from API
             await fetchCurrentUser()
+            #if DEBUG
+            LaunchTimer.mark("checkAuthStatus() — complete")
+            #endif
         }
     }
     
