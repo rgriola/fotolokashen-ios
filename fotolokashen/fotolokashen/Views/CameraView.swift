@@ -511,11 +511,10 @@ struct CameraView: View {
                 isWritingToDisk = false
                 // Clear the capturedImage so cameraService is ready for next
                 cameraService.capturedImage = nil
+                #if DEBUG
+                print("[Camera] Session capture \(sessionCaptures.count) saved to \(fileURL.lastPathComponent)")
+                #endif
             }
-
-            #if DEBUG
-            print("[Camera] Session capture \(sessionCaptures.count) saved to \(fileURL.lastPathComponent)")
-            #endif
         }
     }
 

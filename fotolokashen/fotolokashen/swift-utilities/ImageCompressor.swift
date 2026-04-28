@@ -2,11 +2,14 @@ import UIKit
 
 /// Smart image compressor that reduces image size while maintaining quality
 /// Implements a two-step process: resize then compress
-struct ImageCompressor {
+///
+/// All methods are pure CPU work (resize + JPEG encode) and safe to call
+/// from any concurrency context, including background Task.detached.
+struct ImageCompressor: Sendable {
     
     // MARK: - Configuration
     
-    struct Config {
+    struct Config: Sendable {
         /// Target file size in bytes (default: 1.5MB)
         let targetBytes: Int
         
@@ -23,7 +26,7 @@ struct ImageCompressor {
         let qualityStep: CGFloat
         
         /// Default configuration matching backend requirements
-        static let `default` = Config(
+        nonisolated static let `default` = Config(
             targetBytes: 1_500_000,      // 1.5MB
             qualityStart: 0.9,            // 90% quality
             qualityFloor: 0.4,            // Don't go below 40%
@@ -77,7 +80,7 @@ struct ImageCompressor {
     ///   - image: The UIImage to compress
     ///   - config: Compression configuration
     /// - Returns: Tuple containing compressed data and metadata
-    static func compressWithMetadata(
+    nonisolated static func compressWithMetadata(
         _ image: UIImage,
         config: Config = .default
     ) -> (data: Data?, metadata: CompressionMetadata)? {
@@ -114,7 +117,7 @@ struct ImageCompressor {
     ///   - image: The UIImage to resize
     ///   - maxDimension: Maximum width or height IN PIXELS
     /// - Returns: Resized UIImage
-    private static func resize(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
+    nonisolated private static func resize(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
         // Get actual pixel size (not points)
         // UIImage.size returns points, multiply by scale to get pixels
         let scale = image.scale
