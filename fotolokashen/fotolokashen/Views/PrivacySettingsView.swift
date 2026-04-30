@@ -29,10 +29,10 @@ struct PrivacySettingsView: View {
                 }
 
                 Toggle("Appear in People Search", isOn: $showInSearch)
-                    .tint(.brandPurple)
+                    .tint(.brand)
 
                 Toggle("Show Location on Profile", isOn: $showLocation)
-                    .tint(.brandPurple)
+                    .tint(.brand)
 
                 Picker("Saved Locations Visibility", selection: $showSavedLocations) {
                     ForEach(visibilityOptions, id: \.self) { option in
@@ -41,7 +41,7 @@ struct PrivacySettingsView: View {
                 }
 
                 Toggle("Allow Follow Requests", isOn: $allowFollowRequests)
-                    .tint(.brandPurple)
+                    .tint(.brand)
 
             } header: {
                 Text("Visibility")

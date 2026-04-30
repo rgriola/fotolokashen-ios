@@ -81,7 +81,7 @@ struct FollowListView: View {
                                 await loadMore()
                             }
                         }
-                        .foregroundColor(.brandPurple)
+                        .foregroundColor(.brand)
                     }
                     Spacer()
                 }
@@ -204,13 +204,13 @@ struct UserRowView: View {
 
     private var avatarPlaceholder: some View {
         Circle()
-            .fill(Color.brandPurple.opacity(0.2))
+            .fill(Color.brand.opacity(0.2))
             .frame(width: 44, height: 44)
             .overlay(
                 Text(user.initials)
                     .font(.subheadline)
                     .fontWeight(.bold)
-                    .foregroundColor(.brandPurple)
+                    .foregroundColor(.brand)
             )
     }
 }

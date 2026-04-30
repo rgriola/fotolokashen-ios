@@ -1,24 +1,30 @@
 import SwiftUI
 import CoreLocation
 
-/// Form for creating a new location with captured photo
+/// Form for creating a new location with one or more photos.
 ///
-// REVIEW: Missing features compared to web app's create-with-photo flow:
-// 1. No caption field — web app supports captions at creation time.
-// 2. No UserSave fields (tags, personalRating, isFavorite, color) — must edit post-create.
+/// Phase 2a-4: form state, sanitization, geocoding, GPS spread analysis, and
+/// the multi-photo save pipeline live in `CreateLocationViewModel`. The view
+/// keeps `PhotoPickerViewModel` as a separate `@StateObject` (it's the photo
+/// pipeline VM) and passes it to the create VM at save time.
+///
+// REVIEW: Still missing — caption, tags, personalRating, isFavorite, color at
+// create time. `CreateLocationRequest` doesn't carry these fields and the
+// server's POST /api/locations doesn't accept them, so adding them requires
+// either (a) a CREATE → PATCH chain client-side, or (b) a server-side schema
+// change. Tracked as a follow-up to Phase 2a.
 struct CreateLocationView: View {
-    
-    @StateObject private var locationService = LocationService()
+
+    @StateObject private var viewModel: CreateLocationViewModel
     @StateObject private var photoViewModel = PhotoPickerViewModel()
     @Environment(\.dismiss) var dismiss
-    
+
     /// Initial photo from the camera (optional — user can also add from library)
     let initialPhoto: UIImage?
     let initialLibraryPhotos: [PipelinePhoto]?
     let initialSessionCaptures: [SessionCapture]?
-    let photoLocation: CLLocation?
     var onLocationCreated: ((Location) -> Void)?
-    
+
     /// Legacy initializer: single camera photo (backward compatible)
     init(
         photo: UIImage,
@@ -28,8 +34,8 @@ struct CreateLocationView: View {
         self.initialPhoto = photo
         self.initialLibraryPhotos = nil
         self.initialSessionCaptures = nil
-        self.photoLocation = photoLocation
         self.onLocationCreated = onLocationCreated
+        _viewModel = StateObject(wrappedValue: CreateLocationViewModel(photoLocation: photoLocation))
     }
 
     /// Initializer: start with Photo Library photos
@@ -41,8 +47,8 @@ struct CreateLocationView: View {
         self.initialPhoto = nil
         self.initialLibraryPhotos = libraryPhotos
         self.initialSessionCaptures = nil
-        self.photoLocation = photoLocation
         self.onLocationCreated = onLocationCreated
+        _viewModel = StateObject(wrappedValue: CreateLocationViewModel(photoLocation: photoLocation))
     }
 
     /// Initializer: start with multi-photo camera session captures
@@ -54,8 +60,8 @@ struct CreateLocationView: View {
         self.initialPhoto = nil
         self.initialLibraryPhotos = nil
         self.initialSessionCaptures = sessionCaptures
-        self.photoLocation = photoLocation
         self.onLocationCreated = onLocationCreated
+        _viewModel = StateObject(wrappedValue: CreateLocationViewModel(photoLocation: photoLocation))
     }
 
     /// Initializer: no initial photo (opens with empty grid + picker)
@@ -66,256 +72,20 @@ struct CreateLocationView: View {
         self.initialPhoto = nil
         self.initialLibraryPhotos = nil
         self.initialSessionCaptures = nil
-        self.photoLocation = photoLocation
         self.onLocationCreated = onLocationCreated
+        _viewModel = StateObject(wrappedValue: CreateLocationViewModel(photoLocation: photoLocation))
     }
-    
-    @State private var locationName = ""
-    @State private var locationDetails = ""
-    @State private var locationType = "BROLL"
-    @State private var productionDate: Date?
-    @State private var hasProductionDate = false
-    @State private var isLoadingAddress = true
-    @State private var showingSuccess = false
-    @State private var createdLocation: Location?
-    @State private var geocodedAddressData: GeocodedAddress?
 
-    // MARK: - GPS Spread Detection
+    private var photoLocation: CLLocation? { viewModel.photoLocation }
 
-    @State private var spreadResult: GPSSpreadAnalyzer.SpreadResult?
-    
-    // Location types (matching web app)
-    private let locationTypes = [
-        "BROLL",
-        "STORY",
-        "INTERVIEW",
-        "LIVE ANCHOR",
-        "REPORTER LIVE",
-        "STAKEOUT",
-        "DRONE",
-        "SCENE",
-        "EVENT",
-        "BATHROOM",
-        "OTHER"
-        // Note: Admin-only types (HQ, BUREAU, REMOTE STAFF, STORAGE) 
-        // should be added based on user role in future
-    ]
-    
     var body: some View {
         NavigationStack {
             Form {
-                // ── Photos ───────────────────────────────────────────────
-                Section {
-                    if photoViewModel.isCompressing {
-                        HStack(spacing: 6) {
-                            ProgressView().scaleEffect(0.7)
-                            Text("Compressing…")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 2, trailing: 16))
-                    }
-
-                    PhotoGridView(
-                        photos: photoViewModel.photos,
-                        maxPhotos: photoViewModel.maxPhotos,
-                        onAddTapped: { photoViewModel.showPicker = true },
-                        onRemovePhoto: { id in photoViewModel.removePhoto(id: id) }
-                    )
-                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
-
-                    // GPS Spread Info Banner
-                    if let spread = spreadResult, spread.exceedsThreshold {
-                        HStack(spacing: 8) {
-                            Image(systemName: "mappin.and.ellipse")
-                                .foregroundStyle(.orange)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Photos span \(spread.spreadDescription)")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                Text("Using first photo's location. You can change this in Edit mode.")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-
-                // ── Location Info ─────────────────────────────────────────
-                Section("Location Info") {
-                    // Name (required, 50 chars)
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextField("Location Name (required)", text: $locationName)
-                            .autocapitalization(.words)
-                            .submitLabel(.next)
-                            .onChange(of: locationName) { _, newValue in
-                                // Hard cap — collapse excess whitespace as you type
-                                var cleaned = newValue
-                                if cleaned.count > 50 { cleaned = String(cleaned.prefix(50)) }
-                                if cleaned != newValue { locationName = cleaned }
-                            }
-                        HStack {
-                            if locationName.trimmingCharacters(in: .whitespaces).isEmpty && !locationName.isEmpty {
-                                Text("Name cannot be blank")
-                                    .font(.caption)
-                                    .foregroundStyle(.red)
-                            }
-                            Spacer()
-                            if locationName.count > 35 {
-                                Text("\(locationName.count)/50")
-                                    .font(.caption)
-                                    .foregroundStyle(locationName.count >= 50 ? .red : .secondary)
-                            }
-                        }
-                    }
-
-                    // Details (required, 500 chars)
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextField("Location Details (required)", text: $locationDetails, axis: .vertical)
-                            .lineLimit(3...6)
-                            .autocapitalization(.sentences)
-                            .submitLabel(.done)
-                            .onChange(of: locationDetails) { _, newValue in
-                                if newValue.count > 500 { locationDetails = String(newValue.prefix(500)) }
-                            }
-                        HStack {
-                            if locationDetails.trimmingCharacters(in: .whitespaces).isEmpty && !locationDetails.isEmpty {
-                                Text("Details cannot be blank")
-                                    .font(.caption)
-                                    .foregroundStyle(.red)
-                            }
-                            Spacer()
-                            if locationDetails.count > 400 {
-                                Text("\(locationDetails.count)/500")
-                                    .font(.caption)
-                                    .foregroundStyle(locationDetails.count >= 500 ? .red : .secondary)
-                            }
-                        }
-                    }
-
-                    Picker("Type", selection: $locationType) {
-                        ForEach(locationTypes, id: \.self) { type in
-                            Text(type).tag(type)
-                        }
-                    }
-                }
-
-                // ── Production Date ───────────────────────────────────────
-                Section("Production Date") {
-                    Toggle("Production Date", isOn: $hasProductionDate)
-                        .tint(.brandPurple)
-                        .onChange(of: hasProductionDate) { _, newValue in
-                            if !newValue { productionDate = nil }
-                            else if productionDate == nil { productionDate = Date() }
-                        }
-
-                    if hasProductionDate {
-                        DatePicker(
-                            "Date",
-                            selection: Binding(
-                                get: { productionDate ?? Date() },
-                                set: { productionDate = $0 }
-                            ),
-                            displayedComponents: [.date]
-                        )
-                        .datePickerStyle(.compact)
-                    }
-                }
-
-                // ── GPS Information ───────────────────────────────────────
-                Section("GPS Information") {
-                    if photoLocation != nil {
-                        if isLoadingAddress {
-                            HStack(spacing: 8) {
-                                ProgressView().scaleEffect(0.9)
-                                Text("Locating address…")
-                                    .foregroundStyle(.secondary)
-                                    .font(.subheadline)
-                            }
-                        } else {
-                            // Postal address layout
-                            HStack(alignment: .top, spacing: 10) {
-                                Image(systemName: "mappin.and.ellipse")
-                                    .foregroundStyle(Color.brandPurple)
-                                    .frame(width: 20)
-                                    .padding(.top, 2)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    if let geo = geocodedAddressData {
-                                        // Line 1: street number + street
-                                        if let street = geo.fullStreet {
-                                            Text(street)
-                                                .font(.subheadline)
-                                        }
-                                        // Line 2: City, ST
-                                        let cityState = [geo.city, stateAbbr(geo.state)]
-                                            .compactMap { $0?.isEmpty == false ? $0 : nil }
-                                            .joined(separator: ", ")
-                                        if !cityState.isEmpty {
-                                            Text(cityState)
-                                                .font(.subheadline)
-                                        }
-                                        // Line 3: ZIP (5-digit only)
-                                        if let zip = shortZip(geo.zipcode) {
-                                            Text(zip)
-                                                .font(.subheadline)
-                                        }
-                                    } else {
-                                        Text("Address unavailable")
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        }
-                    } else {
-                        Label("No GPS data available", systemImage: "location.slash")
-                            .foregroundStyle(.orange)
-                    }
-                }
-
-                // ── Save Button ───────────────────────────────────────────
-                Section {
-                    Button(action: { Task { await saveLocation() } }) {
-                        HStack {
-                            Spacer()
-                            if locationService.isLoading || photoViewModel.isUploading {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .padding(.trailing, 6)
-                                if photoViewModel.isUploading {
-                                    let uploaded = Int(photoViewModel.uploadProgress * Double(photoViewModel.photos.count - 1))
-                                    let total = photoViewModel.photos.count - 1
-                                    Text("Uploading \(uploaded + 1)/\(total)…")
-                                } else {
-                                    Text("Creating…")
-                                }
-                            } else {
-                                Image(systemName: AppIcons.checkmark)
-                                    .padding(.trailing, 4)
-                                Text("Create Location")
-                            }
-                            Spacer()
-                        }
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .padding(.vertical, 4)
-                    }
-                    .listRowBackground(canSave ? Color.brand : Color(.systemGray3))
-                    .disabled(!canSave || locationService.isLoading || photoViewModel.isUploading)
-                }
-
-                // Error message
-                if let error = locationService.errorMessage {
-                    Section {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                    }
-                }
+                photosSection
+                locationInfoSection
+                productionDateSection
+                gpsSection
+                saveSection
             }
             .navigationTitle("Create Location")
             .navigationBarTitleDisplayMode(.inline)
@@ -325,29 +95,23 @@ struct CreateLocationView: View {
                 }
             }
         }
-
         .task {
             // Seed initial photos into the pipeline
             if photoViewModel.photos.isEmpty {
                 if let initial = initialPhoto {
-                    // Single camera capture path (legacy)
                     photoViewModel.addCameraPhoto(image: initial, location: photoLocation)
                 } else if let captures = initialSessionCaptures, !captures.isEmpty {
-                    // Multi-photo camera session — convert disk-backed captures to pipeline photos
                     let pipelinePhotos = captures.compactMap { $0.toPipelinePhoto() }
                     photoViewModel.addPhotos(pipelinePhotos)
                 } else if let libraryPhotos = initialLibraryPhotos, !libraryPhotos.isEmpty {
-                    // Library picker path — seed all selected photos
                     photoViewModel.addPhotos(libraryPhotos)
                 }
             }
 
             // Run GPS spread detection after photos are loaded
-            if photoViewModel.photos.count >= 2 {
-                spreadResult = GPSSpreadAnalyzer.analyze(photos: photoViewModel.photos)
-            }
+            viewModel.analyzeSpread(photos: photoViewModel.photos)
 
-            await loadAddress()
+            await viewModel.loadAddress()
         }
         .sheet(isPresented: $photoViewModel.showPicker) {
             let remaining = photoViewModel.maxPhotos - photoViewModel.photos.count
@@ -355,9 +119,9 @@ struct CreateLocationView: View {
                 photoViewModel.addPhotos(newPhotos)
             }
         }
-        .alert("Success!", isPresented: $showingSuccess) {
+        .alert("Success!", isPresented: $viewModel.showingSuccess) {
             Button("OK") {
-                if let location = createdLocation {
+                if let location = viewModel.createdLocation {
                     onLocationCreated?(location)
                 }
                 dismiss()
@@ -366,202 +130,213 @@ struct CreateLocationView: View {
             Text("Location created successfully!")
         }
     }
-    
-    // MARK: - Computed Properties
+
+    // MARK: - Sections
+
+    private var photosSection: some View {
+        Section {
+            if photoViewModel.isCompressing {
+                HStack(spacing: 6) {
+                    ProgressView().scaleEffect(0.7)
+                    Text("Compressing…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 2, trailing: 16))
+            }
+
+            PhotoGridView(
+                photos: photoViewModel.photos,
+                maxPhotos: photoViewModel.maxPhotos,
+                onAddTapped: { photoViewModel.showPicker = true },
+                onRemovePhoto: { id in photoViewModel.removePhoto(id: id) },
+                onRetryPhoto: { id in photoViewModel.retryPhoto(id: id) }
+            )
+            .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+
+            // GPS Spread Info Banner
+            if let spread = viewModel.spreadResult, spread.exceedsThreshold {
+                HStack(spacing: 8) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Photos span \(spread.spreadDescription)")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        Text("Using first photo's location. You can change this in Edit mode.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
+    private var locationInfoSection: some View {
+        Section("Location Info") {
+            // Name (required, 50 chars)
+            VStack(alignment: .leading, spacing: 4) {
+                TextField("Location Name (required)", text: $viewModel.locationName)
+                    .autocapitalization(.words)
+                    .submitLabel(.next)
+                    .onChange(of: viewModel.locationName) { _, _ in viewModel.enforceLimits() }
+                HStack {
+                    if viewModel.locationName.trimmingCharacters(in: .whitespaces).isEmpty
+                        && !viewModel.locationName.isEmpty {
+                        Text("Name cannot be blank")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                    Spacer()
+                    if viewModel.locationName.count > 35 {
+                        Text("\(viewModel.locationName.count)/\(CreateLocationViewModel.nameLimit)")
+                            .font(.caption)
+                            .foregroundStyle(viewModel.locationName.count >= CreateLocationViewModel.nameLimit ? .red : .secondary)
+                    }
+                }
+            }
+
+            // Details (required, 500 chars)
+            VStack(alignment: .leading, spacing: 4) {
+                TextField("Location Details (required)", text: $viewModel.locationDetails, axis: .vertical)
+                    .lineLimit(3...6)
+                    .autocapitalization(.sentences)
+                    .submitLabel(.done)
+                    .onChange(of: viewModel.locationDetails) { _, _ in viewModel.enforceLimits() }
+                HStack {
+                    if viewModel.locationDetails.trimmingCharacters(in: .whitespaces).isEmpty
+                        && !viewModel.locationDetails.isEmpty {
+                        Text("Details cannot be blank")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                    Spacer()
+                    if viewModel.locationDetails.count > 400 {
+                        Text("\(viewModel.locationDetails.count)/\(CreateLocationViewModel.detailsLimit)")
+                            .font(.caption)
+                            .foregroundStyle(viewModel.locationDetails.count >= CreateLocationViewModel.detailsLimit ? .red : .secondary)
+                    }
+                }
+            }
+
+            Picker("Type", selection: $viewModel.locationType) {
+                ForEach(CreateLocationViewModel.locationTypes, id: \.self) { type in
+                    Text(type).tag(type)
+                }
+            }
+        }
+    }
+
+    private var productionDateSection: some View {
+        Section("Production Date") {
+            Toggle("Production Date", isOn: $viewModel.hasProductionDate)
+                .tint(.brand)
+                .onChange(of: viewModel.hasProductionDate) { _, newValue in
+                    viewModel.didChangeHasProductionDate(newValue)
+                }
+
+            if viewModel.hasProductionDate {
+                DatePicker(
+                    "Date",
+                    selection: Binding(
+                        get: { viewModel.productionDate ?? Date() },
+                        set: { viewModel.productionDate = $0 }
+                    ),
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.compact)
+            }
+        }
+    }
+
+    private var gpsSection: some View {
+        Section("GPS Information") {
+            if photoLocation != nil {
+                if viewModel.isLoadingAddress {
+                    HStack(spacing: 8) {
+                        ProgressView().scaleEffect(0.9)
+                        Text("Locating address…")
+                            .foregroundStyle(.secondary)
+                            .font(.subheadline)
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "mappin.and.ellipse")
+                            .foregroundStyle(Color.brand)
+                            .frame(width: 20)
+                            .padding(.top, 2)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            if let geo = viewModel.geocodedAddressData {
+                                if let street = geo.fullStreet {
+                                    Text(street)
+                                        .font(.subheadline)
+                                }
+                                let cityState = [geo.city, viewModel.stateAbbr(geo.state)]
+                                    .compactMap { $0?.isEmpty == false ? $0 : nil }
+                                    .joined(separator: ", ")
+                                if !cityState.isEmpty {
+                                    Text(cityState)
+                                        .font(.subheadline)
+                                }
+                                if let zip = viewModel.shortZip(geo.zipcode) {
+                                    Text(zip)
+                                        .font(.subheadline)
+                                }
+                            } else {
+                                Text("Address unavailable")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            } else {
+                Label("No GPS data available", systemImage: "location.slash")
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
+
+    private var saveSection: some View {
+        Section {
+            Button(action: { Task { await viewModel.save(using: photoViewModel) } }) {
+                HStack {
+                    Spacer()
+                    if viewModel.locationService.isLoading || photoViewModel.isUploading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .padding(.trailing, 6)
+                        if photoViewModel.isUploading {
+                            let uploaded = Int(photoViewModel.uploadProgress * Double(photoViewModel.photos.count - 1))
+                            let total = photoViewModel.photos.count - 1
+                            Text("Uploading \(uploaded + 1)/\(total)…")
+                        } else {
+                            Text("Creating…")
+                        }
+                    } else {
+                        Image(systemName: AppIcons.checkmark)
+                            .padding(.trailing, 4)
+                        Text("Create Location")
+                    }
+                    Spacer()
+                }
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                .padding(.vertical, 4)
+            }
+            .listRowBackground(canSave ? Color.brand : Color(.systemGray3))
+            .disabled(!canSave || viewModel.locationService.isLoading || photoViewModel.isUploading)
+        }
+    }
+
+    // MARK: - Computed Helpers
 
     private var canSave: Bool {
-        !locationName.trimmingCharacters(in: .whitespaces).isEmpty
-            && !locationDetails.trimmingCharacters(in: .whitespaces).isEmpty
-            && photoLocation != nil
-            && !photoViewModel.photos.isEmpty
+        viewModel.canSave(photoCount: photoViewModel.photos.count)
     }
-
-    /// Returns the 2-letter state abbreviation (uppercased), or nil if absent.
-    /// Google already returns shortName; Apple may return full name, so we take first 2 chars
-    /// only when the string is exactly 2 characters (proper abbrev) to avoid truncating full names.
-    private func stateAbbr(_ state: String?) -> String? {
-        guard let s = state, !s.isEmpty else { return nil }
-        // Google shortName is already 2-letter; Apple administrativeArea may be full name
-        if s.count == 2 { return s.uppercased() }
-        // For Apple full names we keep as-is (no truncation of "New York" → "Ne")
-        return s
-    }
-
-    /// Strips http://, https://, and www. URLs from a string.
-    /// Complements server-side sanitizeUserInput — defense in depth.
-    private func stripURLs(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(
-            pattern: #"https?://\S+|www\.\S+"#,
-            options: .caseInsensitive
-        ) else { return text }
-        let range = NSRange(text.startIndex..., in: text)
-        return regex.stringByReplacingMatches(in: text, range: range, withTemplate: "")
-            .trimmingCharacters(in: .whitespaces)
-    }
-
-    private func shortZip(_ zip: String?) -> String? {
-        guard let z = zip, !z.isEmpty else { return nil }
-        // Strip anything after a hyphen, then take first 5 digits
-        let base = z.split(separator: "-").first.map(String.init) ?? z
-        let digits = base.filter { $0.isNumber }
-        guard digits.count >= 5 else { return digits.isEmpty ? nil : digits }
-        return String(digits.prefix(5))
-    }
-    
-    // MARK: - Methods
-    
-    private func loadAddress() async {
-        guard let location = photoLocation else {
-            isLoadingAddress = false
-            return
-        }
-        do {
-            let geocoded = try await locationService.getGeocodedAddress(
-                latitude: location.coordinate.latitude,
-                longitude: location.coordinate.longitude
-            )
-            geocodedAddressData = geocoded
-            isLoadingAddress = false
-        } catch {
-            #if DEBUG
-            if ConfigLoader.shared.enableDebugLogging {
-                print("[CreateLocation] Geocoding failed: \(error.localizedDescription)")
-            }
-            #endif
-            isLoadingAddress = false
-        }
-    }
-    
-    private func saveLocation() async {
-        // ── Sanitize inputs before saving ─────────────────────────────────
-        let sanitizedName = stripURLs(
-            locationName
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .components(separatedBy: .whitespaces)
-                .filter { !$0.isEmpty }
-                .joined(separator: " ")
-        )
-
-        let sanitizedDetails = stripURLs(
-            locationDetails
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .components(separatedBy: .newlines)
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty }
-                .joined(separator: "\n")
-        )
-
-        guard !sanitizedName.isEmpty, !sanitizedDetails.isEmpty else { return }
-
-        #if DEBUG
-        print("[CreateLocation] Saving '\(sanitizedName)' with \(photoViewModel.photos.count) photo(s)")
-        #endif
-
-        guard let location = photoLocation else { return }
-
-        let firstPhoto = photoViewModel.photos.first?.originalImage
-
-        // Create fallback geocoded address using coordinates if geocoding failed
-        let geocodedAddress: GeocodedAddress
-        if let existingGeocodedData = geocodedAddressData {
-            geocodedAddress = existingGeocodedData
-        } else {
-            let coordinateString = String(format: "%.6f, %.6f",
-                                          location.coordinate.latitude,
-                                          location.coordinate.longitude)
-            geocodedAddress = GeocodedAddress(
-                placeId: "photo-\(Date().timeIntervalSince1970)",
-                formattedAddress: coordinateString,
-                streetNumber: nil,
-                street: nil,
-                city: nil,
-                state: nil,
-                zipcode: nil
-            )
-        }
-
-        do {
-            // Step 1: Create location with the first photo
-            let createdLoc = try await locationService.createLocation(
-                name: sanitizedName,
-                type: locationType,
-                latitude: location.coordinate.latitude,
-                longitude: location.coordinate.longitude,
-                geocodedAddress: geocodedAddress,
-                photo: firstPhoto ?? UIImage(),
-                photoLocation: location,
-                details: sanitizedDetails,
-                productionDate: productionDate
-            )
-
-            // Step 2: Upload remaining photos (2..N) using the ViewModel pipeline
-            // This updates isUploading and uploadProgress, driving the save button UI
-            if photoViewModel.photos.count > 1 {
-                // Build a temporary ViewModel with just the remaining photos
-                let remainingPhotos = Array(photoViewModel.photos.dropFirst())
-                let _ = try await uploadRemainingPhotos(
-                    remainingPhotos,
-                    locationId: createdLoc.id,
-                    location: location
-                )
-            }
-
-            #if DEBUG
-            print("[CreateLocation] ✅ Created location \(createdLoc.id) with \(photoViewModel.photos.count) photo(s)")
-            #endif
-
-            createdLocation = createdLoc
-            showingSuccess = true
-
-        } catch {
-            #if DEBUG
-            print("[CreateLocation] ❌ Failed: \(error)")
-            #endif
-        }
-    }
-
-    /// Upload remaining photos sequentially, updating the ViewModel's progress state.
-    private func uploadRemainingPhotos(
-        _ photos: [PipelinePhoto],
-        locationId: Int,
-        location: CLLocation
-    ) async throws -> [Photo] {
-        photoViewModel.isUploading = true
-        photoViewModel.uploadProgress = 0.0
-        defer { photoViewModel.isUploading = false }
-
-        let uploader = PhotoUploadService()
-        var uploaded: [Photo] = []
-        let total = Double(photos.count)
-
-        for (index, pipelinePhoto) in photos.enumerated() {
-            do {
-                let photo = try await uploader.uploadPhoto(
-                    image: pipelinePhoto.originalImage,
-                    locationId: locationId,
-                    location: location,
-                    caption: pipelinePhoto.caption,
-                    exifMetadata: pipelinePhoto.exifMetadata
-                )
-                uploaded.append(photo)
-                photoViewModel.uploadProgress = Double(index + 1) / total
-
-                #if DEBUG
-                print("[CreateLocation] Uploaded photo \(index + 1)/\(Int(total))")
-                #endif
-            } catch {
-                #if DEBUG
-                print("[CreateLocation] Failed to upload photo \(index + 1): \(error)")
-                #endif
-                // Continue uploading remaining photos
-            }
-        }
-
-        return uploaded
-    }
-
-    // MARK: - Group Save Flow
-
 }
 
 // MARK: - Preview

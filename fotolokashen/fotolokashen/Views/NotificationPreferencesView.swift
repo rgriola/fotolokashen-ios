@@ -16,7 +16,7 @@ struct NotificationPreferencesView: View {
         Form {
             Section {
                 Toggle("Email Notifications", isOn: $emailNotifications)
-                    .tint(.brandPurple)
+                    .tint(.brand)
                     .onChange(of: emailNotifications) { _, _ in checkForChanges() }
             } header: {
                 Text("Email")

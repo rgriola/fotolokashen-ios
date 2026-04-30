@@ -2,6 +2,43 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
+## [Unreleased] - Phase 4 Hardening & Testing
+
+### 🧪 Test Coverage (Phases 4a–4d)
+
+- **Phase 4a — PhotoUploadServicing protocol + queue tests**
+  - New `Services/Photo/PhotoUploadServicing.swift` — `@MainActor protocol` exposing only `uploadCompressedPhoto(...)`. `PhotoUploadService` retroactively conforms.
+  - `PhotoUploadQueue.uploader` retyped to the protocol; production callers unchanged.
+  - New `fotolokashenTests/MockPhotoUploadService.swift` — programmable FIFO mock with `responses`, `defaultResponse`, optional `delay`, recorded `calls`.
+  - New `fotolokashenTests/PhotoUploadQueueTests.swift` — 6 tests covering happy path, retry-then-success, give-up after max retries, non-retryable failure, cancel-pending, maxConcurrent honored. Includes `collectEvents(on:until:while:)` helper that subscribes to `events()` BEFORE the action runs (queue does not buffer for late subscribers).
+
+- **Phase 4b — PhotoCompressionService tests**
+  - New `fotolokashenTests/PhotoCompressionServiceTests.swift` — 5 tests: JPEG SOI marker, `targetBytes` cap respected, `compressBatch` preserves order, batch beats serial by 15%+ on 8 images, empty batch returns empty.
+
+- **Phase 4c — VM pure-logic tests**
+  - New `fotolokashenTests/LocationViewModelTests.swift` — 15 tests covering `CreateLocationViewModel` (canSave guards, enforceLimits, production-date toggle, `stateAbbr`, `shortZip`) and `EditLocationViewModel` (populateForm hydration, parsedTags trimming, canSave, enforceLimits cap-all, photo-deletion bookkeeping).
+  - Service-touching `save()` / `loadPhotos()` paths deferred (need `LocationServicing` protocol + store stubbing).
+
+- **Phase 4d — APIClient HTTP/error-mapping tests**
+  - Added internal `APIClient.init(session:baseURL:)` for dependency injection. The `APIClient.shared` singleton path is unchanged.
+  - New `fotolokashenTests/APIClientTests.swift` — 7 tests + inline `URLProtocolStub` covering URL composition, JSON Content-Type + body roundtrip, `.decodingFailed` mapping, 403/404/400/500 error mapping, and 401 → throws `.unauthorized` AND posts `.authSessionInvalidated` notification.
+
+### 📈 Observability (Phase 4e)
+
+- **`dlog` → `os.Logger` migration**
+  - `Services/Networking/DebugLog.swift`: `dlog(tag, message)` body now routes through `Logger(subsystem: "com.fotolokashen.app", category: tag).debug(...)` in DEBUG builds. RELEASE body is still empty (call sites stripped). All ~89 call sites unchanged.
+  - Per-service filtering now possible in Console.app and Instruments while preserving the legacy `[Tag] message` shape in Xcode's debug console.
+
+### �️ Web Contract Tests (Phase 4f)
+
+- **Web `/api/v1/*` schema contract tests** — Vitest suite in the `fotolokashen` (web) workspace at `src/lib/__tests__/mobileApiV1Contract.test.ts` (21 tests) validating each mobile endpoint matches `/docs/api/MOBILE_API_SCHEMAS.md`.
+  - New `src/lib/schemas/mobileApiV1.ts` — canonical Zod schemas (`.strict()`) for `cursorPaginationEnvelopeSchema`, `userLocationsEnvelopeSchema`, `mapSocialLocationSchema`, `socialLocationSchema`, `photoSizesSchema`, `userSummarySchema`. Single source of truth for what iOS expects.
+  - **Schema layer**: golden fixtures (one per documented endpoint) parsed against schemas — strict mode rejects `latitude`/`longitude` and any other unknown keys.
+  - **Source-scan layer**: regex sweep of every `route.ts` under `src/app/api/v1/` (with comment stripping) fails the build if any handler emits `latitude:` / `longitude:` as a response key. Catches new endpoints added without fixtures.
+  - Explicit negative tests: `latitude`/`longitude` injected on both flat (`MapSocialLocation`) and nested (`SocialLocation`) shapes confirm the schemas reject them.
+
+---
+
 ## [1.5.1] - 2026-04-26
 
 ### 🐛 Bug Fixes
@@ -25,6 +62,7 @@ All notable changes to Fotolokashen iOS are documented in this file.
 ### ✨ Profile & Settings Restructure
 
 #### Navigation Redesign
+
 - **App Settings** section added directly to `ProfileView` — Preferences and Permissions now visible one level up, without needing to navigate into Account & Security
 - **Preferences** (language, timezone, notifications) moved from Edit Profile → Account & Security up to Profile → App Settings
 - **Permissions** section added to App Settings with live on/off toggles for:
@@ -35,17 +73,20 @@ All notable changes to Fotolokashen iOS are documented in this file.
 - **App Version** moved out of Profile into the new dedicated **About** screen
 
 #### About Screen (`AboutView`)
+
 - New `AboutView` accessible from Profile tab
 - Displays app version, build number, legal links, and brand info
 - Fixed `Color.brandPurple` usage in `foregroundStyle` for consistent theming
 
 #### Account & Security (`AccountSecurityView`)
+
 - **Personal Details** card with display-only fields (name, username, email, DOB)
 - **Edit Profile** sheet accessible from Account & Security (name, bio, city, country, language, timezone, notifications)
 - Added `state` and `dateOfBirth` to iOS `User` model and all profile forms
 - Fixed Swift compiler error: renamed `DetailRow` → `ProfileDetailRow` to resolve redeclaration conflict
 
 #### Profile Tab
+
 - Restructured as a top-level navigation hub with clearly separated subviews
 - Preferences and Permissions now surfaced at Profile level under **App Settings**
 
@@ -68,11 +109,13 @@ All notable changes to Fotolokashen iOS are documented in this file.
 ### 🔒 Security Hardening
 
 #### URL Injection Prevention
+
 - Added `stripURLs()` helper using `NSRegularExpression` — strips `http://`, `https://`, and `www.` patterns from user text
 - Applied to **Location Name** and **Location Details** in `saveLocation()` before API submission
 - Complements server-side `sanitizeUserInput()` as defense-in-depth
 
 #### Authentication Flow
+
 - Fixed: Registration browser dismissed automatically on successful auto-login after email verification
 - Added auto-login trigger after email verification deep link — skips manual login step
 - Implemented deep link handler for `fotolokashen://email-verified?token=` scheme
@@ -99,7 +142,6 @@ All notable changes to Fotolokashen iOS are documented in this file.
 ---
 
 ## [1.4.1] - 2026-02-23
-
 
 ### 🔧 Architecture Improvements & UI Enhancements
 
@@ -363,8 +405,8 @@ First production release of the Fotolokashen iOS app - a location-based photo ma
 
 - Full-screen camera interface with device rotation support
 - Photo capture with EXIF metadata extraction (GPS, timestamps)
-- Location type selection (15 types with custom camera icons) 
-- Name, description, and tag fields for each location 
+- Location type selection (15 types with custom camera icons)
+- Name, description, and tag fields for each location
 
 #### Map & Locations
 
@@ -372,14 +414,14 @@ First production release of the Fotolokashen iOS app - a location-based photo ma
 - Custom camera marker icons matching web app design
 - Marker clustering for dense location areas
 - Location list view with detail cards
-- Tap markers to view location details 
+- Tap markers to view location details
 
 #### Authentication & Sync
 
 - OAuth2 + PKCE authentication via Safari
 - Secure token storage in iOS Keychain
 - Auto-logout when session invalidated on another device
-- Automatic sync when app becomes active 
+- Automatic sync when app becomes active
 
 #### Geocoding
 
@@ -388,18 +430,18 @@ First production release of the Fotolokashen iOS app - a location-based photo ma
 - Full address component extraction:
   - Street number and name
   - City, state, zip code
-  - Google Place ID or Apple fallback ID 
+  - Google Place ID or Apple fallback ID
 
 #### Photo Upload
 
 - ImageKit integration for cloud storage
 - Server-signed upload URLs
-- JPEG compression with quality optimization 
-- Upload progress feedback 
+- JPEG compression with quality optimization
+- Upload progress feedback
 
 ### Technical Stack
 
-- SwiftUI with iOS 17+ deployment target 
+- SwiftUI with iOS 17+ deployment target
 - SwiftData for local caching
 - Google Maps SDK for iOS
 - GMUClusterManager for marker clustering

@@ -1,12 +1,6 @@
 import SwiftUI
 import CoreLocation
 
-// MARK: - Legacy Brand Color Aliases (use Color.brand / Color.brandDark from AppColors.swift)
-extension Color {
-    static let brandPurple = Color.brand
-    static let brandPurpleDark = Color.brandDark
-}
-
 // MARK: - Notification Names
 extension Notification.Name {
     static let navigateToMapTab = Notification.Name("navigateToMapTab")
@@ -16,13 +10,16 @@ struct ContentView: View {
     @EnvironmentObject var authService: AuthService
     
     var body: some View {
-        if authService.isAuthenticated {
-            LoggedInView()
-        } else {
-            NavigationStack {
-                LoginView()
+        Group {
+            if authService.isAuthenticated {
+                LoggedInView()
+            } else {
+                NavigationStack {
+                    LoginView()
+                }
             }
         }
+        .errorPresenter()
     }
 }
 
@@ -42,7 +39,7 @@ struct LoginView: View {
         ZStack {
             // Purple to black gradient background
             LinearGradient(
-                gradient: Gradient(colors: [Color.brandPurple, Color.black]),
+                gradient: Gradient(colors: [Color.brand, Color.black]),
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -75,7 +72,7 @@ struct LoginView: View {
                         HStack {
                             if authService.isLoading {
                                 ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .brandPurple))
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .brand))
                             } else {
                                 Image(systemName: "person.circle.fill")
                                 Text("Sign In")
@@ -85,7 +82,7 @@ struct LoginView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.white)
-                        .foregroundColor(.brandPurple)
+                        .foregroundColor(.brand)
                         .cornerRadius(12)
                     }
                     .disabled(authService.isLoading)
@@ -253,7 +250,7 @@ private struct CheckEmailSheet: View {
 
             Image(systemName: icon)
                 .font(.system(size: 56))
-                .foregroundColor(.brandPurple)
+                .foregroundColor(.brand)
 
             Text(title)
                 .font(.title2)
@@ -268,14 +265,14 @@ private struct CheckEmailSheet: View {
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
                     Image(systemName: "tray")
-                        .foregroundColor(.brandPurple)
+                        .foregroundColor(.brand)
                     Text("Check your spam or junk folder")
                         .font(.callout)
                         .foregroundColor(.secondary)
                 }
                 HStack(spacing: 8) {
                     Image(systemName: "clock")
-                        .foregroundColor(.brandPurple)
+                        .foregroundColor(.brand)
                     Text("Wait a few minutes if it hasn't arrived")
                         .font(.callout)
                         .foregroundColor(.secondary)
@@ -287,7 +284,7 @@ private struct CheckEmailSheet: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.brandPurple)
+                    .background(Color.brand)
                     .foregroundColor(.white)
                     .cornerRadius(12)
             }
@@ -353,7 +350,7 @@ struct LoggedInView: View {
                 }
                 .tag(4)
         }
-        .tint(.brandPurple)
+        .tint(.brand)
         .onChange(of: selectedTab) { _, newTab in
             if newTab == 2 {
                 // Capture tab tapped — open camera and bounce back

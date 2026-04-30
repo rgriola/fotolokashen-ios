@@ -113,42 +113,36 @@ struct PhotoGallerySection: View {
         let apiKey = ConfigLoader.shared.googleMapsAPIKey
         let mapUrl = "https://maps.googleapis.com/maps/api/staticmap?center=\(latitude),\(longitude)&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C\(latitude),\(longitude)&key=\(apiKey)"
 
-        return AsyncImage(url: URL(string: mapUrl)) { phase in
-            switch phase {
-            case .empty:
+        return KFImage(URL(string: mapUrl))
+            .resizable()
+            .placeholder {
                 ZStack {
                     Rectangle()
                         .fill(Color(.systemGray5))
                         .frame(height: 200)
                     ProgressView()
                 }
-            case .success(let image):
-                image
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 200)
-                    .clipped()
-                    .overlay(
-                        VStack {
-                            Spacer()
-                            HStack {
-                                Image(systemName: "photo.badge.exclamationmark")
-                                Text("No photos available")
-                            }
-                            .font(.caption)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Capsule())
-                            .padding(.bottom, 8)
-                        }
-                    )
-            case .failure:
-                offlinePlaceholder
-            @unknown default:
-                EmptyView()
             }
-        }
+            .onFailureView { offlinePlaceholder }
+            .fade(duration: 0.2)
+            .scaledToFill()
+            .frame(height: 200)
+            .clipped()
+            .overlay(
+                VStack {
+                    Spacer()
+                    HStack {
+                        Image(systemName: "photo.badge.exclamationmark")
+                        Text("No photos available")
+                    }
+                    .font(.caption)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .padding(.bottom, 8)
+                }
+            )
     }
 
     // MARK: - Offline Placeholder

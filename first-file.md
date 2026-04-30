@@ -61,9 +61,23 @@ User already has account >> redirect to login in iOS case redirect back to app f
 - can you review the capture funtion in iOS and show me a plan to improve this function. Consider the web app as well since this new approach to locations and photos would need to be applied there as well. 
 - do not code just show a plan and what I may have missed. 
 
+... Apr 28 2026 
 *** Task ***
 - Lets review how the iOS capture process works.
 - There are two workflows 1) ios camera 2) using photo library. 
 - We were also trying to add a feature to group photos by distance.  This may be a bit over our skis right now. 
 - Lets get the multiple photo capture working first for both Camera and Photo Library. 
 - Once this is solid and working we can move onto the Group photos by distance feature.
+- remember changing biz logic will affect the web app as well. 
+- Come up with a plan from the review for iOS. No coding. 
+
+
+on iOS Location Details, Can we stucture the address to look like a proper postal address with each line right justifed in the container. 
+[30 Hudson Yards]
+[5th Floor ]
+[New York, NY 10001]
+{drop country if user is in that country}
+
+Also default the Permit Required to only appear if Yes. 
+
+On iOS edit view, add a 

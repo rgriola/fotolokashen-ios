@@ -43,7 +43,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				"swift-utilities/README.md",
+				"Services/README.md",
 			);
 			target = 676F6B872F196B7600CEBBE4 /* fotolokashen */;
 		};

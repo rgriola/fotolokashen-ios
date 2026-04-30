@@ -40,7 +40,7 @@ struct PreferencesView: View {
                 Toggle(isOn: $emailNotifications) {
                     Label("Email Notifications", systemImage: "envelope")
                 }
-                .tint(.brandPurple)
+                .tint(.brand)
                 .onChange(of: emailNotifications) { _, _ in checkForChanges() }
 
             } header: {

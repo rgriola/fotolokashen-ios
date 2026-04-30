@@ -1,0 +1,276 @@
+import Foundation
+
+/// Pre-computed ImageKit size variants returned by the backend (`/api/photos/upload`,
+/// list/detail responses). All fields are optional — older API responses may omit the
+/// entire `sizes` object, in which case callers should fall back to building URLs
+/// client-side via `ImageKitURL`.
+struct PhotoSizes: Codable, Equatable, Hashable {
+    let thumbnail: String?
+    let card: String?
+    let gallery: String?
+    let full: String?
+}
+
+/// Photo model matching backend API response
+struct Photo: Codable, Identifiable {
+    let id: Int
+    let imagekitFilePath: String
+    let url: String
+    let thumbnailUrl: String
+    let caption: String?
+    let width: Int?
+    let height: Int?
+    let uploadedAt: String
+    let gpsLatitude: Double?
+    let gpsLongitude: Double?
+    let isPrimary: Bool
+    let fileSize: Int?
+    let mimeType: String?
+
+    // EXIF metadata (matches web app schema)
+    let cameraMake: String?
+    let cameraModel: String?
+    let lensMake: String?
+    let lensModel: String?
+    let iso: Int?
+    let focalLength: String?
+    let aperture: String?
+    let shutterSpeed: String?
+    let exposureMode: String?
+    let whiteBalance: String?
+    let flash: String?
+    let colorSpace: String?
+    let dateTaken: String?
+
+    // Pre-computed ImageKit size variants (added Phase 0 backend, Phase 1a iOS)
+    // Optional for backward compatibility with older server responses.
+    let sizes: PhotoSizes?
+
+    /// Photo URL
+    var photoURL: URL? {
+        URL(string: url)
+    }
+    
+    /// Thumbnail URL
+    var thumbnail: URL? {
+        URL(string: thumbnailUrl)
+    }
+    
+    /// Has GPS data
+    var hasGPS: Bool {
+        gpsLatitude != nil && gpsLongitude != nil
+    }
+    
+    /// GPS coordinates
+    var coordinates: (lat: Double, lng: Double)? {
+        guard let lat = gpsLatitude, let lng = gpsLongitude else {
+            return nil
+        }
+        return (lat, lng)
+    }
+    
+    /// Uploaded date
+    var uploadDate: Date? {
+        ISO8601DateFormatter().date(from: uploadedAt)
+    }
+    
+    /// File size formatted
+    var fileSizeFormatted: String? {
+        guard let size = fileSize else { return nil }
+        return ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file)
+    }
+    
+    /// Aspect ratio
+    var aspectRatio: CGFloat? {
+        guard let w = width, let h = height, h > 0 else { return nil }
+        return CGFloat(w) / CGFloat(h)
+    }
+
+    // MARK: - Optimized Variant URLs (Phase 1a)
+    //
+    // Prefer server-provided `sizes` (saves URL-building roundtrip and stays in sync
+    // with the backend's `PHOTO_TRANSFORMS` registry). Fall back to client-side
+    // `ImageKitURL` building for older API responses.
+
+    /// Thumbnail URL (200×200) — list rows, small cells, photo-grid cells.
+    var thumbnailURL: URL? {
+        if let s = sizes?.thumbnail, let u = URL(string: s) { return u }
+        return ImageKitURL.url(for: imagekitFilePath, variant: .thumbnail)
+    }
+
+    /// Card URL (400×300) — location row carousels, card previews.
+    var cardURL: URL? {
+        if let s = sizes?.card, let u = URL(string: s) { return u }
+        return ImageKitURL.url(for: imagekitFilePath, variant: .card)
+    }
+
+    /// Gallery URL (800×600) — detail view hero, photo grid in detail.
+    var galleryURL: URL? {
+        if let s = sizes?.gallery, let u = URL(string: s) { return u }
+        return ImageKitURL.url(for: imagekitFilePath, variant: .gallery)
+    }
+
+    /// Full-resolution URL (1600px wide) — lightbox, full-screen view.
+    var fullURL: URL? {
+        if let s = sizes?.full, let u = URL(string: s) { return u }
+        return ImageKitURL.url(for: imagekitFilePath, variant: .full)
+    }
+}
+
+// MARK: - Request Upload Response
+
+struct RequestUploadResponse: Codable {
+    let photoId: Int
+    let uploadUrl: String
+    let uploadToken: String
+    let signature: String
+    let expire: Int
+    let fileName: String
+    let folder: String
+    let publicKey: String
+    
+    /// Upload URL
+    var url: URL? {
+        URL(string: uploadUrl)
+    }
+    
+    /// Is expired
+    var isExpired: Bool {
+        Date().timeIntervalSince1970 > Double(expire)
+    }
+}
+
+// MARK: - Request Upload Request
+
+struct RequestUploadRequest: Codable {
+    let filename: String
+    let mimeType: String
+    let size: Int
+    let width: Int?
+    let height: Int?
+    let capturedAt: String?
+    let gpsLatitude: Double?
+    let gpsLongitude: Double?
+    let gpsAltitude: Double?
+    let gpsAccuracy: Double?
+    let cameraMake: String?
+    let cameraModel: String?
+    let iso: Int?
+    let focalLength: String?
+    let aperture: String?
+    let shutterSpeed: String?
+}
+
+// MARK: - Confirm Upload Request
+
+struct ConfirmUploadRequest: Codable {
+    let imagekitFileId: String
+    let imagekitUrl: String
+}
+
+// MARK: - Confirm Upload Response
+
+struct ConfirmUploadResponse: Codable {
+    let success: Bool
+    let photo: PhotoConfirmation
+}
+
+struct PhotoConfirmation: Codable {
+    let id: Int
+    let imagekitFilePath: String
+    let url: String
+    let uploadedAt: String
+}
+
+// MARK: - ImageKit Upload Response (Legacy - Direct CDN Upload)
+
+struct ImageKitUploadResponse: Codable {
+    let fileId: String
+    let name: String
+    let url: String
+    let thumbnailUrl: String?  // Make optional - sometimes missing
+    let width: Int?             // Make optional
+    let height: Int?            // Make optional
+    let size: Int?              // Make optional
+}
+
+// MARK: - Secure Upload Response (Server-Mediated)
+
+/// Response from /api/photos/upload
+/// Server performs virus scanning, format validation, and compression
+struct SecureUploadResponse: Codable {
+    let upload: SecureUploadDetails
+    let file: SecureFileDetails
+    let metadata: SecurePhotoMetadata?
+}
+
+struct SecureUploadDetails: Codable {
+    let fileId: String
+    let filePath: String
+    let url: String
+    let thumbnailUrl: String?
+    let width: Int?
+    let height: Int?
+}
+
+struct SecureFileDetails: Codable {
+    let originalFilename: String
+    let size: Int
+    let mimeType: String
+}
+
+struct SecurePhotoMetadata: Codable {
+    let hasGPS: Bool?
+    let gpsLatitude: Double?
+    let gpsLongitude: Double?
+    let gpsAltitude: Double?
+    let cameraMake: String?
+    let cameraModel: String?
+    let lensMake: String?
+    let lensModel: String?
+    let dateTaken: String?
+    let iso: Int?
+    let focalLength: String?
+    let aperture: String?
+    let exposureTime: String?
+    let exposureMode: String?
+    let whiteBalance: String?
+    let flash: String?
+    let colorSpace: String?
+    let orientation: Int?
+}
+
+// MARK: - Equatable
+
+extension Photo: Equatable {
+    static func == (lhs: Photo, rhs: Photo) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+// MARK: - Hashable
+
+extension Photo: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+// MARK: - Example JSON Response
+/*
+ {
+   "id": 789,
+   "imagekitFilePath": "/production/locations/456/photo_789.jpg",
+   "url": "https://ik.imagekit.io/rgriola/production/locations/456/photo_789.jpg",
+   "thumbnailUrl": "https://ik.imagekit.io/rgriola/production/locations/456/photo_789.jpg?tr=w-400,h-400,c-at_max,fo-auto,q-80",
+   "caption": null,
+   "width": 3000,
+   "height": 2000,
+   "uploadedAt": "2026-01-14T19:05:00Z",
+   "gpsLatitude": 37.7749,
+   "gpsLongitude": -122.4194,
+   "isPrimary": false,
+   "fileSize": 1500000,
+   "mimeType": "image/jpeg"
+ }
+ */

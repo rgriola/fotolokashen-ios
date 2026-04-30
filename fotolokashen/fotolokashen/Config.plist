@@ -52,7 +52,7 @@
         <key>enableOfflineMode</key>
         <true/>
         <key>enableDebugLogging</key>
-        <true/>
+        <false/>
     </dict>
 </dict>
 </plist>

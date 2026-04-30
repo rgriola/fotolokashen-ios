@@ -227,13 +227,13 @@ private struct SearchUserRow: View {
 
     private var avatarPlaceholder: some View {
         Circle()
-            .fill(Color.brandPurple.opacity(0.2))
+            .fill(Color.brand.opacity(0.2))
             .frame(width: 48, height: 48)
             .overlay(
                 Text(user.initials)
                     .font(.subheadline)
                     .fontWeight(.bold)
-                    .foregroundColor(.brandPurple)
+                    .foregroundColor(.brand)
             )
     }
 }

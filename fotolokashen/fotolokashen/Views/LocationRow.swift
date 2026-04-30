@@ -13,9 +13,7 @@ struct LocationRow: View {
     /// All photo URLs from the location's photos array — optimized for card display
     private var photoURLs: [URL] {
         guard let photos = location.photos, !photos.isEmpty else { return [] }
-        return photos.compactMap { photo in
-            ImageKitURL.url(for: photo.imagekitFilePath, variant: .card)
-        }
+        return photos.compactMap { $0.cardURL }
     }
 
     // MARK: - Static Map URL
@@ -171,20 +169,16 @@ struct LocationRow: View {
     @ViewBuilder
     private var staticMapImage: some View {
         if let mapURL = staticMapURL {
-            AsyncImage(url: mapURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    mapPlaceholder
-                default:
+            KFImage(mapURL)
+                .resizable()
+                .placeholder {
                     Rectangle()
                         .fill(Color(.systemFill))
                         .overlay { ProgressView() }
                 }
-            }
+                .onFailureView { mapPlaceholder }
+                .fade(duration: 0.2)
+                .aspectRatio(contentMode: .fill)
         } else {
             mapPlaceholder
         }

@@ -134,7 +134,7 @@ struct EditProfileView: View {
                         .font(.caption)
                         .foregroundColor(.white)
                         .padding(8)
-                        .background(Color.brandPurple)
+                        .background(Color.brand)
                         .clipShape(Circle())
                         .shadow(radius: 2)
                 }
@@ -204,7 +204,7 @@ struct EditProfileView: View {
                     displayedComponents: .date
                 )
                 .datePickerStyle(.graphical)
-                .tint(.brandPurple)
+                .tint(.brand)
                 .onChange(of: dateOfBirth) { _, _ in checkForChanges() }
             }
         }

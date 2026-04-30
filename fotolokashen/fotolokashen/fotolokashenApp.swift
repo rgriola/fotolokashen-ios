@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import GoogleMaps
+import Kingfisher
 
 // MARK: - Launch Timer (DEBUG only)
 #if DEBUG
@@ -41,6 +42,21 @@ struct FotolokashenApp: App {
                 LaunchTimer.mark("GMSServices.provideAPIKey() completed (background)")
             }
             #endif
+        }
+
+        // Configure Kingfisher image cache (Phase 1a)
+        // - 100MB memory cap, 500MB disk cap, 14-day disk expiration
+        // - Memory-warning observer flushes the in-memory cache (disk cache is preserved)
+        let cache = ImageCache.default
+        cache.memoryStorage.config.totalCostLimit = 100 * 1024 * 1024
+        cache.diskStorage.config.sizeLimit = 500 * 1024 * 1024
+        cache.diskStorage.config.expiration = .days(14)
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            KingfisherManager.shared.cache.clearMemoryCache()
         }
 
         #if DEBUG

@@ -205,7 +205,7 @@ struct PublicProfileView: View {
             .fontWeight(.semibold)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(followStatus?.isFollowing == true ? Color(.systemGray5) : Color.brandPurple)
+            .background(followStatus?.isFollowing == true ? Color(.systemGray5) : Color.brand)
             .foregroundColor(followStatus?.isFollowing == true ? .primary : .white)
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
@@ -227,7 +227,7 @@ struct PublicProfileView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.brandPurple)
+                        .background(Color.brand)
                         .clipShape(Capsule())
                 }
                 Spacer()
@@ -297,27 +297,25 @@ struct PublicProfileView: View {
                 longitude: socialLocation.location.lng
             ) {
                 // Show static map when no photo available
-                AsyncImage(url: staticMapUrl) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color(.systemGray5))
-                        .overlay(
-                            ProgressView()
-                        )
-                }
-                .frame(height: 88)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    // Subtle map indicator badge
-                    Image(systemName: "map.fill")
-                        .font(.caption2)
-                        .foregroundColor(.white)
-                        .padding(4)
-                        .background(Color.black.opacity(0.5))
-                        .clipShape(Circle())
+                KFImage(staticMapUrl)
+                    .resizable()
+                    .placeholder {
+                        Rectangle()
+                            .fill(Color(.systemGray5))
+                            .overlay(ProgressView())
+                    }
+                    .fade(duration: 0.2)
+                    .scaledToFill()
+                    .frame(height: 88)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        // Subtle map indicator badge
+                        Image(systemName: "map.fill")
+                            .font(.caption2)
+                            .foregroundColor(.white)
+                            .padding(4)
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
                         .padding(4),
                     alignment: .topTrailing
                 )

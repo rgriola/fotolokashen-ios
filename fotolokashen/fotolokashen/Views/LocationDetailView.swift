@@ -8,15 +8,13 @@
 //  Two modes: Owner (editable) and Read-only (viewing someone else's public location)
 //  See copilot-instructions.md for usage patterns and initializer documentation.
 //
-// REVIEW: This file is ~750 lines — consider decomposing:
-// 1. Extract owner-mode production detail sections into LocationDetailOwnerSections.swift
-// 2. Extract read-only "Saved by" section into LocationDetailReadOnlySection.swift
-// 3. Extract the visibility picker + toolbar logic into LocationDetailToolbar.swift
-// 4. The formatDate/formatProductionDate helpers are duplicated — move to a shared Date extension.
+//  Phase 2a-1: data/lifecycle moved to `LocationDetailViewModel`. The view
+//  now binds to the VM via `@StateObject` and is a thin presentation shell.
 //
 
 import SwiftUI
 import CoreLocation
+import MapKit
 
 // MARK: - LocationDetailView
 
@@ -26,51 +24,34 @@ struct LocationDetailView: View {
     // MARK: - Properties
     // =========================================================================
 
-    /// The location data being displayed
-    /// In owner mode: this is the actual Location from user's saved locations
-    /// In read-only mode: this is a synthesized Location from SocialLocation data
-    @State private var currentLocation: Location
+    @StateObject private var viewModel: LocationDetailViewModel
 
-    /// Determines whether this is read-only (viewing someone else's location)
-    /// - false = Owner mode: user can edit, change visibility
-    /// - true = Read-only mode: viewing someone else's public location
-    let isReadOnly: Bool
-
-    /// Owner information (used in read-only mode to show "Saved by" section)
-    let ownerUsername: String?
-    let ownerDisplayName: String?
-
-    /// The original SocialLocation ID (used for share URL in read-only mode)
-    private let socialLocationId: Int?
-
-    /// Inline photos from SocialLocation (used in read-only mode)
-    private let inlinePhotos: [LocationPhoto]
+    // Convenience read-throughs to keep existing inline code readable.
+    private var currentLocation: Location { viewModel.currentLocation }
+    private var isReadOnly: Bool { viewModel.mode.isReadOnly }
+    private var ownerUsername: String? { viewModel.mode.ownerUsername }
+    private var ownerDisplayName: String? { viewModel.mode.ownerDisplayName }
+    private var socialLocationId: Int? { viewModel.mode.socialLocationId }
+    private var inlinePhotos: [LocationPhoto] { viewModel.mode.inlinePhotos }
+    private var photos: [DetailPhoto] { viewModel.photos }
+    private var isLoadingPhotos: Bool { viewModel.isLoadingPhotos }
+    private var userSaveDetails: UserSaveWithLocation? { viewModel.userSaveDetails }
+    private var locationVisibility: String { viewModel.locationVisibility }
+    private var isSavingVisibility: Bool { viewModel.isSavingVisibility }
 
     // =========================================================================
-    // MARK: - Environment & State
+    // MARK: - Environment & Local UI State
     // =========================================================================
 
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @Environment(\.dismiss) private var dismiss
 
-    /// Photos fetched from API (owner mode) or converted from inline (read-only)
-    @State private var photos: [DetailPhoto] = []
-    @State private var isLoadingPhotos = true
+    /// Photo gallery selection (UI-only, not persisted).
     @State private var selectedPhotoIndex: Int = 0
     @State private var showingFullScreenGallery = false
 
-    /// User save details (owner mode only - for showing metadata)
-    @State private var userSaveDetails: UserSaveWithLocation?
-    @State private var isLoadingDetails = true
-
-    /// Edit mode state (owner mode only)
+    /// Edit/profile sheet presentation flags (UI-only).
     @State private var showingEditView = false
-
-    /// Visibility control state (owner mode only)
-    @State private var locationVisibility: String
-    @State private var isSavingVisibility = false
-
-    /// Creator profile sheet (owner mode - when location was created by another user)
     @State private var showCreatorProfile = false
 
     // =========================================================================
@@ -81,13 +62,9 @@ struct LocationDetailView: View {
     /// Use this when displaying the user's own saved location
     /// - Parameter location: The Location from the user's saved locations
     init(location: Location) {
-        self._currentLocation = State(initialValue: location)
-        self.isReadOnly = false
-        self.ownerUsername = nil
-        self.ownerDisplayName = nil
-        self.socialLocationId = nil
-        self.inlinePhotos = []
-        self._locationVisibility = State(initialValue: location.visibility ?? "private")
+        _viewModel = StateObject(
+            wrappedValue: LocationDetailViewModel(location: location, mode: .owner)
+        )
     }
 
     /// READ-ONLY MODE INITIALIZER
@@ -115,27 +92,34 @@ struct LocationDetailView: View {
             state: loc.state,
             caption: socialLocation.caption
         )
-
-        self._currentLocation = State(initialValue: synthesizedLocation)
-        self.isReadOnly = true
-        self.ownerUsername = ownerUsername
-        self.ownerDisplayName = ownerDisplayName
-        self.socialLocationId = socialLocation.id
-        self.inlinePhotos = loc.photos ?? []
-        self._locationVisibility = State(initialValue: "public") // Read-only = always public
+        _viewModel = StateObject(
+            wrappedValue: LocationDetailViewModel(
+                location: synthesizedLocation,
+                mode: .readOnly(
+                    socialLocationId: socialLocation.id,
+                    ownerUsername: ownerUsername,
+                    ownerDisplayName: ownerDisplayName,
+                    inlinePhotos: loc.photos ?? []
+                )
+            )
+        )
     }
 
     /// READ-ONLY MODE INITIALIZER (from ReadOnlyLocationContext)
     /// Use this when navigating from Map after tapping a marker for a friend's location
     /// - Parameter context: The ReadOnlyLocationContext stored when navigating to map
     init(readOnlyContext context: ReadOnlyLocationContext) {
-        self._currentLocation = State(initialValue: context.location)
-        self.isReadOnly = true
-        self.ownerUsername = context.ownerUsername
-        self.ownerDisplayName = context.ownerDisplayName
-        self.socialLocationId = context.id
-        self.inlinePhotos = context.photos
-        self._locationVisibility = State(initialValue: "public") // Read-only = always public
+        _viewModel = StateObject(
+            wrappedValue: LocationDetailViewModel(
+                location: context.location,
+                mode: .readOnly(
+                    socialLocationId: context.id,
+                    ownerUsername: context.ownerUsername,
+                    ownerDisplayName: context.ownerDisplayName,
+                    inlinePhotos: context.photos
+                )
+            )
+        )
     }
 
     // =========================================================================
@@ -279,11 +263,7 @@ struct LocationDetailView: View {
         .sheet(isPresented: $showingEditView) {
             // Edit location sheet (owner mode)
             EditLocationView(location: currentLocation) { updated in
-                currentLocation = updated
-                Task {
-                    await loadPhotos()
-                    await loadUserSaveDetails()
-                }
+                Task { await viewModel.applyEdited(updated) }
             }
         }
         .sheet(isPresented: $showCreatorProfile) {
@@ -312,9 +292,9 @@ struct LocationDetailView: View {
         // Data Loading on Appear
         // ---------------------------------------------------------------------
         .task {
-            await loadPhotos()
+            await viewModel.loadPhotos()
             if !isReadOnly {
-                await loadUserSaveDetails()
+                await viewModel.loadUserSaveDetails()
             }
         }
     }
@@ -333,32 +313,20 @@ struct LocationDetailView: View {
                 .font(.title2)
                 .fontWeight(.bold)
 
-            // Address with map pin icon - tap to show on map
-            if let address = currentLocation.address, !address.isEmpty {
+            // Postal-style address — tap to show on map
+            if hasAddressContent {
                 Button {
                     showOnMap()
                 } label: {
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: AppIcons.mapPin)
                             .foregroundColor(.destructive)
-                        Text(address)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.leading)
+                            .padding(.top, 2)
+
+                        postalAddressBlock
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
-            }
-
-            // City/State (if available - commonly in read-only mode)
-            if let cityState = formatCityState() {
-                HStack(spacing: 8) {
-                    Image(systemName: "building.2")
-                        .foregroundColor(.secondary)
-                    Text(cityState)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
             }
 
             // Created date + creator link (owner mode only)
@@ -378,12 +346,51 @@ struct LocationDetailView: View {
                         } label: {
                             Text("@\(creator)")
                                 .font(.footnote)
-                                .foregroundColor(.brandPurple)
+                                .foregroundColor(.brand)
                         }
                         .buttonStyle(.plain)
                     }
                 }
             }
+        }
+    }
+
+    /// Whether any address content is available to display
+    private var hasAddressContent: Bool {
+        let hasComponents = currentLocation.street != nil || currentLocation.city != nil
+        let hasRawAddress = !(currentLocation.address ?? "").isEmpty
+        return hasComponents || hasRawAddress
+    }
+
+    /// Structured postal address block
+    /// Renders as:  30 Hudson Yards
+    ///              New York, NY 10001
+    @ViewBuilder
+    private var postalAddressBlock: some View {
+        let hasComponents = currentLocation.street != nil || currentLocation.city != nil
+
+        if hasComponents {
+            VStack(alignment: .leading, spacing: 2) {
+                // Line 1: Street (number + street name)
+                if let streetLine = formatStreetLine() {
+                    Text(streetLine)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                // Line 2: City, State ZIP
+                if let cityLine = formatCityStateZip() {
+                    Text(cityLine)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+        } else if let address = currentLocation.address, !address.isEmpty {
+            // Fallback: raw address string when components aren't available
+            Text(address)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.leading)
         }
     }
 
@@ -416,13 +423,13 @@ struct LocationDetailView: View {
                     .frame(height: 28)
             } else {
                 Menu {
-                    Button(action: { changeVisibility("public") }) {
+                    Button(action: { viewModel.changeVisibility("public") }) {
                         Label("Public — Anyone can view", systemImage: "globe")
                     }
-                    Button(action: { changeVisibility("unlisted") }) {
+                    Button(action: { viewModel.changeVisibility("unlisted") }) {
                         Label("Unlisted — Only with link", systemImage: "link")
                     }
-                    Button(action: { changeVisibility("private") }) {
+                    Button(action: { viewModel.changeVisibility("private") }) {
                         Label("Private — Only you", systemImage: "lock.fill")
                     }
                 } label: {
@@ -493,8 +500,8 @@ struct LocationDetailView: View {
             if let permitCost = currentLocation.permitCost {
                 DetailRow(label: "Permit Cost", value: String(format: "$%.2f", permitCost))
             }
-            if let permitRequired = currentLocation.permitRequired {
-                DetailRow(label: "Permit Required", value: permitRequired ? "Yes" : "No")
+            if let permitRequired = currentLocation.permitRequired, permitRequired {
+                DetailRow(label: "Permit Required", value: "Yes")
             }
             if let restrictions = currentLocation.restrictions, !restrictions.isEmpty {
                 DetailRow(label: "Restrictions", value: restrictions)
@@ -513,13 +520,13 @@ struct LocationDetailView: View {
             HStack(spacing: 12) {
                 // Avatar placeholder
                 Circle()
-                    .fill(Color.brandPurple.opacity(0.2))
+                    .fill(Color.brand.opacity(0.2))
                     .frame(width: 36, height: 36)
                     .overlay(
                         Text(String(username.prefix(1)).uppercased())
                             .font(.caption)
                             .fontWeight(.bold)
-                            .foregroundColor(.brandPurple)
+                            .foregroundColor(.brand)
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -560,108 +567,7 @@ struct LocationDetailView: View {
 
 
     // =========================================================================
-    // MARK: - Data Loading
-    // =========================================================================
-
-    /// Loads photos for this location
-    /// - Owner mode: fetches from /api/locations/{id}/photos
-    /// - Read-only mode: converts inline photos from SocialLocation, or fetches from user's public locations if empty
-    private func loadPhotos() async {
-        if isReadOnly {
-            // Read-only mode: use inline photos from SocialLocation
-            if !inlinePhotos.isEmpty {
-                await MainActor.run {
-                    self.photos = DetailPhoto.fromLocationPhotos(inlinePhotos)
-                    self.isLoadingPhotos = false
-                }
-            } else if let username = ownerUsername, !username.isEmpty {
-                // No inline photos - fetch from user's public locations to get photos
-                await fetchPhotosFromPublicProfile(username: username)
-            } else {
-                await MainActor.run {
-                    self.isLoadingPhotos = false
-                }
-            }
-        } else {
-            // Owner mode: fetch from API
-            let locationId = currentLocation.id
-
-            do {
-                let response: PhotosResponse = try await APIClient.shared.get("/api/locations/\(locationId)/photos")
-                await MainActor.run {
-                    self.photos = response.photos
-                    self.isLoadingPhotos = false
-                }
-            } catch {
-                #if DEBUG
-                print("[LocationDetailView] Failed to load photos: \(error)")
-                #endif
-                await MainActor.run {
-                    self.photos = DetailPhoto.fromLocationPhotos(currentLocation.photos ?? [])
-                    self.isLoadingPhotos = false
-                }
-            }
-        }
-    }
-
-    /// Fetches photos from user's public locations when inline photos are empty
-    /// Used when tapping a friend's marker on the map (MapSocialLocation doesn't include photos)
-    private func fetchPhotosFromPublicProfile(username: String) async {
-        do {
-            let response: UserLocationsResponse = try await APIClient.shared.get(
-                "/api/v1/users/\(username)/locations",
-                authenticated: true
-            )
-
-            // Find the matching location by ID
-            let locationId = socialLocationId ?? currentLocation.id
-            if let matchingLocation = response.locations.first(where: { $0.location.id == locationId }) {
-                await MainActor.run {
-                    self.photos = DetailPhoto.fromLocationPhotos(matchingLocation.location.photos ?? [])
-                    self.isLoadingPhotos = false
-                }
-            } else {
-                #if DEBUG
-                print("[LocationDetailView] Location \(locationId) not found in user's public locations")
-                #endif
-                await MainActor.run {
-                    self.isLoadingPhotos = false
-                }
-            }
-        } catch {
-            #if DEBUG
-            print("[LocationDetailView] Failed to fetch photos from public profile: \(error)")
-            #endif
-            await MainActor.run {
-                self.isLoadingPhotos = false
-            }
-        }
-    }
-
-    /// Loads user save details (owner mode only)
-    /// Provides additional metadata like creator info
-    private func loadUserSaveDetails() async {
-        guard let userSaveId = currentLocation.userSaveId else {
-            await MainActor.run { isLoadingDetails = false }
-            return
-        }
-
-        do {
-            let response: UserSaveDetailResponse = try await APIClient.shared.get("/api/locations/\(userSaveId)")
-            await MainActor.run {
-                self.userSaveDetails = response.userSave
-                self.isLoadingDetails = false
-            }
-        } catch {
-            #if DEBUG
-            print("[LocationDetailView] Failed to load user save details: \(error)")
-            #endif
-            await MainActor.run { isLoadingDetails = false }
-        }
-    }
-
-    // =========================================================================
-    // MARK: - Visibility Helpers
+    // MARK: - Visibility Helpers (presentation-only)
     // =========================================================================
 
     private func visibilityIcon(for visibility: String) -> String {
@@ -685,29 +591,6 @@ struct LocationDetailView: View {
         case "public": return .green
         case "unlisted": return .orange
         default: return Color(.systemGray)
-        }
-    }
-
-    private func changeVisibility(_ newVisibility: String) {
-        guard newVisibility != locationVisibility else { return }
-        let previous = locationVisibility
-        locationVisibility = newVisibility
-        Task {
-            isSavingVisibility = true
-            var request = UpdateLocationRequest()
-            request.visibility = newVisibility
-            if let updated = await LocationStore.shared.updateLocation(currentLocation, request: request) {
-                await MainActor.run {
-                    currentLocation = updated
-                    locationVisibility = updated.visibility ?? "private"
-                    isSavingVisibility = false
-                }
-            } else {
-                await MainActor.run {
-                    locationVisibility = previous
-                    isSavingVisibility = false
-                }
-            }
         }
     }
 
@@ -745,9 +628,43 @@ struct LocationDetailView: View {
         return formatter.string(from: date)
     }
 
-    private func formatCityState() -> String? {
-        let parts = [currentLocation.city, currentLocation.state].compactMap { $0 }
-        return parts.isEmpty ? nil : parts.joined(separator: ", ")
+    /// Formats street line: "30 Hudson Yards"
+    private func formatStreetLine() -> String? {
+        let parts = [currentLocation.number, currentLocation.street]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
+
+    /// Formats city/state/zip line: "New York, NY 10001"
+    private func formatCityStateZip() -> String? {
+        var line = ""
+
+        // City
+        if let city = currentLocation.city, !city.isEmpty {
+            line = city
+        }
+
+        // State (abbreviation)
+        if let state = currentLocation.state, !state.isEmpty {
+            let abbr = state.count == 2 ? state.uppercased() : state
+            if line.isEmpty {
+                line = abbr
+            } else {
+                line += ", \(abbr)"
+            }
+        }
+
+        // ZIP (first 5 digits only)
+        if let zip = currentLocation.zipcode, !zip.isEmpty {
+            let digits = zip.split(separator: "-").first.map(String.init) ?? zip
+            let short = String(digits.filter(\.isNumber).prefix(5))
+            if !short.isEmpty {
+                line += line.isEmpty ? short : " \(short)"
+            }
+        }
+
+        return line.isEmpty ? nil : line
     }
 
     /// Navigate to Map tab and center on this location's pin

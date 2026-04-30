@@ -56,7 +56,7 @@ struct ProfileBannerView: View {
         Rectangle()
             .fill(
                 LinearGradient(
-                    colors: [.brandPurple.opacity(0.6), .brandPurple.opacity(0.3)],
+                    colors: [.brand.opacity(0.6), .brand.opacity(0.3)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -111,7 +111,7 @@ struct ProfileAvatarView<MenuContent: View>: View {
                         .font(.system(size: 10))
                         .foregroundColor(.white)
                         .padding(5)
-                        .background(Color.brandPurple)
+                        .background(Color.brand)
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
                 }
@@ -129,7 +129,7 @@ struct ProfileAvatarView<MenuContent: View>: View {
 
     private var avatarPlaceholder: some View {
         Circle()
-            .fill(Color.brandPurple)
+            .fill(Color.brand)
             .frame(width: 85, height: 85)
             .overlay(
                 Text(initials)

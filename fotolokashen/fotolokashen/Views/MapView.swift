@@ -55,7 +55,7 @@ struct MapView: View {
                         Button {
                             showFriendsLocations.toggle()
                             #if DEBUG
-                            print("[MapView] Friends toggle: \(showFriendsLocations), cached: \(friendsLocations.count)")
+                            dlog("MapView", "Friends toggle: \(showFriendsLocations), cached: \(friendsLocations.count)")
                             #endif
                             if showFriendsLocations && friendsLocations.isEmpty {
                                 Task { await loadFriendsLocations() }
@@ -73,7 +73,7 @@ struct MapView: View {
                             .font(.title3)
                             .foregroundColor(.white)
                             .frame(width: 50, height: 50)
-                            .background(showFriendsLocations ? Color.brandPurple : Color(.systemGray2))
+                            .background(showFriendsLocations ? Color.brand : Color(.systemGray2))
                             .clipShape(Circle())
                             .shadow(radius: 4)
                         }
@@ -133,17 +133,17 @@ struct MapView: View {
 
     private func loadFriendsLocations() async {
         #if DEBUG
-        print("[MapView] loadFriendsLocations() called")
+        dlog("MapView", "loadFriendsLocations() called")
         #endif
         isLoadingFriends = true
         do {
             friendsLocations = try await followService.getFriendsLocations()
             #if DEBUG
-            print("[MapView] Loaded \(friendsLocations.count) friends locations")
+            dlog("MapView", "Loaded \(friendsLocations.count) friends locations")
             #endif
         } catch {
             #if DEBUG
-            print("[MapView] Failed to load friends locations: \(error)")
+            dlog("MapView", "Failed to load friends locations: \(error)")
             #endif
         }
         isLoadingFriends = false
@@ -217,7 +217,7 @@ struct ClusteredMapView: UIViewRepresentable {
     
     func updateUIView(_ mapView: GMSMapView, context: Context) {
         #if DEBUG
-        print("[MapView] updateUIView: \(locations.count) locations, \(socialLocations.count) social locations")
+        dlog("MapView", "updateUIView: \(locations.count) locations, \(socialLocations.count) social locations")
         #endif
         
         // Handle center on user location request
@@ -229,9 +229,9 @@ struct ClusteredMapView: UIViewRepresentable {
                     zoom: 15.0
                 )
                 mapView.animate(to: camera)
-                print("[MapView] Centered on user location: \(userLocation.coordinate)")
+                dlog("MapView", "Centered on user location: \(userLocation.coordinate)")
             } else {
-                print("[MapView] User location not available yet")
+                dlog("MapView", "User location not available yet")
             }
             // Reset the flag
             DispatchQueue.main.async {
@@ -441,7 +441,7 @@ struct ClusteredMapView: UIViewRepresentable {
                 )
                 mapView.animate(to: camera)
                 #if DEBUG
-                print("[MapView] GPS fix → centered on user: \(location.coordinate)")
+                dlog("MapView", "GPS fix → centered on user: \(location.coordinate)")
                 #endif
             }
         }
