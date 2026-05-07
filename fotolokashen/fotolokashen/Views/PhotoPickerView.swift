@@ -40,25 +40,51 @@ struct PhotoPickerView: UIViewControllerRepresentable {
             _ picker: PHPickerViewController,
             didFinishPicking results: [PHPickerResult]
         ) {
-            picker.dismiss(animated: true)
-
+            // Empty selection — dismiss immediately
             guard !results.isEmpty else {
+                picker.dismiss(animated: true)
                 onPhotosPicked([])
                 return
             }
 
-            Task {
-                var photos: [PipelinePhoto] = []
+            // Show full-screen blur loading overlay while photos load (A3)
+            let loadingVC = makeLoadingOverlay(photoCount: results.count)
+            picker.present(loadingVC, animated: true)
 
-                for result in results {
-                    guard let photo = await loadPhoto(from: result) else { continue }
-                    photos.append(photo)
+            Task {
+                // Load all photos concurrently via TaskGroup (A1)
+                let photos = await withTaskGroup(of: PipelinePhoto?.self, returning: [PipelinePhoto].self) { group in
+                    for result in results {
+                        group.addTask { [weak self] in
+                            await self?.loadPhoto(from: result)
+                        }
+                    }
+                    var collected: [PipelinePhoto] = []
+                    for await photo in group {
+                        if let photo { collected.append(photo) }
+                    }
+                    return collected
                 }
 
+                // Dismiss loading overlay, then picker, then deliver photos (A3)
                 await MainActor.run {
+                    loadingVC.dismiss(animated: false) {
+                        picker.dismiss(animated: true)
+                    }
                     onPhotosPicked(photos)
                 }
             }
+        }
+
+        // MARK: - Loading Overlay (A3)
+
+        /// Create a full-screen blurred loading overlay presented on top of the picker.
+        private func makeLoadingOverlay(photoCount: Int) -> UIViewController {
+            let hostingController = UIHostingController(rootView: PhotoLoadingOverlay(photoCount: photoCount))
+            hostingController.modalPresentationStyle = .overFullScreen
+            hostingController.modalTransitionStyle = .crossDissolve
+            hostingController.view.backgroundColor = .clear
+            return hostingController
         }
 
         /// Load a single photo from a PHPickerResult.
@@ -98,6 +124,8 @@ struct PhotoPickerView: UIViewControllerRepresentable {
         }
 
         /// Load data for a specific type identifier.
+        /// A2: Removed inline ImageCompressor.compress() call — compression is now handled
+        /// uniformly by PhotoPickerViewModel.compressUncompressedPhotos() after add.
         private func loadData(
             provider: NSItemProvider,
             typeIdentifier: String
@@ -117,12 +145,7 @@ struct PhotoPickerView: UIViewControllerRepresentable {
                     // Extract EXIF from raw data (before any UIImage conversion)
                     let exif = EXIFExtractor.extract(from: data)
 
-                    var photo = PipelinePhoto(source: .library, image: image, exif: exif)
-                    // Store compressed data early if JPEG
-                    if typeIdentifier == "public.jpeg" {
-                        photo.compressedData = ImageCompressor.compress(image)
-                    }
-
+                    let photo = PipelinePhoto(source: .library, image: image, exif: exif)
                     continuation.resume(returning: photo)
                 }
             }
@@ -146,6 +169,38 @@ struct PhotoPickerView: UIViewControllerRepresentable {
                     continuation.resume(returning: photo)
                 }
             }
+        }
+    }
+}
+
+// MARK: - Photo Loading Overlay
+
+/// Full-screen blurred overlay shown on the picker while photos are loading (A3).
+private struct PhotoLoadingOverlay: View {
+    let photoCount: Int
+
+    var body: some View {
+        ZStack {
+            // Blur background
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .background(.ultraThinMaterial)
+
+            VStack(spacing: 20) {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .tint(.white)
+
+                Text("Loading \(photoCount) photo\(photoCount == 1 ? "" : "s")…")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+
+                Text("Please wait")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .padding(40)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
         }
     }
 }

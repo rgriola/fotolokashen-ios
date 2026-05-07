@@ -38,6 +38,9 @@ struct CameraView: View {
     // Photo Library picker
     @State private var showLibraryPicker = false
 
+    // Library-from-Camera transition overlay (B2)
+    @State private var isTransitioningToForm = false
+
     // Callbacks
     var onSessionComplete: (([SessionCapture]) -> Void)?
     var onLibraryPhotosPicked: (([PipelinePhoto]) -> Void)?
@@ -101,9 +104,10 @@ struct CameraView: View {
 
                 // --- HUD overlays ---
 
-                // Close button — top-left
+                // Top bar: Close | Flash | (spacer) | GPS badge
                 VStack {
-                    HStack {
+                    HStack(spacing: 12) {
+                        // Close button
                         Button {
                             dismiss()
                         } label: {
@@ -114,24 +118,31 @@ struct CameraView: View {
                                 .background(Color.black.opacity(0.5))
                                 .clipShape(Circle())
                         }
-                        Spacer()
-                    }
-                    .padding(.top, geo.safeAreaInsets.top + 8)
-                    .padding(.leading, geo.safeAreaInsets.leading + 16)
-                    Spacer()
-                }
 
-                // GPS badge — top-right
-                VStack {
-                    HStack {
+                        // Flash mode button — Apple-style top bar (B4)
+                        if !cameraService.isUsingFrontCamera {
+                            Button {
+                                cameraService.cycleFlashMode()
+                            } label: {
+                                Image(systemName: cameraService.flashIconName)
+                                    .font(.title3)
+                                    .foregroundColor(cameraService.flashIconName.contains("slash") ? .white : .yellow)
+                                    .padding(12)
+                                    .background(Color.black.opacity(0.5))
+                                    .clipShape(Circle())
+                            }
+                        }
+
                         Spacer()
+
+                        // GPS badge
                         CameraGPSBadge(
                             location: locationManager.location,
                             showCoordinates: $showCoordinates
                         )
                     }
                     .padding(.top, geo.safeAreaInsets.top + 8)
-                    .padding(.trailing, geo.safeAreaInsets.trailing + 16)
+                    .padding(.horizontal, 16)
                     Spacer()
                 }
 
@@ -168,6 +179,24 @@ struct CameraView: View {
                     Color.white
                         .ignoresSafeArea()
                         .allowsHitTesting(false)
+                }
+
+                // Library-from-Camera transition overlay (B2)
+                if isTransitioningToForm {
+                    ZStack {
+                        Color.black.opacity(0.6)
+                            .ignoresSafeArea()
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.3)
+                                .tint(.white)
+                            Text("Preparing photos…")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .transition(.opacity)
+                    .allowsHitTesting(true)
                 }
 
                 // Bottom controls stack
@@ -218,7 +247,7 @@ struct CameraView: View {
                         .transition(.scale(scale: 0.8).combined(with: .opacity))
                     }
 
-                    // Bottom controls: Library | Capture (with count badge) | (spacer)
+                    // Bottom controls: Library | Capture (with count badge) | Camera flip (B3)
                     HStack(spacing: 32) {
                         // Library button
                         Button {
@@ -259,9 +288,17 @@ struct CameraView: View {
                             }
                         }
 
-                        // Spacer to balance the layout
-                        Color.clear
-                            .frame(width: 50, height: 50)
+                        // Front/back camera toggle — next to shutter (B3)
+                        Button {
+                            cameraService.switchCamera()
+                        } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath.camera")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 50, height: 50)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                        }
                     }
                     .padding(.bottom, geo.safeAreaInsets.bottom + 20)
                 }
@@ -274,8 +311,13 @@ struct CameraView: View {
             Text(errorMessage)
         }
         .sheet(isPresented: $showLibraryPicker) {
-            PhotoPickerView(selectionLimit: 20) { photos in
-                onLibraryPhotosPicked?(photos)
+            PhotoPickerView(selectionLimit: 20) { [self] photos in
+                guard !photos.isEmpty else { return }
+                // B2: Show transition overlay before dismissing camera
+                isTransitioningToForm = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    onLibraryPhotosPicked?(photos)
+                }
             }
         }
         .task {
@@ -287,9 +329,15 @@ struct CameraView: View {
         }
         .onChange(of: cameraService.capturedImage) { _, newValue in
             if let image = newValue {
-                session.handleCapturedPhoto(image, location: locationManager.location)
+                // B1: Pass raw photo data so it writes to disk with full EXIF intact
+                session.handleCapturedPhoto(
+                    image,
+                    rawData: cameraService.capturedPhotoData,
+                    location: locationManager.location
+                )
                 // Clear so cameraService is ready for the next shot.
                 cameraService.capturedImage = nil
+                cameraService.capturedPhotoData = nil
             }
         }
         .onChange(of: cameraService.errorMessage) { _, newValue in

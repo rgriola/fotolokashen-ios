@@ -53,6 +53,8 @@
         <true/>
         <key>enableDebugLogging</key>
         <false/>
+        <key>useNewPhotoPipeline</key>
+        <true/>
     </dict>
 </dict>
 </plist>

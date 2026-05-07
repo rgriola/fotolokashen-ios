@@ -11,7 +11,14 @@ class CameraService: NSObject, ObservableObject {
     
     @Published var isAuthorized = false
     @Published var capturedImage: UIImage?
+    /// Raw photo data from AVCapturePhoto — preserves full EXIF (ISO, shutter, aperture, lens).
+    /// Published alongside capturedImage so CameraSessionViewModel can write it to disk directly.
+    @Published var capturedPhotoData: Data?
     @Published var errorMessage: String?
+    /// Current flash mode: .auto → .on → .off (B4)
+    @Published var flashMode: AVCaptureDevice.FlashMode = .auto
+    /// Whether the device is using the front camera (B3)
+    @Published var isUsingFrontCamera = false
     @Published var isSessionReady = false
     @Published var currentZoom: CGFloat = 1.0
     @Published var currentExposureBias: Float = 0.0
@@ -305,6 +312,85 @@ class CameraService: NSObject, ObservableObject {
     func resetExposure() {
         setExposureBias(0)
     }
+
+    // MARK: - Camera Switch (B3)
+
+    /// Toggle between front and back cameras.
+    func switchCamera() {
+        guard !isSimulator else { return }
+
+        sessionQueue.async { [self] in
+            captureSession.beginConfiguration()
+
+            // Remove existing input
+            if let currentInput = videoDeviceInput {
+                captureSession.removeInput(currentInput)
+            }
+
+            let newPosition: AVCaptureDevice.Position = isUsingFrontCamera ? .back : .front
+
+            let device: AVCaptureDevice?
+            if newPosition == .back {
+                device = Self.preferredBackCamera()
+            } else {
+                device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+            }
+
+            guard let device else {
+                captureSession.commitConfiguration()
+                return
+            }
+
+            do {
+                let input = try AVCaptureDeviceInput(device: device)
+                if captureSession.canAddInput(input) {
+                    captureSession.addInput(input)
+                    self.videoDeviceInput = input
+
+                    // Recalculate zoom multiplier for new device
+                    let firstSwitchOver = device.virtualDeviceSwitchOverVideoZoomFactors.first?.doubleValue ?? 1.0
+                    self.displayZoomMultiplier = CGFloat(firstSwitchOver > 0 ? firstSwitchOver : 1.0)
+
+                    // Reset zoom to 1x for the new device
+                    try device.lockForConfiguration()
+                    device.videoZoomFactor = self.displayZoomMultiplier
+                    device.unlockForConfiguration()
+                }
+            } catch {
+                dlog("CameraService", "Switch camera error: \(error)")
+            }
+
+            captureSession.commitConfiguration()
+
+            DispatchQueue.main.async {
+                self.isUsingFrontCamera = !self.isUsingFrontCamera
+                self.currentZoom = 1.0
+            }
+        }
+    }
+
+    // MARK: - Flash Mode (B4)
+
+    /// Cycle flash mode: auto → on → off → auto (matches Apple Camera app).
+    func cycleFlashMode() {
+        switch flashMode {
+        case .auto: flashMode = .on
+        case .on:   flashMode = .off
+        case .off:  flashMode = .auto
+        @unknown default: flashMode = .auto
+        }
+    }
+
+    /// SF Symbol name for the current flash mode.
+    var flashIconName: String {
+        switch flashMode {
+        case .auto: return "bolt.badge.automatic"
+        case .on:   return "bolt.fill"
+        case .off:  return "bolt.slash.fill"
+        @unknown default: return "bolt.badge.automatic"
+        }
+    }
+
     
     // MARK: - Photo Capture
     
@@ -384,7 +470,7 @@ class CameraService: NSObject, ObservableObject {
             }
             
             let settings = AVCapturePhotoSettings()
-            settings.flashMode = .auto
+            settings.flashMode = self.flashMode
             
             photoOutput.capturePhoto(with: settings, delegate: self)
             dlog("CameraService", "Capturing photo...")
@@ -416,6 +502,7 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
                 return
             }
             
+            self.capturedPhotoData = imageData  // B1: raw bytes with full EXIF
             self.capturedImage = image
             dlog("CameraService", "Photo captured successfully")
             dlog("CameraService", "Image size: \(image.size)")

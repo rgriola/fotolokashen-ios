@@ -27,11 +27,14 @@ struct SessionCapture: Identifiable {
     }
 
     /// Convert to a PipelinePhoto for the upload pipeline.
-    /// Loads the full image from disk and extracts EXIF.
+    /// Loads the full image from disk and extracts EXIF from raw Data (B1 — preserves
+    /// camera-specific metadata: ISO, shutter speed, aperture, focal length, lens model).
     func toPipelinePhoto() -> PipelinePhoto? {
-        guard let image = loadFullImage() else { return nil }
+        guard let data = try? Data(contentsOf: fileURL),
+              let image = UIImage(data: data) else { return nil }
 
-        var exif = EXIFExtractor.extract(from: image) ?? EXIFMetadata()
+        // Extract EXIF from raw file data (not UIImage) to preserve camera metadata
+        var exif = EXIFExtractor.extract(from: data) ?? EXIFMetadata()
 
         // Supplement with device GPS if EXIF has none
         if !exif.hasGPS, let loc = location {

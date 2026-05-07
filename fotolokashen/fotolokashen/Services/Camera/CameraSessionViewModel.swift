@@ -37,8 +37,12 @@ final class CameraSessionViewModel: ObservableObject {
     // MARK: - Capture Pipeline
 
     /// Handle a captured photo — write to disk, generate thumbnail, append to session.
-    /// Mirrors the original `CameraView.handleCapturedPhoto(_:)` exactly.
-    func handleCapturedPhoto(_ image: UIImage, location: CLLocation?) {
+    /// - Parameters:
+    ///   - image: The captured UIImage (used for thumbnail generation).
+    ///   - rawData: Raw photo data from AVCapturePhoto (preserves full EXIF). When provided,
+    ///     this is written directly to disk instead of re-encoding the UIImage (B1).
+    ///   - location: Device GPS at the moment of capture.
+    func handleCapturedPhoto(_ image: UIImage, rawData: Data? = nil, location: CLLocation?) {
         isWritingToDisk = true
 
         // Flash animation
@@ -48,8 +52,15 @@ final class CameraSessionViewModel: ObservableObject {
         }
 
         Task.detached(priority: .userInitiated) { [weak self] in
-            // Compress to JPEG
-            guard let jpegData = image.jpegData(compressionQuality: 0.85) else {
+            // Use raw data when available (preserves full EXIF), fall back to JPEG encode
+            let jpegData: Data?
+            if let rawData {
+                jpegData = rawData
+            } else {
+                jpegData = image.jpegData(compressionQuality: 0.85)
+            }
+
+            guard let jpegData else {
                 await MainActor.run { [weak self] in self?.isWritingToDisk = false }
                 return
             }

@@ -108,8 +108,10 @@ struct CreateLocationView: View {
                 }
             }
 
-            // Run GPS spread detection after photos are loaded
-            viewModel.analyzeSpread(photos: photoViewModel.photos)
+            // Run GPS spread detection AFTER photos are seeded (A4 — fixes L5)
+            if !photoViewModel.photos.isEmpty {
+                viewModel.analyzeSpread(photos: photoViewModel.photos)
+            }
 
             await viewModel.loadAddress()
         }
