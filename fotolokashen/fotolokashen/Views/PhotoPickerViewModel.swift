@@ -247,7 +247,7 @@ class PhotoPickerViewModel: ObservableObject {
         // Await terminal state for every enqueued photo so the caller can
         // continue its existing post-upload flow.
         var collected: [Photo] = []
-        let stream = await uploadQueue.events()
+        let stream = uploadQueue.events()
         var remaining = pendingIds
         for await event in stream {
             switch event {
@@ -289,8 +289,8 @@ class PhotoPickerViewModel: ObservableObject {
     private func subscribeToQueueEvents() {
         queueEventTask = Task { [weak self] in
             guard let self else { return }
-            for await event in await self.uploadQueue.events() {
-                await self.handleQueueEvent(event)
+            for await event in self.uploadQueue.events() {
+                self.handleQueueEvent(event)
             }
         }
     }

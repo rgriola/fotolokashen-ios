@@ -63,7 +63,7 @@ User already has account >> redirect to login in iOS case redirect back to app f
 
 ... Apr 28 2026 
 *** Task ***
-- Lets review how the iOS capture process works.
+- Lets review how the iOS capture process works, the last review pipeline.md does not account for the work we have done to date. 
 - There are two workflows 1) ios camera 2) using photo library. 
 - We were also trying to add a feature to group photos by distance.  This may be a bit over our skis right now. 
 - Lets get the multiple photo capture working first for both Camera and Photo Library. 
@@ -81,3 +81,10 @@ on iOS Location Details, Can we stucture the address to look like a proper posta
 Also default the Permit Required to only appear if Yes. 
 
 On iOS edit view, add a 
+
+*** Task ***
+- iOS Capture View has two modes Create a location from the camera, or use photos from your library. 
+- lets review how we build a location on iOS with the Camera > Form > Save and Photo Library > Form > Save. 
+- my experience is the Photo Library path is slow and buggy. The Camera path is ok but also a little buggy. 
+- pipeline.md needs to be updated to reflect the changes we have made to the app, and used as a template for photo uploads. 
+- I included Photo Upload Architecture.md for your review as a reference since we are also creating a photo upload path on another app. We do not need auth or the lightroom integration, those are specific to the other app process. 

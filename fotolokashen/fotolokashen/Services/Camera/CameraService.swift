@@ -22,12 +22,20 @@ class CameraService: NSObject, ObservableObject {
     private var photoOutput = AVCapturePhotoOutput()
     private let sessionQueue = DispatchQueue(label: "camera.session.queue")
     private var videoDeviceInput: AVCaptureDeviceInput?
-    
-    /// Min/max zoom range
-    var minZoom: CGFloat { 1.0 }
+
+    /// Multiplier mapping user-facing display zoom → device `videoZoomFactor`.
+    /// On a virtual device that includes the ultra-wide lens (e.g. `.builtInTripleCamera`,
+    /// `.builtInDualWideCamera`), the ultra-wide sits at `videoZoomFactor = 1.0` and the
+    /// wide "1x" lens sits at the first switch-over factor (typically 2.0). We expose a
+    /// display zoom where 0.5 == ultra-wide and 1.0 == wide.
+    /// On a single wide-only device this stays 1.0, so 1.0x display == 1.0x device.
+    private var displayZoomMultiplier: CGFloat = 1.0
+
+    /// Min/max zoom range (in user-facing display units)
+    var minZoom: CGFloat { 1.0 / displayZoomMultiplier }
     var maxZoom: CGFloat {
         guard let device = videoDeviceInput?.device else { return 5.0 }
-        return min(device.activeFormat.videoMaxZoomFactor, 10.0)
+        return min(device.activeFormat.videoMaxZoomFactor / displayZoomMultiplier, 10.0)
     }
     
     /// Exposure bias range from device
@@ -84,14 +92,22 @@ class CameraService: NSObject, ObservableObject {
             sessionQueue.async { [self] in
                 captureSession.beginConfiguration()
                 captureSession.sessionPreset = .photo
-                
-                // Add camera input
-                guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+
+                // Prefer a virtual multi-camera that includes the ultra-wide lens so the
+                // 0.5x preset is selectable. Fall back to wide-only on devices without it.
+                let camera = Self.preferredBackCamera()
+                guard let camera else {
                     captureSession.commitConfiguration()
                     continuation.resume(throwing: CameraError.noCameraAvailable)
                     return
                 }
-                
+
+                // Determine the display-zoom multiplier from the device's switch-over
+                // factors. For dual/triple cameras the first switch-over (typically 2.0)
+                // is the wide lens, which we treat as the user's "1x".
+                let firstSwitchOver = camera.virtualDeviceSwitchOverVideoZoomFactors.first?.doubleValue ?? 1.0
+                self.displayZoomMultiplier = CGFloat(firstSwitchOver > 0 ? firstSwitchOver : 1.0)
+
                 do {
                     let input = try AVCaptureDeviceInput(device: camera)
                     self.videoDeviceInput = input
@@ -113,8 +129,18 @@ class CameraService: NSObject, ObservableObject {
                     }
                     
                     captureSession.commitConfiguration()
-                    dlog("CameraService", "Session configured successfully")
-                    
+                    dlog("CameraService", "Session configured successfully (device: \(camera.localizedName), multiplier: \(self.displayZoomMultiplier))")
+
+                    // Start at the wide lens (display 1.0x) so framing matches the prior default.
+                    do {
+                        try camera.lockForConfiguration()
+                        camera.videoZoomFactor = self.displayZoomMultiplier
+                        camera.unlockForConfiguration()
+                        DispatchQueue.main.async { self.currentZoom = 1.0 }
+                    } catch {
+                        dlog("CameraService", "Initial zoom set failed: \(error)")
+                    }
+
                     continuation.resume()
                     
                 } catch {
@@ -166,17 +192,20 @@ class CameraService: NSObject, ObservableObject {
     
     // MARK: - Zoom
     
-    /// Set zoom factor (clamped to valid range)
+    /// Set zoom factor in user-facing display units (e.g. 0.5, 1.0, 2.0).
+    /// Internally translated to the device's `videoZoomFactor` via `displayZoomMultiplier`.
     func setZoom(_ factor: CGFloat) {
         guard let device = videoDeviceInput?.device else { return }
-        let clamped = min(max(factor, minZoom), maxZoom)
+        let clampedDisplay = min(max(factor, minZoom), maxZoom)
+        let deviceFactor = clampedDisplay * displayZoomMultiplier
         sessionQueue.async {
             do {
                 try device.lockForConfiguration()
-                device.videoZoomFactor = clamped
+                let bounded = min(max(deviceFactor, 1.0), device.activeFormat.videoMaxZoomFactor)
+                device.videoZoomFactor = bounded
                 device.unlockForConfiguration()
                 DispatchQueue.main.async {
-                    self.currentZoom = clamped
+                    self.currentZoom = clampedDisplay
                 }
             } catch {
                 #if DEBUG
@@ -184,6 +213,25 @@ class CameraService: NSObject, ObservableObject {
                 #endif
             }
         }
+    }
+
+    // MARK: - Device Selection
+
+    /// Choose the best back camera. Prefer virtual devices that include the ultra-wide
+    /// lens so the 0.5x preset is available; fall back to wide-only otherwise.
+    private static func preferredBackCamera() -> AVCaptureDevice? {
+        let preferredTypes: [AVCaptureDevice.DeviceType] = [
+            .builtInTripleCamera,      // ultra-wide + wide + tele
+            .builtInDualWideCamera,    // ultra-wide + wide
+            .builtInDualCamera,        // wide + tele (no ultra-wide)
+            .builtInWideAngleCamera    // wide only
+        ]
+        for type in preferredTypes {
+            if let device = AVCaptureDevice.default(type, for: .video, position: .back) {
+                return device
+            }
+        }
+        return nil
     }
     
     /// Zoom in by a step

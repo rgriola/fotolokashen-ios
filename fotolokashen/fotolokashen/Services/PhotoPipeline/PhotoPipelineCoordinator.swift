@@ -200,8 +200,8 @@ final class PhotoPipelineCoordinator: ObservableObject {
     private func subscribeToQueueEvents() {
         eventTask = Task { [weak self] in
             guard let self else { return }
-            for await event in await self.uploadQueue.events() {
-                await self.handle(event: event)
+            for await event in self.uploadQueue.events() {
+                self.handle(event: event)
             }
         }
     }

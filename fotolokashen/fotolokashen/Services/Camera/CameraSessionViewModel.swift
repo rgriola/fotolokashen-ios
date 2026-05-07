@@ -50,7 +50,7 @@ final class CameraSessionViewModel: ObservableObject {
         Task.detached(priority: .userInitiated) { [weak self] in
             // Compress to JPEG
             guard let jpegData = image.jpegData(compressionQuality: 0.85) else {
-                await MainActor.run { self?.isWritingToDisk = false }
+                await MainActor.run { [weak self] in self?.isWritingToDisk = false }
                 return
             }
 
@@ -68,7 +68,7 @@ final class CameraSessionViewModel: ObservableObject {
                 #if DEBUG
                 print("[Camera] Failed to write capture to disk: \(error)")
                 #endif
-                await MainActor.run { self?.isWritingToDisk = false }
+                await MainActor.run { [weak self] in self?.isWritingToDisk = false }
                 return
             }
 
@@ -86,7 +86,7 @@ final class CameraSessionViewModel: ObservableObject {
                 capturedAt: Date()
             )
 
-            await MainActor.run {
+            await MainActor.run { [weak self] in
                 guard let self else { return }
                 self.sessionCaptures.append(capture)
                 self.isWritingToDisk = false
@@ -94,6 +94,7 @@ final class CameraSessionViewModel: ObservableObject {
                 print("[Camera] Session capture \(self.sessionCaptures.count) saved to \(fileURL.lastPathComponent)")
                 #endif
             }
+
         }
     }
 

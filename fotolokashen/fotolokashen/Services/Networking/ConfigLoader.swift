@@ -2,10 +2,14 @@ import Foundation
 
 /// Configuration loader for reading values from Config.plist
 /// Provides type-safe access to app configuration
-class ConfigLoader {
-    
+///
+/// `nonisolated` so it can be safely read from any actor context (the photo
+/// pipeline actors, background queues, etc). The class is effectively
+/// immutable after `init`, so `@unchecked Sendable` is safe.
+nonisolated final class ConfigLoader: @unchecked Sendable {
+
     // MARK: - Singleton
-    
+
     static let shared = ConfigLoader()
     
     // MARK: - Properties
