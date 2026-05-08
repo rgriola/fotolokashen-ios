@@ -154,6 +154,10 @@ struct EditLocationView: View {
 
     private var notesSection: some View {
         Section {
+            TextField("Details", text: $viewModel.details, axis: .vertical)
+                .lineLimit(2...5)
+                .onChange(of: viewModel.details) { _, _ in viewModel.enforceLimits() }
+
             TextField("Notes", text: $viewModel.notes, axis: .vertical)
                 .lineLimit(2...5)
                 .onChange(of: viewModel.notes) { _, _ in viewModel.enforceLimits() }

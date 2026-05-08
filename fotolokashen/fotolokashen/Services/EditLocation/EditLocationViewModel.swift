@@ -25,6 +25,7 @@ final class EditLocationViewModel: ObservableObject {
     @Published var locationName: String = ""
     @Published var locationType: String = "OTHER"
     @Published var notes: String = ""
+    @Published var details: String = ""   // Maps to Location.details (free-text from iOS Create form)
 
     // MARK: - Form State (Production Details)
 
@@ -92,6 +93,7 @@ final class EditLocationViewModel: ObservableObject {
         locationName = location.name
         locationType = location.type ?? "OTHER"
         notes = location.notes ?? ""
+        details = location.details ?? ""   // Populate from the `details` field (iOS Create form)
         productionNotes = location.productionNotes ?? ""
         entryPoint = location.entryPoint ?? ""
         parking = location.parking ?? ""
@@ -145,6 +147,7 @@ final class EditLocationViewModel: ObservableObject {
     /// Apply the per-field character limits — call from `.onChange` modifiers in the view.
     func enforceLimits() {
         if locationName.count > Self.nameLimit { locationName = String(locationName.prefix(Self.nameLimit)) }
+        if details.count > Self.textLimit500 { details = String(details.prefix(Self.textLimit500)) }
         if productionNotes.count > Self.textLimit500 { productionNotes = String(productionNotes.prefix(Self.textLimit500)) }
         if entryPoint.count > Self.textLimit200 { entryPoint = String(entryPoint.prefix(Self.textLimit200)) }
         if parking.count > Self.textLimit200 { parking = String(parking.prefix(Self.textLimit200)) }
@@ -180,6 +183,7 @@ final class EditLocationViewModel: ObservableObject {
             access: access.isEmpty ? nil : access,
             indoorOutdoor: indoorOutdoor.isEmpty ? nil : indoorOutdoor,
             isPermanent: isPermanent,
+            details: details.isEmpty ? nil : details,   // Round-trip the iOS Create form Details field
             tags: parsedTags.isEmpty ? nil : parsedTags,
             isFavorite: isFavorite,
             personalRating: personalRating > 0 ? personalRating : nil,

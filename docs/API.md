@@ -1,10 +1,20 @@
 # fotolokashen API Documentation
 
+> ⚠️ **Partial Deprecation Notice — Last Reviewed: May 2026**
+>
+> This document was last fully updated January 2026. The following sections are **stale or replaced**:
+>
+> - **Photos API (Request Upload URL / Upload to ImageKit / Confirm Upload)**: The legacy 3-step upload flow (`request-upload` → ImageKit direct → `confirm`) is no longer used. The active path is `POST /api/photos/upload` (server-mediated, includes virus scan, HEIC/TIFF conversion, and EXIF preservation). See `PhotoUploadService.swift` and `README.md` for the current flow.
+> - **Update Location — `PUT /api/locations/{id}`**: The active method is `PATCH`. The request body now includes `details`, `productionNotes`, `entryPoint`, `parking`, `access`, `indoorOutdoor`, `isPermanent`, `isFavorite`, `personalRating`, `tags`, `color`, `caption`. See `Location.swift → UpdateLocationRequest` for the canonical struct.
+> - **Swift Models section**: The embedded `Location` struct is the v1.0 minimal model. Current model has 30+ fields. See `Services/Models/Location.swift` for the source of truth.
+> - **Staging URL** (`https://staging.fotolokashen.com`): Staging environment does not exist; there is only production (`https://fotolokashen.com`).
+>
+> **Sections that remain accurate**: OAuth2 authentication flow, Social endpoints (`/api/v1/*`), Rate limiting, ImageKit transform parameters, Error response shapes.
+
 **Base URL**: `https://fotolokashen.com`  
-**Staging URL**: `https://staging.fotolokashen.com`  
 **API Version**: v1
 
----
+
 
 ## Authentication
 

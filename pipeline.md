@@ -1,9 +1,12 @@
-## Fotolokashen iOS — Photo Upload Pipeline
-### Updated: May 5, 2026 May 5 12:33pm EST
+# Fotolokashen iOS — Photo Upload Pipeline
+### Updated: May 8, 2026
+
+> **Status**: All high-priority issues (L1–L5, C2, C5) from the original audit have been resolved in v1.6.0.  
+> This document now serves as the canonical architecture reference for the photo upload pipeline.  
+> See `CHANGELOG.md` for implementation details.
 
 > **Purpose:** Document the current state of the two location-creation paths
-> (Camera and Photo Library), diagnose known bugs and performance issues, and
-> serve as a reusable template for photo upload pipelines in other apps.
+> (Camera and Photo Library) and serve as a reusable template for photo upload pipelines.
 
 ---
 

@@ -2,7 +2,66 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
-## [Unreleased] - Phase 4 Hardening & Testing
+## [1.6.0] - 2026-05-08
+
+### 🎞️ Camera & Upload Pipeline Hardening
+
+#### EXIF Preservation (CameraService + CameraSessionViewModel + SessionCapture)
+
+- **Raw Data capture**: `CameraService` now publishes `rawPhotoData: Data?` alongside `UIImage`. `CameraSessionViewModel` writes raw data directly to disk temp files — no re-encoding, no EXIF loss
+- **EXIF from raw file**: `SessionCapture` reads EXIF metadata from raw file `Data` via `CGImageSourceCopyProperties` instead of from `UIImage` (which strips metadata on creation)
+
+#### Camera UX (CameraView + CameraService)
+
+- **Flip camera**: New button next to shutter toggles front/back camera via `CameraService.switchCamera()`
+- **Flash control**: Top-bar Auto/On/Off toggle. Flash icon turns yellow when On or Auto is active (Apple-style). Implemented via `flashIconName` string property to avoid direct `AVFoundation` module dependency in the View layer
+- **Transition overlay**: "Preparing photos…" blur overlay prevents abrupt dismissal when transitioning from Camera to Library
+
+#### Photo Library Path (PhotoPickerView + PhotoPickerViewModel)
+
+- **Concurrent loading**: Refactored `PhotoPickerView.Coordinator` to use `withTaskGroup` — all photos load in parallel instead of sequentially
+- **Inline compression removed**: Deleted redundant `ImageCompressor` calls from picker coordinator; all compression delegated to `PhotoPickerViewModel`
+- **Race condition fix**: Picker dismissal is now deferred via `Task`. A full-screen `PhotoLoadingOverlay` (blur + spinner) persists until photos are fully ingested into the pipeline, preventing premature UI teardown
+
+#### Spread Analysis Timing (CreateLocationView)
+
+- `analyzeSpread` is now deferred until after photos are successfully seeded, eliminating GPS spread UI flicker
+
+#### Bug Fix — Edit Location Details Field (Location.swift + EditLocationViewModel + EditLocationView)
+
+- **Root cause**: The `details` field (typed in "Location Details" during Create) was orphaned in the Edit path — never read from `Location.details`, never sent in `UpdateLocationRequest`, never shown in the UI
+- **Fix**: Added `details: String? = nil` to `UpdateLocationRequest`; `EditLocationViewModel.populateForm()` now reads `location.details`; `EditLocationView` shows a "Details" text field at the top of the Notes section
+
+#### Pipeline Activation (Config.plist)
+
+- `useNewPhotoPipeline = true` — activates `PhotoPipelineCoordinator` + `PhotoUploadQueue` for concurrent, retry-capable uploads. Legacy `PhotoPickerViewModel` path retained for rollback
+
+### 🧪 Test Coverage (Phases 4a–4d — landed this cycle)
+
+- **Phase 4a**: `PhotoUploadServicing` protocol + `PhotoUploadQueueTests` (6 tests)
+- **Phase 4b**: `PhotoCompressionServiceTests` (5 tests)
+- **Phase 4c**: `LocationViewModelTests` — 15 tests for `CreateLocationViewModel` + `EditLocationViewModel`
+- **Phase 4d**: `APIClientTests` — 7 tests + `URLProtocolStub` for HTTP/error-mapping
+
+### 📈 Observability (Phase 4e)
+
+- `dlog()` now routes through `os.Logger(subsystem: "com.fotolokashen.app", category: tag)` in DEBUG builds — filterable in Console.app and Instruments
+
+### 🌐 Web Contract Tests (Phase 4f)
+
+- Vitest contract suite in web workspace: `src/lib/__tests__/mobileApiV1Contract.test.ts` (21 tests)
+- `src/lib/schemas/mobileApiV1.ts` — canonical Zod schemas for all mobile API shapes
+- Strict mode rejects `latitude`/`longitude` keys; source-scan layer fails build if any `/api/v1/` handler emits them
+
+---
+
+## [Unreleased]
+
+_No unreleased changes._
+
+---
+
+## [1.5.1] - 2026-04-26
 
 ### 🧪 Test Coverage (Phases 4a–4d)
 

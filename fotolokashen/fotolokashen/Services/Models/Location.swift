@@ -393,6 +393,7 @@ struct UpdateLocationRequest: Codable {
     var access: String? = nil
     var indoorOutdoor: String? = nil
     var isPermanent: Bool? = nil
+    var details: String? = nil       // Free-text "Details" field from iOS Create form
     // Address components
     var street: String? = nil
     var number: String? = nil
