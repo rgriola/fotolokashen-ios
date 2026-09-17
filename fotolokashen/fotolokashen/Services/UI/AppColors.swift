@@ -19,16 +19,15 @@ import SwiftUI
 extension Color {
 
     // MARK: - Brand
-
     /// Primary brand color — web token: `primary` / `social`
     ///
-    static let brand = Color(hex: "#5B4CFF")
+    static let brand = Color(hex: "#5B4CFF") //  5038f5
+    /// Social features (follow, people) — web token: `social`
+    static let social = Color(hex: "#5B4CFF")
     /// Darker brand variant for pressed/active states
-    static let brandDark = Color(hex: "#4D40E6")
-
+    static let brandDark = Color(hex: "#2a1d7f")
 
     // MARK: - Semantic Intent
-
     /// Error, delete, destructive actions — web token: `destructive`
     static let destructive = Color(.systemRed)
 
@@ -38,12 +37,7 @@ extension Color {
     /// Warning, caution — web token: `warning`
     static let warning = Color(.systemOrange)
 
-    /// Social features (follow, people) — web token: `social`
-    static let social = Color(hex: "#5B4CFF")
-
     // MARK: - Color Extension
-
-
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0

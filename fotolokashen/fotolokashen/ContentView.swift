@@ -52,16 +52,18 @@ struct LoginView: View {
                 Image("FLogo")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 120, height: 120)
+                   // .frame(width: 120, height: 120)
                 
+             /*
                 Text("fotolokashen")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
+            */
                 
-                Text("Location Intel for Production")
+                Text("Production Knowledge")
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(.white)
                 
                 Spacer()
                 
@@ -116,9 +118,10 @@ struct LoginView: View {
                     }
                     .disabled(authService.isLoading)
                     
-                    Text("Secure sign-in via \(ConfigLoader.shared.backendBaseURL.replacingOccurrences(of: "https://", with: ""))")
+                  /*  Text("Secure sign-in via \(ConfigLoader.shared.backendBaseURL.replacingOccurrences(of: "https://", with: ""))")
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.7))
+                        */
                 }
                 .padding(.horizontal, 40)
                 

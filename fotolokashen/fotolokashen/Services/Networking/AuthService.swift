@@ -29,6 +29,9 @@ class AuthService: ObservableObject {
     // ASWebAuthenticationSession (retained to keep the session alive)
     private var webAuthSession: ASWebAuthenticationSession?
     private let presentationContextProvider = AuthPresentationContextProvider()
+
+    // In-flight token refresh, shared by concurrent callers
+    private var refreshTask: Task<Void, Error>?
     
     // MARK: - Initialization
     
@@ -115,10 +118,15 @@ class AuthService: ObservableObject {
                     }
                     LaunchTimer.mark("checkAuthStatus() — token refresh FAILED")
                     #endif
-                    if isAuthenticated { isAuthenticated = false }
-                    if currentUser != nil { currentUser = nil }
-                    try? keychainService.clearTokens()
-                    return
+                    if isUnrecoverableAuthError(error) {
+                        if isAuthenticated { isAuthenticated = false }
+                        if currentUser != nil { currentUser = nil }
+                        try? keychainService.clearTokens()
+                        return
+                    }
+                    // Offline or server-side failure — keep the tokens. Stay signed in only
+                    // if the cached access token has not actually expired yet.
+                    if keychainService.isTokenExpired() { return }
                 }
             }
             
@@ -617,8 +625,36 @@ class AuthService: ObservableObject {
         try await refreshToken()
     }
     
-    /// Force refresh the access token
+    /// True only when the server has definitively rejected our credentials.
+    /// Network failures and 5xx responses must not count, or going offline logs the user out.
+    private func isUnrecoverableAuthError(_ error: Error) -> Bool {
+        if case AuthError.noRefreshToken = error { return true }
+        guard let apiError = error as? APIError else { return false }
+        switch apiError {
+        case .unauthorized:
+            return true
+        case .apiError(_, let code):
+            return code == "INVALID_GRANT"
+        default:
+            return false
+        }
+    }
+
+    /// Force refresh the access token.
+    /// Concurrent callers share one request — the server drops the previous `ios` session on
+    /// every refresh, so overlapping refreshes would orphan each other's access token.
     private func refreshToken() async throws {
+        if let existing = refreshTask {
+            return try await existing.value
+        }
+
+        let task = Task { try await performTokenRefresh() }
+        refreshTask = task
+        defer { refreshTask = nil }
+        return try await task.value
+    }
+
+    private func performTokenRefresh() async throws {
         guard let refreshToken = keychainService.getRefreshToken() else {
             throw AuthError.noRefreshToken
         }
@@ -639,7 +675,10 @@ class AuthService: ObservableObject {
             country: Locale.current.region?.identifier
         )
         
-        let tokenResponse: TokenResponse = try await apiClient.post(
+        // The refresh grant only returns a new access token (no refresh_token/user) —
+        // decoding as TokenResponse throws keyNotFound and silently orphans the new
+        // token the server already committed, which is what caused the logout bug.
+        let refreshResponse: RefreshTokenResponse = try await apiClient.post(
             "/api/auth/oauth/token",
             body: refreshRequest,
             authenticated: false
@@ -651,13 +690,9 @@ class AuthService: ObservableObject {
         }
         #endif
         
-        // Save new tokens
-        let token = OAuthToken(from: tokenResponse)
-        try keychainService.saveToken(token)
-        
-        // Update user info
-        currentUser = tokenResponse.user
-        isAuthenticated = true
+        // Rotate just the access token in place; refresh token + user stay as-is
+        let newExpiresAt = Date().addingTimeInterval(TimeInterval(refreshResponse.expiresIn))
+        try keychainService.updateAccessToken(refreshResponse.accessToken, expiresAt: newExpiresAt)
     }
     
     // MARK: - Logout

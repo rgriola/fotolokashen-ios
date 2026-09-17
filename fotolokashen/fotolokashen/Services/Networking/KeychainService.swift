@@ -47,6 +47,12 @@ class KeychainService {
         try? keychain.get(Keys.accessToken)
     }
     
+    /// Rotate the access token after a refresh, leaving the refresh token + user untouched
+    func updateAccessToken(_ accessToken: String, expiresAt: Date) throws {
+        try keychain.set(accessToken, key: Keys.accessToken)
+        try keychain.set(expiresAt.timeIntervalSince1970.description, key: Keys.tokenExpiry)
+    }
+    
     /// Retrieve refresh token from keychain
     func getRefreshToken() -> String? {
         try? keychain.get(Keys.refreshToken)
