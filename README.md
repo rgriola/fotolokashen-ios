@@ -79,18 +79,18 @@ The fotolokashen iOS app allows users to quickly capture photos with GPS coordin
 
 ## Tech Stack
 
-| Technology       | Purpose                             |
-| ---------------- | ----------------------------------- |
-| SwiftUI          | Declarative UI framework            |
-| Swift Concurrency| async/await + TaskGroup for networking and I/O |
-| AVFoundation     | Camera capture and raw photo data   |
-| PhotosUI         | PHPickerViewController for library  |
-| Google Maps SDK  | Map display and clustering          |
-| Apple CLGeocoder | Address lookup (primary)            |
-| ImageKit         | Cloud image storage                 |
-| SwiftData        | Local caching (iOS 17+)             |
-| Keychain         | Secure token storage                |
-| os.Logger        | Structured logging (debug builds)   |
+| Technology        | Purpose                                        |
+| ----------------- | ---------------------------------------------- |
+| SwiftUI           | Declarative UI framework                       |
+| Swift Concurrency | async/await + TaskGroup for networking and I/O |
+| AVFoundation      | Camera capture and raw photo data              |
+| PhotosUI          | PHPickerViewController for library             |
+| Google Maps SDK   | Map display and clustering                     |
+| Apple CLGeocoder  | Address lookup (primary)                       |
+| ImageKit          | Cloud image storage                            |
+| SwiftData         | Local caching (iOS 17+)                        |
+| Keychain          | Secure token storage                           |
+| os.Logger         | Structured logging (debug builds)              |
 
 ---
 
@@ -274,29 +274,29 @@ See [docs/API.md](./docs/API.md) for full reference.
 
 > ⚠️ **Note**: `docs/API.md` documents the legacy request/upload/confirm flow. The active upload flow uses `POST /api/photos/upload` (server-mediated). The `PUT /api/locations/{id}` shown in API.md is now `PATCH`. Full updated endpoint table is in the README backend table below.
 
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/api/auth/oauth/token` | POST | Exchange code for tokens |
-| `/api/auth/oauth/revoke` | POST | Revoke tokens on logout |
-| `/api/auth/delete-account` | DELETE | Delete account |
-| `/api/photos/upload` | POST | Secure photo upload |
-| `/api/v1/users/me` | GET/PATCH | Current user profile |
-| `/api/auth/avatar` | POST/DELETE | Avatar upload/delete |
-| `/api/auth/banner` | POST/DELETE | Banner upload/delete |
-| `/api/locations` | GET/POST | List / create locations |
-| `/api/locations/{id}` | GET/PATCH/DELETE | Location detail/update/delete |
-| `/api/locations/{id}/photos` | GET | List photos for location |
-| `/api/photos/{id}` | DELETE | Delete a photo |
-| `/api/v1/users/{username}` | GET | Public profile |
-| `/api/v1/users/{username}/follow` | POST | Follow user |
-| `/api/v1/users/{username}/unfollow` | POST | Unfollow user |
-| `/api/v1/users/{username}/followers` | GET | Paginated followers |
-| `/api/v1/users/{username}/following` | GET | Paginated following |
-| `/api/v1/users/{username}/locations` | GET | User's public locations |
-| `/api/v1/locations/public` | GET | All public locations (bounds) |
-| `/api/v1/locations/friends` | GET | Friends' locations |
-| `/api/v1/search/users` | GET | User search |
-| `/api/v1/search/suggestions` | GET | Username autocomplete |
+| Endpoint                             | Method           | Purpose                       |
+| ------------------------------------ | ---------------- | ----------------------------- |
+| `/api/auth/oauth/token`              | POST             | Exchange code for tokens      |
+| `/api/auth/oauth/revoke`             | POST             | Revoke tokens on logout       |
+| `/api/auth/delete-account`           | DELETE           | Delete account                |
+| `/api/photos/upload`                 | POST             | Secure photo upload           |
+| `/api/v1/users/me`                   | GET/PATCH        | Current user profile          |
+| `/api/auth/avatar`                   | POST/DELETE      | Avatar upload/delete          |
+| `/api/auth/banner`                   | POST/DELETE      | Banner upload/delete          |
+| `/api/locations`                     | GET/POST         | List / create locations       |
+| `/api/locations/{id}`                | GET/PATCH/DELETE | Location detail/update/delete |
+| `/api/locations/{id}/photos`         | GET              | List photos for location      |
+| `/api/photos/{id}`                   | DELETE           | Delete a photo                |
+| `/api/v1/users/{username}`           | GET              | Public profile                |
+| `/api/v1/users/{username}/follow`    | POST             | Follow user                   |
+| `/api/v1/users/{username}/unfollow`  | POST             | Unfollow user                 |
+| `/api/v1/users/{username}/followers` | GET              | Paginated followers           |
+| `/api/v1/users/{username}/following` | GET              | Paginated following           |
+| `/api/v1/users/{username}/locations` | GET              | User's public locations       |
+| `/api/v1/locations/public`           | GET              | All public locations (bounds) |
+| `/api/v1/locations/friends`          | GET              | Friends' locations            |
+| `/api/v1/search/users`               | GET              | User search                   |
+| `/api/v1/search/suggestions`         | GET              | Username autocomplete         |
 
 ---
 
@@ -312,6 +312,7 @@ Enable in `Config.plist`:
 Logs route through `os.Logger` in debug builds (filterable in Console.app and Instruments).
 
 Log prefixes:
+
 - `[APIClient]` — Network requests
 - `[LocationService]` — Location CRUD
 - `[LocationStore]` — State management
