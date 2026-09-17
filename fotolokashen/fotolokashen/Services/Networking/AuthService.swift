@@ -5,7 +5,7 @@ import AuthenticationServices
 
 /// Authentication service managing OAuth2 PKCE flow
 @MainActor
-class AuthService: ObservableObject {
+class AuthService: ObservableObject, TokenRefreshing {
     
     // MARK: - Published Properties
     
@@ -45,6 +45,7 @@ class AuthService: ObservableObject {
         print("[⏱️ AuthService] checkAuthStatus() took \(Int((t1 - t0) * 1000))ms")
         #endif
         setupSessionInvalidationObserver()
+        APIClient.setTokenRefresher(self)
         #if DEBUG
         print("[⏱️ AuthService] init() total: \(Int((CFAbsoluteTimeGetCurrent() - t0) * 1000))ms")
         #endif
@@ -603,7 +604,27 @@ class AuthService: ObservableObject {
     }
     
     // MARK: - Token Refresh
-    
+
+    /// Called by `APIClient` when an authenticated request is rejected with 401.
+    /// Shares the same single-flight refresh as every other caller, so a burst of
+    /// concurrent 401s produces exactly one token exchange.
+    func refreshAccessTokenForRetry(staleAccessToken: String?) async throws {
+        // The in-flight dedup in `refreshToken()` only covers overlapping calls. A request
+        // that 401s just after a refresh completed would otherwise start a second exchange,
+        // superseding the session again. If the Keychain already holds a different token,
+        // the 401 was caused by the caller's stale token — nothing to refresh.
+        if let staleAccessToken, keychainService.getAccessToken() != staleAccessToken {
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[AuthService] Token already rotated; retrying without a new exchange")
+            }
+            #endif
+            return
+        }
+
+        try await refreshToken()
+    }
+
     /// Refresh access token using refresh token
     func refreshTokenIfNeeded() async throws {
         // Check if refresh is needed
@@ -641,8 +662,9 @@ class AuthService: ObservableObject {
     }
 
     /// Force refresh the access token.
-    /// Concurrent callers share one request — the server drops the previous `ios` session on
-    /// every refresh, so overlapping refreshes would orphan each other's access token.
+    /// Concurrent callers share one request — the server supersedes the previous `ios`
+    /// session on every refresh, so overlapping refreshes would orphan each other's
+    /// access token once the grace window elapses.
     private func refreshToken() async throws {
         if let existing = refreshTask {
             return try await existing.value

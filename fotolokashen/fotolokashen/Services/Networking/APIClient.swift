@@ -3,8 +3,22 @@ import Foundation
 // MARK: - Notification Names
 
 extension Notification.Name {
-    /// Posted when the API returns 401, indicating the auth session is invalid
+    /// Posted when a request is rejected with 401 and a token refresh could not recover it,
+    /// indicating the auth session is genuinely invalid
     static let authSessionInvalidated = Notification.Name("authSessionInvalidated")
+}
+
+// MARK: - Token Refresh Hook
+
+/// Supplies a fresh access token when a request is rejected with 401.
+/// Implemented by `AuthService` and registered at launch so `APIClient` can recover
+/// from a stale token without depending on `AuthService` directly.
+@MainActor
+protocol TokenRefreshing: AnyObject {
+    /// - Parameter staleAccessToken: the token the failed request actually sent, or nil if
+    ///   unknown. Lets the refresher skip the exchange when the token has already been
+    ///   rotated by someone else.
+    func refreshAccessTokenForRetry(staleAccessToken: String?) async throws
 }
 
 /// Network client for making API requests to fotolokashen backend
@@ -13,6 +27,41 @@ class APIClient {
     // MARK: - Singleton
     
     static let shared = APIClient()
+
+    // MARK: - Token Refresh Registration
+
+    /// Registered by `AuthService` at launch. Weak so the client never keeps the
+    /// auth service alive. MainActor-isolated because `AuthService` is.
+    @MainActor private static weak var tokenRefresher: TokenRefreshing?
+
+    /// Wire up the token refresher. Call once during app startup.
+    @MainActor
+    static func setTokenRefresher(_ refresher: TokenRefreshing?) {
+        tokenRefresher = refresher
+    }
+
+    /// Attempt one token refresh. Returns false when there is no refresher registered
+    /// or the refresh failed, in which case the 401 stands.
+    @MainActor
+    private static func attemptTokenRefresh(staleAccessToken: String?) async -> Bool {
+        guard let refresher = tokenRefresher else { return false }
+        do {
+            try await refresher.refreshAccessTokenForRetry(staleAccessToken: staleAccessToken)
+            return true
+        } catch {
+            #if DEBUG
+            print("[APIClient] Token refresh for 401 retry failed: \(error)")
+            #endif
+            return false
+        }
+    }
+
+    /// Posted on the main actor: observers drive UI (logout) off this notification.
+    private static func notifySessionInvalidated() async {
+        await MainActor.run {
+            NotificationCenter.default.post(name: .authSessionInvalidated, object: nil)
+        }
+    }
     
     // MARK: - Properties
     
@@ -118,7 +167,8 @@ class APIClient {
         path: String,
         method: String,
         body: B? = nil as String?,
-        authenticated: Bool = true
+        authenticated: Bool = true,
+        allowRetry: Bool = true
     ) async throws -> T {
         // Build URL using string concatenation to preserve query parameters
         // (appendingPathComponent percent-encodes ? and & characters, breaking query strings)
@@ -143,10 +193,33 @@ class APIClient {
         
         // Make request
         let (data, response) = try await session.data(for: request)
-        
+
         // Validate response
         let httpResponse = try validateResponse(response)
-        
+
+        // A 401 on an authenticated request is far more often a stale access token than a
+        // dead session. Refresh once and retry before tearing the user's session down —
+        // logging out on the first 401 turns any transient server-side auth blip into a logout.
+        if httpResponse.statusCode == 401 && authenticated {
+            // Which token this attempt actually sent. If it has since been rotated by another
+            // request, the refresher skips the exchange and we just retry with the current one —
+            // otherwise N staggered 401s would trigger N sequential refreshes.
+            let sentAccessToken = request.value(forHTTPHeaderField: "Authorization")
+                .flatMap { $0.hasPrefix("Bearer ") ? String($0.dropFirst(7)) : nil }
+
+            if allowRetry, await Self.attemptTokenRefresh(staleAccessToken: sentAccessToken) {
+                return try await self.request(
+                    path: path,
+                    method: method,
+                    body: body,
+                    authenticated: authenticated,
+                    allowRetry: false
+                )
+            }
+            await Self.notifySessionInvalidated()
+            throw APIError.unauthorized
+        }
+
         // Handle status code and decode
         return try handleStatusCode(httpResponse.statusCode, data: data)
     }
@@ -259,10 +332,8 @@ class APIClient {
                 print("[APIClient] 401 Unauthorized - token is invalid or expired")
             }
             #endif
-            // Post notification so AuthService can handle logout
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(name: .authSessionInvalidated, object: nil)
-            }
+            // Reached only for unauthenticated requests (e.g. login). Authenticated 401s are
+            // handled in `request(...)`, which refreshes and retries before invalidating.
             throw APIError.unauthorized
             
         case 403:

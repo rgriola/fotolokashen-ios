@@ -135,19 +135,22 @@ final class APIClientTests: XCTestCase {
         }
     }
 
-    // MARK: - 401 Broadcast
+    // MARK: - 401 Handling
 
-    func test401PostsAuthSessionInvalidatedNotification() async {
+    /// A 401 on an *unauthenticated* request (e.g. a failed login) must not tear down an
+    /// existing session. Only an authenticated request that still 401s after a token
+    /// refresh-and-retry posts `.authSessionInvalidated`.
+    func test401OnUnauthenticatedRequestDoesNotInvalidateSession() async {
         URLProtocolStub.stub(json: #"{"error":"unauth"}"#, statusCode: 401)
 
-        let expectation = XCTNSNotificationExpectation(name: .authSessionInvalidated)
-        expectation.expectedFulfillmentCount = 1
+        let notPosted = XCTNSNotificationExpectation(name: .authSessionInvalidated)
+        notPosted.isInverted = true
 
         await assertThrows(APIError.unauthorized) {
             let _: Echo = try await self.client.get("/api/test", authenticated: false)
         }
 
-        await fulfillment(of: [expectation], timeout: 2.0)
+        await fulfillment(of: [notPosted], timeout: 0.5)
     }
 
     // MARK: - Helpers
