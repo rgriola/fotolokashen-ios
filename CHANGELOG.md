@@ -57,7 +57,18 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 ## [Unreleased]
 
-_No unreleased changes._
+### 🐛 Auth — Stop Transient 401s From Logging Users Out (APIClient + AuthService)
+
+- **Root cause**: a single 401 on any authenticated request immediately posted `.authSessionInvalidated`, logging the user out. Combined with a server-side session rotation race (fixed server-side), a token refresh or a brief DB blip was indistinguishable from a rejected credential.
+- **Fix**: `APIClient` now refreshes the access token and retries the request once before invalidating the session; `.authSessionInvalidated` only fires if the retry also 401s. `AuthService` registers itself weakly as a `TokenRefreshing` hook so `APIClient` has no direct dependency on it.
+- **Staggered-refresh guard**: the failed request passes the token it actually sent; if another request already rotated that token, the refresher skips the exchange and just retries with the current one — otherwise N staggered 401s would trigger N sequential refreshes and re-create the bug.
+- A 401 on an *unauthenticated* request (e.g. a failed login) no longer tears down an existing session.
+
+### 🐛 People Search Returned No Results (FollowService + Social.swift + PeopleSearchView)
+
+- **Root cause 1**: `GET /api/v1/search/users` and `/api/v1/search/suggestions` require auth server-side (the server excludes the caller from results), but `FollowService` called them with `authenticated: false` — every search 401'd.
+- **Root cause 2**: `UserSearchResponse` modeled a `users` array; the server actually returns `{ results, pagination, meta }`. Even with a valid token the response failed to decode. Both failures were silently swallowed, showing "No users found" either way.
+- **Fix**: both endpoints now send `authenticated: true`; `UserSearchResponse`/`SearchUser` match the real payload (new `SearchPagination` type — search paginates by `offset`, not `page`). `SearchUser.name` now composes `firstName`/`lastName` since the search endpoint never sends `displayName`.
 
 ---
 

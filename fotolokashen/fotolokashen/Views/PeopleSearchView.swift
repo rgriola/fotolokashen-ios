@@ -150,7 +150,7 @@ private struct DiscoverTab: View {
 
         do {
             let response = try await followService.searchUsers(query: query)
-            searchResults = response.users
+            searchResults = response.results
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {

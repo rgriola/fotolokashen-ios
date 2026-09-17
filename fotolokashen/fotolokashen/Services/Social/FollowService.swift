@@ -318,14 +318,15 @@ class FollowService: ObservableObject {
             let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
             let path = "/api/v1/search/users?q=\(encodedQuery)&type=\(type)&limit=\(limit)&offset=\(offset)"
 
+            // Requires auth: the server uses the caller's id to exclude them from results.
             let response: UserSearchResponse = try await apiClient.get(
                 path,
-                authenticated: false
+                authenticated: true
             )
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Search found \(response.users.count) users for query '\(query)'")
+                print("[FollowService] Search found \(response.results.count) users for query '\(query)'")
             }
             #endif
 
@@ -349,7 +350,7 @@ class FollowService: ObservableObject {
 
             let response: SearchSuggestionsResponse = try await apiClient.get(
                 path,
-                authenticated: false
+                authenticated: true
             )
 
             return response.suggestions

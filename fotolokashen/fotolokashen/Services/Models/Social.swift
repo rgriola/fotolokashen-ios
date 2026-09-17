@@ -146,11 +146,18 @@ struct FollowingResponse: Codable {
 
 // MARK: - People Search
 
+/// Search paginates by offset, unlike the page-based follower/following lists.
+struct SearchPagination: Codable {
+    let limit: Int
+    let offset: Int
+    let hasMore: Bool
+    let total: Int
+}
+
 /// Response from GET /api/v1/search/users
 struct UserSearchResponse: Codable {
-    let users: [SearchUser]
-    let total: Int?
-    let query: String?
+    let results: [SearchUser]
+    let pagination: SearchPagination
 }
 
 /// A user in search results
@@ -165,9 +172,15 @@ struct SearchUser: Codable, Identifiable, Equatable, Hashable {
     let city: String?
     let country: String?
 
-    /// Display name (falls back to username)
+    /// The search endpoint sends firstName/lastName rather than a composed
+    /// displayName, so fall back through both before showing the username.
     var name: String {
-        displayName ?? username
+        if let displayName, !displayName.isEmpty { return displayName }
+        let fullName = [firstName, lastName]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return fullName.isEmpty ? username : fullName
     }
 
     /// Avatar URL
