@@ -202,15 +202,17 @@ class MarkerIconGenerator {
     /// Camera icon on the left, count on the right, pin triangle at bottom.
     /// Color coded by count: ≤5 blue, >5 purple, >10 amber, >20 red.
     static func clusterIcon(count: Int) -> UIImage {
+
         // Dynamic width based on digit count (matches web)
         let countText = "\(count)"
         let digitCount = countText.count
         let width: CGFloat
+
         switch digitCount {
-        case 1: width = 68
-        case 2: width = 76
-        default: width = 84
-        }
+            case 1: width = 68
+            case 2: width = 76
+            default: width = 84
+            }
 
         let rectHeight: CGFloat = 40
         let pinHeight: CGFloat = 14
@@ -220,14 +222,14 @@ class MarkerIconGenerator {
         // Color based on count (matches web thresholds)
         let color: UIColor
         if count > 20 {
-            color = UIColor(red: 0.86, green: 0.15, blue: 0.15, alpha: 1) // #DC2626 red
+            color = UIColor(hex: "#3BD130") //- Green
         } else if count > 10 {
-            color = UIColor(red: 0.96, green: 0.62, blue: 0.04, alpha: 1) // #F59E0B amber
+            color = UIColor(hex: "#2FA827") //- Light Green
         } else if count > 5 {
-            color = UIColor(red: 0.55, green: 0.36, blue: 0.96, alpha: 1) // #8B5CF6 purple
+            color = UIColor(hex: "#247F1D") //- Dark Green
         } else {
-            color = UIColor(red: 0.23, green: 0.51, blue: 0.96, alpha: 1) // #3B82F6 blue
-        }
+            color = UIColor(hex: "#185714") //- Darker Green
+            }
 
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { context in

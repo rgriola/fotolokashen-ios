@@ -34,7 +34,7 @@ struct ImageCompressor: Sendable {
             qualityStep: 0.1              // Reduce by 10% each iteration
         )
         
-        init(
+        nonisolated init(
             targetBytes: Int = 1_500_000,
             qualityStart: CGFloat = 0.9,
             qualityFloor: CGFloat = 0.4,
