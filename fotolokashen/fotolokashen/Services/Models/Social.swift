@@ -344,6 +344,7 @@ struct MapSocialLocation: Codable, Identifiable, Equatable, Hashable {
     let type: String?
     let rating: Double?
     let caption: String?
+    let tags: [String]?
     let savedAt: String?
     let user: SocialLocationUser?
 

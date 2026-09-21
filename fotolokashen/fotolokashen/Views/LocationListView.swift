@@ -7,6 +7,7 @@ import UIKit
 struct LocationListView: View {
     @EnvironmentObject var authService: AuthService
     @ObservedObject private var locationStore = LocationStore.shared
+    @StateObject private var listViewModel = LocationListViewModel()
     @State private var searchText = ""
     @State private var selectedTypeFilter: String?
     @State private var sortOption: SortOption = .dateNewest
@@ -26,6 +27,9 @@ struct LocationListView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Friends / Public source toggles
+                sourceToggleRow
+
                 // Type filter chips
                 typeFilterBar
 
@@ -65,12 +69,76 @@ struct LocationListView: View {
             }
             .refreshable {
                 await locationStore.refreshLocations()
+                await listViewModel.refreshEnabledSources()
             }
         }
         .task {
             await locationStore.fetchLocations()
             await loadGroups()
         }
+    }
+
+    // MARK: - Source Toggle Row
+
+    /// Friends' and public locations are additive (not mutually exclusive) — matches
+    /// the Map screen's toggle semantics and the existing web/API merge behavior.
+    private var sourceToggleRow: some View {
+        HStack(spacing: 8) {
+            sourceToggleButton(
+                title: "Friends",
+                systemImage: listViewModel.showFriends ? "person.2.fill" : "person.2",
+                isOn: listViewModel.showFriends,
+                isLoading: listViewModel.isLoadingFriends
+            ) {
+                Task { await listViewModel.toggleFriends() }
+            }
+
+            sourceToggleButton(
+                title: "Public",
+                systemImage: listViewModel.showPublic ? "globe.americas.fill" : "globe.americas",
+                isOn: listViewModel.showPublic,
+                isLoading: listViewModel.isLoadingPublic
+            ) {
+                Task { await listViewModel.togglePublic() }
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.top, 8)
+    }
+
+    @ViewBuilder
+    private func sourceToggleButton(
+        title: String,
+        systemImage: String,
+        isOn: Bool,
+        isLoading: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: isOn ? .white : .primary))
+                        .scaleEffect(0.7)
+                } else {
+                    Image(systemName: systemImage)
+                }
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(isOn ? Color.brand : Color(.systemGray5))
+            .foregroundColor(isOn ? .white : .primary)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("\(title) locations"))
+        .accessibilityValue(Text(isOn ? "On" : "Off"))
+        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
     // MARK: - Type Filter Bar
@@ -89,7 +157,7 @@ struct LocationListView: View {
                     selectedTypeFilter = nil
                 }
 
-                // Type chips from available types in user's locations
+                // Type chips from available types in the currently displayed locations
                 ForEach(availableTypeFilters, id: \.self) { type in
                     FilterChip(
                         label: type,
@@ -107,51 +175,71 @@ struct LocationListView: View {
         .background(Color(.systemBackground))
     }
 
-    /// Types that actually exist in the user's locations
+    /// Types that actually exist in the currently displayed (merged) locations
     private var availableTypeFilters: [String] {
-        let types = Set(locationStore.locations.compactMap { $0.type })
+        let types = Set(mergedLocations.compactMap { $0.location.type })
         // Return in the order defined by LocationTypeColors
         return LocationTypeColors.allTypes.filter { types.contains($0) }
     }
-    
+
+    // MARK: - Merged Locations
+
+    /// Own locations merged with the currently-enabled friends/public sources, deduplicated by id
+    private var mergedLocations: [LocationWithSource] {
+        listViewModel.mergedLocations(own: locationStore.locations)
+    }
+
     // MARK: - Filtered and Sorted Locations
     
-    private var filteredAndSortedLocations: [Location] {
-        var locations = locationStore.locations
+    private var filteredAndSortedLocations: [LocationWithSource] {
+        var locations = mergedLocations
         
         // Apply search filter
         if !searchText.isEmpty {
-            locations = locations.filter { location in
-                location.name.localizedCaseInsensitiveContains(searchText) ||
-                (location.address?.localizedCaseInsensitiveContains(searchText) ?? false)
-            }
+            locations = locations.filter { matchesSearch($0.location, query: searchText) }
         }
         
         // Apply type filter
         if let typeFilter = selectedTypeFilter {
-            locations = locations.filter { $0.type == typeFilter }
+            locations = locations.filter { $0.location.type == typeFilter }
         }
         
         // Apply sorting
         switch sortOption {
         case .dateNewest:
-            locations.sort { ($0.createdDate ?? Date.distantPast) > ($1.createdDate ?? Date.distantPast) }
+            locations.sort { ($0.location.createdDate ?? Date.distantPast) > ($1.location.createdDate ?? Date.distantPast) }
         case .dateOldest:
-            locations.sort { ($0.createdDate ?? Date.distantPast) < ($1.createdDate ?? Date.distantPast) }
+            locations.sort { ($0.location.createdDate ?? Date.distantPast) < ($1.location.createdDate ?? Date.distantPast) }
         case .nameAZ:
-            locations.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            locations.sort { $0.location.name.localizedCaseInsensitiveCompare($1.location.name) == .orderedAscending }
         case .nameZA:
-            locations.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedDescending }
+            locations.sort { $0.location.name.localizedCaseInsensitiveCompare($1.location.name) == .orderedDescending }
         }
         
         return locations
+    }
+
+    /// Checks name (title), city, address, caption (description), tags, and owner — so
+    /// searching finds friends'/public locations by more than just their title.
+    private func matchesSearch(_ location: Location, query: String) -> Bool {
+        if location.name.localizedCaseInsensitiveContains(query) { return true }
+        if let city = location.city, city.localizedCaseInsensitiveContains(query) { return true }
+        if let address = location.address, address.localizedCaseInsensitiveContains(query) { return true }
+        if let caption = location.caption, caption.localizedCaseInsensitiveContains(query) { return true }
+        if let tags = location.tags, tags.contains(where: { $0.localizedCaseInsensitiveContains(query) }) { return true }
+        if let creator = location.creator {
+            if let username = creator.username, username.localizedCaseInsensitiveContains(query) { return true }
+            let fullName = [creator.firstName, creator.lastName].compactMap { $0 }.joined(separator: " ")
+            if !fullName.isEmpty, fullName.localizedCaseInsensitiveContains(query) { return true }
+        }
+        return false
     }
     
     // MARK: - Location List
     
     private var locationList: some View {
         List {
-            // ── Grouped locations (accordion sections) ────────────────
+            // ── Grouped locations (accordion sections, own locations only) ─
             if !groups.isEmpty {
                 ForEach(displayedGroups) { group in
                     Section {
@@ -194,24 +282,26 @@ struct LocationListView: View {
                 }
             }
 
-            // ── Ungrouped locations ───────────────────────────────────
+            // ── Ungrouped locations (own + friends' + public) ──────────
             if !showGroupsOnly {
-                ForEach(ungroupedLocations) { location in
+                ForEach(ungroupedLocations) { item in
                     NavigationLink {
-                        LocationDetailView(location: location)
+                        destinationView(for: item)
                     } label: {
-                        LocationRow(location: location)
+                        LocationRow(location: item.location, showAttribution: item.source != .own)
                     }
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            locationToDelete = location
-                            showingDeleteConfirmation = true
-                        } label: {
-                            Label("Delete", systemImage: "trash")
+                        if item.source == .own {
+                            Button(role: .destructive) {
+                                locationToDelete = item.location
+                                showingDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            .disabled(isDeleting)
                         }
-                        .disabled(isDeleting)
                     }
                 }
             }
@@ -297,14 +387,26 @@ struct LocationListView: View {
         }
     }
 
-    /// Locations belonging to a specific group (filtered + sorted)
+    /// Locations belonging to a specific group (own locations only — groups are owner-scoped)
     private func locationsForGroup(_ groupId: Int) -> [Location] {
-        filteredAndSortedLocations.filter { $0.groupId == groupId }
+        filteredAndSortedLocations.compactMap { item in
+            item.source == .own && item.location.groupId == groupId ? item.location : nil
+        }
     }
 
-    /// Locations NOT in any group
-    private var ungroupedLocations: [Location] {
-        filteredAndSortedLocations.filter { $0.groupId == nil }
+    /// Locations NOT in any group (own ungrouped + all friends'/public locations)
+    private var ungroupedLocations: [LocationWithSource] {
+        filteredAndSortedLocations.filter { $0.location.groupId == nil }
+    }
+
+    /// Read-only detail view for friends'/public locations; owner detail view for own locations
+    @ViewBuilder
+    private func destinationView(for item: LocationWithSource) -> some View {
+        if let social = item.socialLocation {
+            LocationDetailView(readOnlyContext: ReadOnlyLocationContext(socialLocation: social))
+        } else {
+            LocationDetailView(location: item.location)
+        }
     }
     
     // MARK: - Empty State

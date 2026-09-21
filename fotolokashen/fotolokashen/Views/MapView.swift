@@ -41,8 +41,7 @@ struct MapView: View {
                     },
                     onSocialMarkerTap: { socialLocation in
                         // Convert MapSocialLocation to ReadOnlyLocationContext for full detail view
-                        let context = createReadOnlyContext(from: socialLocation)
-                        selectedReadOnlyContext = context
+                        selectedReadOnlyContext = ReadOnlyLocationContext(socialLocation: socialLocation)
                     }
                 )
                 .ignoresSafeArea()
@@ -149,34 +148,6 @@ struct MapView: View {
         isLoadingFriends = false
     }
 
-    /// Convert MapSocialLocation to ReadOnlyLocationContext for displaying full LocationDetailView
-    private func createReadOnlyContext(from socialLocation: MapSocialLocation) -> ReadOnlyLocationContext {
-        // Synthesize a Location from MapSocialLocation
-        let location = Location(
-            id: socialLocation.id,
-            name: socialLocation.name,
-            address: socialLocation.address ?? "",
-            latitude: socialLocation.lat,
-            longitude: socialLocation.lng,
-            type: socialLocation.type ?? "OTHER",
-            placeId: socialLocation.placeId ?? "",
-            createdAt: socialLocation.savedAt ?? "",
-            photosCount: 0,  // Photos will be fetched by LocationDetailView
-            thumbnailUrl: nil,
-            userSaveId: nil,
-            city: socialLocation.city,
-            state: socialLocation.state,
-            caption: socialLocation.caption
-        )
-
-        return ReadOnlyLocationContext(
-            id: socialLocation.id,
-            location: location,
-            ownerUsername: socialLocation.user?.username ?? "",
-            ownerDisplayName: socialLocation.user?.displayName ?? "",
-            photos: []  // Photos will be fetched by LocationDetailView via fetchPhotosFromPublicProfile
-        )
-    }
 }
 
 // MARK: - Clustered Map View
