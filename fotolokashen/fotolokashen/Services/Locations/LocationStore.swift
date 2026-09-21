@@ -15,6 +15,20 @@ struct ReadOnlyLocationContext: Identifiable, Equatable {
     }
 }
 
+extension ReadOnlyLocationContext {
+    /// Synthesizes a read-only context from a friend's/public `MapSocialLocation`.
+    /// Shared by the Map screen and My Spots list so both navigate to the same read-only detail view.
+    init(socialLocation: MapSocialLocation) {
+        self.init(
+            id: socialLocation.id,
+            location: Location(socialLocation: socialLocation),
+            ownerUsername: socialLocation.user?.username ?? "",
+            ownerDisplayName: socialLocation.user?.displayName ?? "",
+            photos: []
+        )
+    }
+}
+
 /// Facade kept for backward compatibility — Phase 2b split the original store
 /// into:
 ///   • `LocationRepository` — owns `locations`, CRUD against the API.

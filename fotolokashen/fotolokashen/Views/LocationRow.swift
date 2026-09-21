@@ -5,8 +5,16 @@ import Kingfisher
 /// Vertical layout: photo carousel on top, name/address/badge below, three-dot menu.
 struct LocationRow: View {
     let location: Location
+    /// When true, shows a "Saved by @username" line for locations sourced from a friend/public feed.
+    var showAttribution: Bool = false
 
     @State private var currentPhotoIndex = 0
+
+    /// "Saved by @username" attribution text, only shown when `showAttribution` is true and a creator is known.
+    private var attributionText: String? {
+        guard showAttribution, let username = location.creator?.username, !username.isEmpty else { return nil }
+        return "Saved by @\(username)"
+    }
 
     // MARK: - Photo URLs
 
@@ -100,6 +108,13 @@ struct LocationRow: View {
                     Image(systemName: "heart.fill")
                         .font(.caption2)
                         .foregroundColor(.destructive)
+                }
+
+                // Attribution (friend/public locations)
+                if let attributionText {
+                    Text(attributionText)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
             .padding(.horizontal, 12)

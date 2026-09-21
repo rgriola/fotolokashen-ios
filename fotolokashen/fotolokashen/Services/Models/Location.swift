@@ -149,6 +149,31 @@ struct Location: Codable, Identifiable {
         self.restrictions = nil
     }
 
+    /// Synthesizes a read-only `Location` from a friend's/public `MapSocialLocation`
+    /// (My Spots list, map markers) so it can be displayed through the same views as owned locations.
+    init(socialLocation: MapSocialLocation) {
+        self.init(
+            id: socialLocation.id,
+            name: socialLocation.name,
+            address: socialLocation.address ?? "",
+            latitude: socialLocation.lat,
+            longitude: socialLocation.lng,
+            type: socialLocation.type ?? "OTHER",
+            placeId: socialLocation.placeId,
+            createdAt: socialLocation.savedAt ?? "",
+            photosCount: nil,
+            thumbnailUrl: nil,
+            city: socialLocation.city,
+            state: socialLocation.state,
+            caption: socialLocation.caption,
+            tags: socialLocation.tags,
+            visibility: "public",
+            creator: socialLocation.user.map {
+                Creator(id: $0.id, username: $0.username, email: nil, firstName: $0.firstName, lastName: $0.lastName)
+            }
+        )
+    }
+
     /// Latitude (convenience property)
     var latitude: Double { lat }
 
