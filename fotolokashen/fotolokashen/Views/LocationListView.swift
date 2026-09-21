@@ -37,6 +37,9 @@ struct LocationListView: View {
                     if locationStore.isLoading && locationStore.locations.isEmpty {
                         // Loading state with skeleton
                         skeletonLoadingView
+                    } else if !locationStore.errorMessage.isEmpty && locationStore.locations.isEmpty {
+                        // Load failed with nothing cached to show — offer a retry
+                        errorStateView
                     } else if filteredAndSortedLocations.isEmpty {
                         // Empty state
                         emptyStateView
@@ -409,6 +412,36 @@ struct LocationListView: View {
         }
     }
     
+    // MARK: - Error State
+
+    private var errorStateView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 60))
+                .foregroundColor(.secondary)
+
+            Text("Couldn't Load Locations")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text(locationStore.errorMessage)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Button {
+                Task { await locationStore.refreshLocations() }
+            } label: {
+                Label("Retry", systemImage: "arrow.clockwise")
+                    .font(.headline)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top)
+        }
+        .padding()
+    }
+
     // MARK: - Empty State
     
     private var emptyStateView: some View {

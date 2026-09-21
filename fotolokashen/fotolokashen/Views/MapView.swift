@@ -3,6 +3,7 @@ import GoogleMaps
 import GoogleMapsUtils
 import CoreLocation
 import Combine
+import MapKit
 
 /// Map view showing all user locations as markers with clustering
 /// Supports toggling friends' locations (purple markers) on the map
@@ -25,6 +26,8 @@ struct MapView: View {
     @State private var showFriendsLocations = false
     @State private var friendsLocations: [MapSocialLocation] = []
     @State private var isLoadingFriends = false
+    @StateObject private var placeSearchService = MapPlaceSearchService()
+    @State private var searchedPlacePin: SearchedPlacePin? = nil
     
     var body: some View {
         NavigationStack {
@@ -36,6 +39,7 @@ struct MapView: View {
                     selectedLocation: $selectedLocation,
                     centerOnUserLocation: $centerOnUserLocation,
                     focusCoordinate: $focusCoordinate,
+                    searchedPlacePin: $searchedPlacePin,
                     onMarkerTap: { location in
                         selectedLocation = location
                     },
@@ -45,6 +49,12 @@ struct MapView: View {
                     }
                 )
                 .ignoresSafeArea()
+                .overlay(alignment: .top) {
+                    MapPlaceSearchOverlay(searchService: placeSearchService) { suggestion in
+                        Task { await resolveSearchSelection(suggestion) }
+                    }
+                    .padding(.top, 8)
+                }
                 
                 // Bottom buttons
                 VStack {
@@ -148,6 +158,33 @@ struct MapView: View {
         isLoadingFriends = false
     }
 
+    /// Resolves a tapped Apple Maps suggestion to a coordinate and focuses the map there.
+    private func resolveSearchSelection(_ suggestion: MKLocalSearchCompletion) async {
+        do {
+            guard let mapItem = try await placeSearchService.resolve(suggestion) else { return }
+            let coordinate = mapItem.placemark.coordinate
+            focusCoordinate = coordinate
+            searchedPlacePin = SearchedPlacePin(coordinate: coordinate, name: mapItem.name ?? suggestion.title)
+        } catch {
+            #if DEBUG
+            dlog("MapView", "Failed to resolve search selection: \(error)")
+            #endif
+        }
+        placeSearchService.clear()
+    }
+
+}
+
+/// A dropped pin for an Apple Maps search result, shown until the next search selection.
+struct SearchedPlacePin: Equatable {
+    let coordinate: CLLocationCoordinate2D
+    let name: String
+
+    static func == (lhs: SearchedPlacePin, rhs: SearchedPlacePin) -> Bool {
+        lhs.coordinate.latitude == rhs.coordinate.latitude &&
+        lhs.coordinate.longitude == rhs.coordinate.longitude &&
+        lhs.name == rhs.name
+    }
 }
 
 // MARK: - Clustered Map View
@@ -158,6 +195,7 @@ struct ClusteredMapView: UIViewRepresentable {
     @Binding var selectedLocation: Location?
     @Binding var centerOnUserLocation: Bool
     @Binding var focusCoordinate: CLLocationCoordinate2D?
+    @Binding var searchedPlacePin: SearchedPlacePin?
     let onMarkerTap: (Location) -> Void
     let onSocialMarkerTap: (MapSocialLocation) -> Void
     
@@ -221,6 +259,16 @@ struct ClusteredMapView: UIViewRepresentable {
             DispatchQueue.main.async {
                 self.focusCoordinate = nil
             }
+        }
+
+        // Show/update the dropped pin for the currently searched Apple Maps place
+        if let pin = searchedPlacePin {
+            context.coordinator.searchMarker?.map = nil
+            let marker = GMSMarker(position: pin.coordinate)
+            marker.title = pin.name
+            marker.icon = GMSMarker.markerImage(with: .systemRed)
+            marker.map = mapView
+            context.coordinator.searchMarker = marker
         }
         
         // Clear existing markers and polylines
@@ -388,6 +436,7 @@ struct ClusteredMapView: UIViewRepresentable {
         var gmsMapView: GMSMapView?
         var markers: [GMSMarker] = []
         var polylines: [GMSPolyline] = []
+        var searchMarker: GMSMarker?
         private var locationObservation: NSKeyValueObservation?
         
         init(_ parent: ClusteredMapView) {

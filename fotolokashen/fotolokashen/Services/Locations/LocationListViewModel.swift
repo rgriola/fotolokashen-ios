@@ -58,7 +58,11 @@ final class LocationListViewModel: ObservableObject {
         isLoadingFriends = true
         defer { isLoadingFriends = false }
         do {
-            friendLocations = try await followService.getFriendsLocations()
+            // Bounded so a hung request can't leave isLoadingFriends stuck true
+            // with no in-app recovery path (see LocationRepository.refreshLocations).
+            friendLocations = try await withTimeout(seconds: 45) { [followService] in
+                try await followService.getFriendsLocations()
+            }
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
@@ -72,7 +76,9 @@ final class LocationListViewModel: ObservableObject {
         isLoadingPublic = true
         defer { isLoadingPublic = false }
         do {
-            publicLocations = try await followService.getPublicLocations()
+            publicLocations = try await withTimeout(seconds: 45) { [followService] in
+                try await followService.getPublicLocations()
+            }
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {

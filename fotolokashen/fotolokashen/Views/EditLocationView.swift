@@ -100,6 +100,12 @@ struct EditLocationView: View {
 
             Toggle("Favorite", isOn: $viewModel.isFavorite)
                 .tint(.yellow)
+
+            Picker("Visibility", selection: $viewModel.visibility) {
+                Label("Public — Anyone can view", systemImage: "globe").tag("public")
+                Label("Unlisted — Only with link", systemImage: "link").tag("unlisted")
+                Label("Private — Only you", systemImage: "lock.fill").tag("private")
+            }
         } header: {
             Label("Basic Info", systemImage: "info.circle")
         }

@@ -117,11 +117,13 @@ struct LoginView: View {
                             .foregroundColor(.white.opacity(0.8))
                     }
                     .disabled(authService.isLoading)
-                    
-                  /*  Text("Secure sign-in via \(ConfigLoader.shared.backendBaseURL.replacingOccurrences(of: "https://", with: ""))")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.7))
-                        */
+
+                    #if DEBUG
+                    // Shows which backend the app is hitting, to confirm dev-server connectivity.
+                    Text("Connected to: \(ConfigLoader.shared.backendBaseURL)")
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.6))
+                    #endif
                 }
                 .padding(.horizontal, 40)
                 

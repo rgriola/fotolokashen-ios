@@ -37,7 +37,6 @@ struct LocationDetailView: View {
     private var isLoadingPhotos: Bool { viewModel.isLoadingPhotos }
     private var userSaveDetails: UserSaveWithLocation? { viewModel.userSaveDetails }
     private var locationVisibility: String { viewModel.locationVisibility }
-    private var isSavingVisibility: Bool { viewModel.isSavingVisibility }
 
     // =========================================================================
     // MARK: - Environment & Local UI State
@@ -413,42 +412,22 @@ struct LocationDetailView: View {
     // MARK: - Visibility Control (OWNER MODE ONLY)
     // =========================================================================
 
-    /// Dropdown menu for changing location visibility
-    /// Only shown in owner mode
+    /// Read-only visibility badge. Changing visibility now happens exclusively
+    /// through the Edit Location sheet, alongside the other UserSave fields.
     private var visibilityControlRow: some View {
         HStack {
-            if isSavingVisibility {
-                ProgressView()
-                    .scaleEffect(0.75)
-                    .frame(height: 28)
-            } else {
-                Menu {
-                    Button(action: { viewModel.changeVisibility("public") }) {
-                        Label("Public — Anyone can view", systemImage: "globe")
-                    }
-                    Button(action: { viewModel.changeVisibility("unlisted") }) {
-                        Label("Unlisted — Only with link", systemImage: "link")
-                    }
-                    Button(action: { viewModel.changeVisibility("private") }) {
-                        Label("Private — Only you", systemImage: "lock.fill")
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: visibilityIcon(for: locationVisibility))
-                            .font(.caption)
-                        Text(visibilityLabel(for: locationVisibility))
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                        Image(systemName: "chevron.up.chevron.down")
-                            .font(.caption2)
-                    }
-                    .foregroundColor(visibilityColor(for: locationVisibility))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(visibilityColor(for: locationVisibility).opacity(0.12))
-                    .clipShape(Capsule())
-                }
+            HStack(spacing: 4) {
+                Image(systemName: visibilityIcon(for: locationVisibility))
+                    .font(.caption)
+                Text(visibilityLabel(for: locationVisibility))
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
             }
+            .foregroundColor(visibilityColor(for: locationVisibility))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(visibilityColor(for: locationVisibility).opacity(0.12))
+            .clipShape(Capsule())
             Spacer()
         }
         .padding(.vertical, 4)

@@ -1,5 +1,33 @@
 import Foundation
 
+// MARK: - Bounded Async Timeout
+
+/// Thrown by `withTimeout` when `operation` doesn't complete within `seconds`.
+struct TaskTimeoutError: LocalizedError {
+    var errorDescription: String? { "The request timed out. Please check your connection and try again." }
+}
+
+/// Races `operation` against a timer so a hung await (e.g. a `URLSession` task
+/// left dangling by the OS after app suspension, which never fires its own
+/// `timeoutIntervalForRequest`/`timeoutIntervalForResource`) can never block
+/// the caller forever. Callers should still reset their own loading flags in
+/// a `defer` — this only guarantees that defer eventually runs.
+func withTimeout<T: Sendable>(
+    seconds: TimeInterval,
+    operation: @escaping @Sendable () async throws -> T
+) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask { try await operation() }
+        group.addTask {
+            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            throw TaskTimeoutError()
+        }
+        defer { group.cancelAll() }
+        guard let result = try await group.next() else { throw TaskTimeoutError() }
+        return result
+    }
+}
+
 // MARK: - Notification Names
 
 extension Notification.Name {

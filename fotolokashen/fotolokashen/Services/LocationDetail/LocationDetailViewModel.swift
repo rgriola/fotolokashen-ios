@@ -60,7 +60,6 @@ final class LocationDetailViewModel: ObservableObject {
     @Published var isLoadingDetails = true
 
     @Published var locationVisibility: String
-    @Published var isSavingVisibility = false
 
     // MARK: - Configuration
 
@@ -183,39 +182,13 @@ final class LocationDetailViewModel: ObservableObject {
         isLoadingDetails = false
     }
 
-    // MARK: - Visibility
-
-    /// Changes the location's visibility (owner mode only).
-    /// Optimistically updates UI; reverts on failure.
-    func changeVisibility(_ newVisibility: String) {
-        guard !mode.isReadOnly else { return }
-        guard newVisibility != locationVisibility else { return }
-        let previous = locationVisibility
-        locationVisibility = newVisibility
-        Task { [weak self] in
-            guard let self else { return }
-            self.isSavingVisibility = true
-            var request = UpdateLocationRequest()
-            request.visibility = newVisibility
-            if let updated = await LocationStore.shared.updateLocation(
-                self.currentLocation,
-                request: request
-            ) {
-                self.currentLocation = updated
-                self.locationVisibility = updated.visibility ?? "private"
-            } else {
-                self.locationVisibility = previous
-            }
-            self.isSavingVisibility = false
-        }
-    }
-
     // MARK: - Edit Apply
 
     /// Apply an edited location (returned from the edit sheet) and reload
     /// photo + user-save data.
     func applyEdited(_ updated: Location) async {
         currentLocation = updated
+        locationVisibility = updated.visibility ?? "private"
         await loadPhotos()
         await loadUserSaveDetails()
     }

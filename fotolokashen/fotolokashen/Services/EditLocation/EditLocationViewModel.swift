@@ -48,6 +48,7 @@ final class EditLocationViewModel: ObservableObject {
     @Published var color: String = ""
     @Published var caption: String = ""
     @Published var tagsText: String = ""  // comma-separated
+    @Published var visibility: String = "private"
 
     // MARK: - Photos State
 
@@ -105,6 +106,7 @@ final class EditLocationViewModel: ObservableObject {
         color = location.color ?? ""
         caption = location.caption ?? ""
         tagsText = (location.tags ?? []).joined(separator: ", ")
+        visibility = location.visibility ?? "private"
 
         if let date = location.productionDate {
             hasProductionDate = true
@@ -187,7 +189,8 @@ final class EditLocationViewModel: ObservableObject {
             tags: parsedTags.isEmpty ? nil : parsedTags,
             isFavorite: isFavorite,
             personalRating: personalRating > 0 ? personalRating : nil,
-            color: color.isEmpty ? nil : color
+            color: color.isEmpty ? nil : color,
+            visibility: visibility
         )
 
         // Step 1: Delete marked photos

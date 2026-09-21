@@ -41,10 +41,16 @@ final class LocationRepository: ObservableObject {
         guard !isLoading else { return }
 
         isLoading = true
+        errorMessage = ""
         defer { isLoading = false }
 
         do {
-            locations = try await locationService.fetchLocations()
+            // Bounded so a hung request (e.g. a URLSession task orphaned by app
+            // suspension, which never fires its own timeout) can't leave
+            // `isLoading` stuck true forever with no in-app recovery path.
+            locations = try await withTimeout(seconds: 45) { [locationService] in
+                try await locationService.fetchLocations()
+            }
             #if DEBUG
             if config.enableDebugLogging {
                 print("[LocationRepository] Refreshed \(locations.count) locations")
@@ -56,7 +62,7 @@ final class LocationRepository: ObservableObject {
                 print("[LocationRepository] Error refreshing locations: \(error)")
             }
             #endif
-            errorMessage = error.localizedDescription
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
 
