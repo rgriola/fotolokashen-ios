@@ -18,7 +18,7 @@ class AuthService: ObservableObject, TokenRefreshing {
     
     // MARK: - Properties
     
-    private let apiClient = APIClient.shared
+    private let apiClient: APIClient
     private let keychainService = KeychainService.shared
     private let config = ConfigLoader.shared
     
@@ -32,10 +32,25 @@ class AuthService: ObservableObject, TokenRefreshing {
 
     // In-flight token refresh, shared by concurrent callers
     private var refreshTask: Task<Void, Error>?
+
+    #if DEBUG
+    /// Test-only hook to seed PKCE state without driving a real
+    /// `ASWebAuthenticationSession` through `startLogin()`. Lets unit tests
+    /// exercise `handleCallback(url:)` directly. Not intended for production
+    /// use — compiled out of Release builds.
+    func debugSeedCodeVerifierForTesting(_ verifier: String) {
+        self.codeVerifier = verifier
+    }
+    #endif
     
     // MARK: - Initialization
-    
-    init() {
+
+    /// - Parameter apiClient: Defaults to the shared singleton. Overridable
+    ///   only to let unit tests inject a stubbed `APIClient` (see
+    ///   `APIClient(session:baseURL:)`); production call sites always use
+    ///   the default.
+    init(apiClient: APIClient = .shared) {
+        self.apiClient = apiClient
         #if DEBUG
         let t0 = CFAbsoluteTimeGetCurrent()
         #endif
@@ -464,9 +479,65 @@ class AuthService: ObservableObject, TokenRefreshing {
     }
     
     // MARK: - Token Exchange
-    
-    /// Exchange authorization code for access token
+
+    /// Tracks an in-flight authorization-code exchange so a duplicate OAuth
+    /// callback for the *same* code is coalesced into the original request
+    /// instead of firing a second token exchange. This guards against the
+    /// custom-scheme redirect being delivered to the app twice — once via
+    /// `ASWebAuthenticationSession`'s completion handler and once via
+    /// `onOpenURL` — which previously caused two concurrent requests for the
+    /// same single-use authorization code and an iOS "Token Exchange Failed"
+    /// error (the server now also rejects this as a safety net, but
+    /// de-duplicating here avoids the spurious failure altogether).
+    private var inFlightCodeExchange: (code: String, task: Task<Void, Error>)?
+
+    /// The most recent authorization code that was exchanged successfully.
+    /// The in-flight guard above only covers duplicates that overlap the
+    /// original request; a duplicate callback delivered *after* the exchange
+    /// finished would otherwise start a fresh exchange, fail on the already
+    /// cleared PKCE verifier, and surface a login error to a user who is in
+    /// fact signed in. Remembering the last completed code makes the late
+    /// duplicate a no-op.
+    private var lastCompletedCodeExchange: String?
+
+    /// Exchange authorization code for access token.
+    /// Safe to call multiple times with the same `code`: duplicate calls
+    /// await the original in-flight request (or return immediately if it has
+    /// already succeeded) rather than re-sending it.
     private func exchangeCodeForTokens(code: String) async throws {
+        if lastCompletedCodeExchange == code {
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[AuthService] Duplicate OAuth callback for already-exchanged code — ignoring")
+            }
+            #endif
+            return
+        }
+
+        if let inFlight = inFlightCodeExchange, inFlight.code == code {
+            #if DEBUG
+            if config.enableDebugLogging {
+                print("[AuthService] Duplicate OAuth callback for same code — reusing in-flight exchange")
+            }
+            #endif
+            try await inFlight.task.value
+            return
+        }
+
+        let task = Task {
+            try await self.performCodeExchange(code: code)
+            self.lastCompletedCodeExchange = code
+        }
+        inFlightCodeExchange = (code, task)
+        defer {
+            if inFlightCodeExchange?.code == code {
+                inFlightCodeExchange = nil
+            }
+        }
+        try await task.value
+    }
+
+    private func performCodeExchange(code: String) async throws {
         guard let verifier = codeVerifier else {
             throw AuthError.missingCodeVerifier
         }
