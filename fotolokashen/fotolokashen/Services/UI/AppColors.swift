@@ -21,9 +21,9 @@ extension Color {
     // MARK: - Brand
     /// Primary brand color — web token: `primary` / `social`
     ///
-    static let brand = Color(hex: "#5B4CFF") //  5038f5
+    static let brand = Color(hex: "#5038f5") //  5038f5
     /// Social features (follow, people) — web token: `social`
-    static let social = Color(hex: "#5B4CFF")
+    static let social = Color(hex: "#5038f5") // changed Oct 18 2026. Same as Web
     /// Darker brand variant for pressed/active states
     static let brandDark = Color(hex: "#2a1d7f")
 
