@@ -16,7 +16,7 @@ These facts replace the corresponding assumptions in the September evaluation:
 | --- | --- |
 | 1.6.2 (62) on an iOS 27 device | **Tested by Rod — everything works as expected.** No emergency fixes are needed for current users. |
 | GoogleMaps SDK on iOS 27 (D-1) | **Confirmed working.** No longer a blocker. |
-| Xcode 27 | Released, but not on this Mac. **The project must be moved to another computer** (task 7.0, Step 0) to build against the iOS 27 SDK. Because GoogleMaps is confirmed, 1.7.0 is built with the iOS 27 SDK (Step 3). |
+| Xcode 27 | **Xcode 27.1 (27A9275) is now installed on this Mac** (iOS 27.1 simulator SDK). This Mac is the single build machine; no port to a second computer is needed (task 7.0 done here). Because GoogleMaps is confirmed, 1.7.0 is built with the iOS 27 SDK (Step 3). |
 | Minimum iOS version | **Decision: iOS 18.0** — Step 6 of the plan (tasks 8.x). Raise `IPHONEOS_DEPLOYMENT_TARGET` from 17.0 to 18.0. Task 7.6's earlier "leave at 17.0" recommendation is replaced. |
 | Privacy manifest (P-1) | Downgraded from "current submission blocker". The app has passed review without one, and no first-party required-reason APIs are used. Still required work for 1.7.0. |
 | KeychainAccess (P-2) | Correction: KeychainAccess is **not** on Apple's commonly-used-SDK list. Removing it is still recommended as part of S-3/D-3. |
@@ -76,7 +76,7 @@ _Re-checked October 28, 2026 against 1.6.2 (62); only version numbers changed si
 
 | Item                             | Value                                                         |
 | -------------------------------- | ------------------------------------------------------------- |
-| Xcode installed (this Mac)       | 26.6 (Build 17F113) — Xcode 27 to be used on a second computer |
+| Xcode installed (this Mac)       | 27.1 (Build 27A9275) — was 26.6 (17F113) at the September assessment |
 | `IPHONEOS_DEPLOYMENT_TARGET`     | 17.0 (**target: 18.0**, Step 6)                               |
 | `SWIFT_VERSION`                  | 5.0 (Swift 5 language mode, **not** Swift 6)                  |
 | `SWIFT_DEFAULT_ACTOR_ISOLATION`  | MainActor                                                     |
@@ -278,9 +278,9 @@ Each task states its own verification criterion. **Phases 0–6 and 8 are all ex
 
 ---
 
-### Phase 7 — Build against the iOS 27 SDK `(requires the Xcode 27 computer; 7.0 in Step 0, 7.1–7.5 in Step 3)`
+### Phase 7 — Build against the iOS 27 SDK `(this Mac, Xcode 27.1; 7.0 in Step 0, 7.1–7.5 in Step 3)`
 
-**Runtime compatibility is already confirmed** (1.6.2 tested on an iOS 27 device; GoogleMaps works). This phase is about **building** with the iOS 27 SDK, which needs Xcode 27 — available only on a second computer. Since GoogleMaps is no longer a blocker, 1.7.0 is built with the iOS 27 SDK; it does not wait for Swift 6 mode.
+**Runtime compatibility is already confirmed** (1.6.2 tested on an iOS 27 device; GoogleMaps works). This phase is about **building** with the iOS 27 SDK, which needs Xcode 27 — now installed on this Mac (27.1). Since GoogleMaps is no longer a blocker, 1.7.0 is built with the iOS 27 SDK; it does not wait for Swift 6 mode.
 
 | #   | Task                                                                                                                                                                                                                                                                     | Verify                                                                                                             |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
@@ -433,19 +433,19 @@ graph TD
 
 _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 2:20 PM. Tick items as they land; add the date in parentheses. Each task's pass criteria are in the [Phased Plan](#phased-plan)._
 
-**Machine key:** 🖥️ current Mac (Xcode 26.6) · 🆕 Xcode 27 computer · 🌐 web repo
+**Machine key:** 🖥️ / 🆕 this Mac (Xcode 27.1 — both icons now mean the same machine) · 🌐 web repo
 
 ### Step 0 — Check now
 
 - [x] Test 1.6.2 (62) on an iOS 27 device — all working (Oct 28, 2026)
 - [x] Confirm GoogleMaps SDK works on iOS 27 (Oct 28, 2026)
 - [x] Commit pending `project.pbxproj` changes — tree clean (Oct 28, 2026)
-- [ ] 🖥️ Confirm `xcodebuild` runs from Terminal on this Mac
-- [ ] 7.0 🆕 Clone on Xcode 27 computer; recreate `Debug.xcconfig`, `Release.xcconfig`, `Config.plist`; signing set; packages resolve; builds and runs on a simulator
+- [x] 🖥️ Confirm `xcodebuild` runs from Terminal on this Mac — fixed with `xcode-select -s /Applications/Xcode.app/Contents/Developer` (Oct 28, 2026)
+- [x] 7.0 Xcode 27.1 installed on this Mac instead of porting; xcconfigs + `Config.plist` present and gitignored; packages resolve; builds and runs on the iOS 27 simulator (Oct 28, 2026)
 
 ### Step 1 — Test baseline (Phase 0) 🖥️
 
-- [ ] 0.1 Fix UI-test build-products mismatch
+- [x] 0.1 UI-test build-products mismatch — **not reproducible under Xcode 27.1**; `TEST_TARGET_NAME = fotolokashen` is correct and all 3 UI tests run and pass on iPhone 17 (iOS 27.0) with no project change (Oct 28, 2026)
 - [ ] 0.2 Real launch smoke test replaces `testExample`
 - [ ] 0.3 Shared `.xctestplan` committed
 - [ ] 0.4 Concurrency settings moved to project level (C-2)
