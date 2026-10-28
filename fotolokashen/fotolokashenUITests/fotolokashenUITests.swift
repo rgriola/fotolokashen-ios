@@ -22,13 +22,18 @@ final class fotolokashenUITests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
+    /// Launch smoke test: a signed-out app must render the login screen's primary CTA.
+    /// Assumes the simulator has no stored session (fresh simulators never do).
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testLaunchShowsLoginScreen() throws {
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        let signInButton = app.buttons["login.signInButton"]
+        XCTAssertTrue(
+            signInButton.waitForExistence(timeout: 15),
+            "Login screen did not render: Sign In button not found"
+        )
     }
 
     @MainActor

@@ -88,6 +88,7 @@ struct LoginView: View {
                         .cornerRadius(12)
                     }
                     .disabled(authService.isLoading)
+                    .accessibilityIdentifier("login.signInButton")
                     
                     Button(action: {
                         authService.startRegistration()
