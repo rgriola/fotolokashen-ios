@@ -27,7 +27,7 @@ final class APIClientTests: XCTestCase {
 
     // MARK: - Test Models
 
-    private struct Echo: Codable, Equatable {
+    nonisolated private struct Echo: Codable, Equatable {
         let id: Int
         let name: String
     }
