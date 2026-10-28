@@ -187,9 +187,9 @@ Each task states its own verification criterion. **Phases 0–6 and 8 are all ex
 
 #### 0.5 baseline — strict concurrency `complete` (Oct 28, 2026)
 
-Clean Debug build of all 3 targets, Xcode 27.1, Swift 5 mode, after 0.4. Unique diagnostics in repo sources (packages excluded; they produced none). **0 errors; build and full test plan still green.**
+Clean Debug build of all 3 targets, Xcode 27.1, Swift 5 mode, after 0.4. Unique diagnostics in repo sources, including 2 from `#Predicate` macro expansions (packages produced none). **0 errors; build and full test plan still green.**
 
-**Total: 138 warnings** — app 68 · `fotolokashenTests` 59 · `fotolokashenUITests` 11 — across 21 files.
+**Total: 140 warnings** — app 70 · `fotolokashenTests` 59 · `fotolokashenUITests` 11 — across 22 files.
 
 | # | File | Warnings |
 | --- | --- | --- |
@@ -204,9 +204,25 @@ Clean Debug build of all 3 targets, Xcode 27.1, Swift 5 mode, after 0.4. Unique 
 | 9 | `fotolokashenTests/AuthServiceTests.swift` | 5 |
 | 10 | `fotolokashenTests/KeychainServiceTests.swift` | 4 |
 
-**By kind:** 68 are *"main actor-isolated … has different actor isolation from nonisolated overridden declaration"* — 66 of them in the test targets (`XCTestCase` `init`/`setUp`/`tearDown`, `URLProtocol` overrides), a direct consequence of the test targets now defaulting to `MainActor` (0.4). 38 are main-actor state referenced or mutated from a `Sendable` closure (mostly `CameraService`, C-1). 21 are main-actor calls from a synchronous nonisolated context. 6 are region-isolation (`sending`) risks.
+**By kind:** 68 are *"main actor-isolated … has different actor isolation from nonisolated overridden declaration"* — 66 of them in the test targets (`XCTestCase` `init`/`setUp`/`tearDown`, `URLProtocol` overrides), a direct consequence of the test targets now defaulting to `MainActor` (0.4). 38 are main-actor state referenced or mutated from a `Sendable` closure (mostly `CameraService`, C-1). 21 are main-actor calls from a synchronous nonisolated context. 6 are region-isolation (`sending`) risks. 2 are non-`Sendable` `KeyPath`s inside `#Predicate` (`DataManager.swift:74`, `:134`).
 
-**Implication for Phase 3:** roughly half the count is mechanical test-target isolation cleanup (e.g. `nonisolated` on `XCTestCase`/`URLProtocol` subclasses, `@MainActor` on individual tests). The real app work is concentrated in `CameraService` (53 of the app's 68).
+**Implication for Phase 3:** roughly half the count is mechanical test-target isolation cleanup (e.g. `nonisolated` on `XCTestCase`/`URLProtocol` subclasses, `@MainActor` on individual tests). The real app work is concentrated in `CameraService` (53 of the app's 70).
+
+#### 0.6 baseline — deprecations (Oct 28, 2026)
+
+Same clean build as 0.5 (Xcode 27.1, iOS 27.1 simulator SDK). **The compiler emits 0 deprecation warnings** — app, tests and packages. Every `deprecat` match in the log is a compiler flag (`-Wdeprecated-declarations`), not a diagnostic.
+
+Cross-check: A-1..A-5 are all **soft-deprecated** — Apple marks them deprecated in docs but the SDK does not warn — so they are still present and silent. Phase 5 should track them by call-site count, not by warning count:
+
+| Finding | Pattern | Call sites | Files |
+| --- | --- | --- | --- |
+| A-1 | `.navigationBarHidden(` | 1 | `ContentView.swift` (now line 148) |
+| A-2 | `UIImagePickerController` | 8 | `ProfileHeaderComponents.swift` |
+| A-3 | `DispatchQueue.main.asyncAfter` | 8 | `ContentView`, `CameraView`, `CameraSessionViewModel`, `MapView` |
+| A-4 | `.autocapitalization(` | 8 | `MemberSupportView`, `CreateLocationView`, `EditLocationView`, `PeopleSearchView`, … |
+| A-5 | `.foregroundColor(` / `CircularProgressViewStyle` | 151 / 5 | most views |
+
+Other build warnings: `SwiftLint not installed` (build script phase; SwiftLint is not installed on this Mac).
 
 ---
 
@@ -472,8 +488,8 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 - [x] 0.2 Real launch smoke test replaces `testExample` — `testLaunchShowsLoginScreen` waits for `login.signInButton`; verified it fails when the identifier is broken (Oct 28, 2026)
 - [x] 0.3 Shared `.xctestplan` committed — `xcshareddata/fotolokashen.xctestplan` (unit + UI, 120 s test timeouts) wired into a new shared `fotolokashen` scheme; `-testPlan fotolokashen` runs 74 unit + 6 UI tests, all green (Oct 28, 2026)
 - [x] 0.4 Concurrency settings moved to project level (C-2) — all 3 targets (the project has 3, not 4) now inherit `MainActor` + approachable concurrency; test-only `Echo` marked `nonisolated`; clean build has 0 Swift warnings, full plan green (Oct 28, 2026)
-- [x] 0.5 `SWIFT_STRICT_CONCURRENCY = complete`; warning baseline recorded → **count: 138** (app 68, unit tests 59, UI tests 11; see [0.5 baseline](#05-baseline--strict-concurrency-complete-oct-28-2026)) (Oct 28, 2026)
-- [ ] 0.6 Deprecation baseline recorded
+- [x] 0.5 `SWIFT_STRICT_CONCURRENCY = complete`; warning baseline recorded → **count: 140** (app 70, unit tests 59, UI tests 11; see [0.5 baseline](#05-baseline--strict-concurrency-complete-oct-28-2026)) (Oct 28, 2026)
+- [x] 0.6 Deprecation baseline recorded — **0 compiler deprecation warnings** under the iOS 27.1 SDK; A-1..A-5 are soft-deprecated and tracked by call-site count (see [0.6 baseline](#06-baseline--deprecations-oct-28-2026)) (Oct 28, 2026)
 
 ### Step 2 — Security (Phase 1)
 
