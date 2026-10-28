@@ -447,7 +447,7 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 
 - [x] 0.1 UI-test build-products mismatch — **not reproducible under Xcode 27.1**; `TEST_TARGET_NAME = fotolokashen` is correct and all 3 UI tests run and pass on iPhone 17 (iOS 27.0) with no project change (Oct 28, 2026)
 - [x] 0.2 Real launch smoke test replaces `testExample` — `testLaunchShowsLoginScreen` waits for `login.signInButton`; verified it fails when the identifier is broken (Oct 28, 2026)
-- [ ] 0.3 Shared `.xctestplan` committed
+- [x] 0.3 Shared `.xctestplan` committed — `xcshareddata/fotolokashen.xctestplan` (unit + UI, 120 s test timeouts) wired into a new shared `fotolokashen` scheme; `-testPlan fotolokashen` runs 74 unit + 6 UI tests, all green (Oct 28, 2026)
 - [ ] 0.4 Concurrency settings moved to project level (C-2)
 - [ ] 0.5 `SWIFT_STRICT_CONCURRENCY = complete`; warning baseline recorded → **count: ____**
 - [ ] 0.6 Deprecation baseline recorded

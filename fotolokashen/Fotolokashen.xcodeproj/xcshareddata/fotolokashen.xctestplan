@@ -1,0 +1,32 @@
+{
+  "configurations" : [
+    {
+      "id" : "4F8A9688-D8AA-444E-946D-A1EB4597B5B0",
+      "name" : "Default",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "maximumTestExecutionTimeAllowance" : 120,
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:Fotolokashen.xcodeproj",
+        "identifier" : "676F6B942F196B7700CEBBE4",
+        "name" : "fotolokashenTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Fotolokashen.xcodeproj",
+        "identifier" : "676F6B9E2F196B7700CEBBE4",
+        "name" : "fotolokashenUITests"
+      }
+    }
+  ],
+  "version" : 1
+}
