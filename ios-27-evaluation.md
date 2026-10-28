@@ -1,14 +1,32 @@
 # iOS 27 Readiness Evaluation — fotolokashen iOS
 
-**Last updated:** September 20, 2026 — 9:35 PM
-**Version assessed:** 1.6.0 (build 57)
+**Last updated:** October 28, 2026 — 2:20 PM
+**Originally assessed:** 1.6.0 (build 57) on September 20, 2026
+**Current version:** 1.6.2 (build 62)
 **Scope:** Research and analysis only. No source files were modified during this evaluation.
 **Paths:** All file paths in this document are relative to the `fotolokashen-ios` repository root.
 
+> **Progress tracking:** see the [Progress Checklist](#progress-checklist) for the current state of every task. Update it as work lands.
+
+### Update — October 28, 2026
+
+These facts replace the corresponding assumptions in the September evaluation:
+
+| Item | Status |
+| --- | --- |
+| 1.6.2 (62) on an iOS 27 device | **Tested by Rod — everything works as expected.** No emergency fixes are needed for current users. |
+| GoogleMaps SDK on iOS 27 (D-1) | **Confirmed working.** No longer a blocker. |
+| Xcode 27 | Released, but not on this Mac. **The project must be moved to another computer** (task 7.0, Step 0) to build against the iOS 27 SDK. Because GoogleMaps is confirmed, 1.7.0 is built with the iOS 27 SDK (Step 3). |
+| Minimum iOS version | **Decision: iOS 18.0** — Step 6 of the plan (tasks 8.x). Raise `IPHONEOS_DEPLOYMENT_TARGET` from 17.0 to 18.0. Task 7.6's earlier "leave at 17.0" recommendation is replaced. |
+| Privacy manifest (P-1) | Downgraded from "current submission blocker". The app has passed review without one, and no first-party required-reason APIs are used. Still required work for 1.7.0. |
+| KeychainAccess (P-2) | Correction: KeychainAccess is **not** on Apple's commonly-used-SDK list. Removing it is still recommended as part of S-3/D-3. |
+| Accessibility (Phase 6) | No longer gates 1.7.0. Ships in a 1.7.x update. |
+| Web app work | Does **not** need to pause. Only rule: web-side changes that iOS depends on (S-1 `state` passthrough) deploy first and stay backward-compatible; `/api/v1/*` response shapes stay frozen while the iOS test suite is being stabilised. |
+
 Planning and Readiness NOTE FROM Rod:
 
-- Need SF Symbol Fallbacks up to iPhone 15/iOS 17 (current release 26.6+, lowest Apple Supported iOS is 18.0)
-- Moving SF Symbol references to a centralized location for easier fallback management (if #available(iOS 17, _)if #available(iOS 17, _) { use new symbol } else { use fallback }).
+- **Minimum supported iOS: 18.0** (decided October 28, 2026). SF Symbol fallbacks are only needed for symbols introduced **after** iOS 18. With an 18.0 target, any `if #available(iOS 17, *)` / `iOS 18` checks are always true and should be removed.
+- Moving SF Symbol references to a centralized location for easier fallback management (`if #available(iOS 26, *) { use new symbol } else { use fallback }`).
 
 Check Exsistence at Runtime; use `UIImage(systemName:)` and verify it returns non-nil before using the symbol.
 
@@ -27,17 +45,18 @@ Check Font existence at runtime; use `UIFont(name:size:)` and verify it returns 
 5. [Open Questions / MUST VERIFY](#open-questions--must-verify-against-ios-27-sdk)
 6. [What Is Already Good](#what-is-already-good)
 7. [Recommended Sequencing](#recommended-sequencing)
+8. [Progress Checklist](#progress-checklist)
 
 ---
 
 ## Executive Summary
 
-**Overall verdict: NOT READY — but the blocking work is almost entirely iOS-27-independent.**
+**Overall verdict (updated October 28, 2026): RUNS ON iOS 27 TODAY — the remaining work is hardening and modernisation, not rescue.**
 
-Not a single iOS 27 API could be evaluated against the SDK, because **Xcode 27 is not installed**. That turns out to be the less important half of the problem. The codebase has **four hard blockers that exist today**, independent of any future OS:
+1.6.2 has been tested on an iOS 27 device and GoogleMaps works on iOS 27, so current users are not at risk. The app has not yet been **built** against the iOS 27 SDK, because Xcode 27 is not installed on this Mac (Phase 7 runs on another computer). The codebase still has **four issues that exist today**, independent of any future OS:
 
-1. **No `PrivacyInfo.xcprivacy` anywhere in the repo.** This is a _current_ App Store submission blocker, not a future one. The app collects email, name, precise location, photos, and user content.
-2. **The OAuth2 authorization flow has no `state` parameter and no callback-origin binding**, while `.onOpenURL` will route _any_ externally-opened `fotolokashen://oauth-callback?code=…` into a live token exchange. This is an authorization-code-injection surface.
+1. **No `PrivacyInfo.xcprivacy` anywhere in the repo.** Required work for 1.7.0, though not an immediate blocker (see October update). The app collects email, name, precise location, photos, and user content.
+2. **The OAuth2 authorization flow has no `state` parameter and no callback-origin binding**, while `.onOpenURL` will route _any_ externally-opened `fotolokashen://oauth-callback?code=…` into a live token exchange. PKCE already blocks most injected codes (a code issued for another verifier fails the exchange); `state` closes the remaining login-CSRF gap.
 3. **Keychain tokens are stored at `.whenUnlocked`, not `…ThisDeviceOnly`** — refresh tokens are restorable to a different device from an encrypted backup.
 4. **No regression net.** UI tests are unmodified Xcode boilerplate and currently fail to build. Migrating a 108-file app to a new OS major with zero end-to-end coverage is the single biggest schedule risk here.
 
@@ -45,24 +64,26 @@ Not a single iOS 27 API could be evaluated against the SDK, because **Xcode 27 i
 
 Also good: exactly **one** file exceeds the project's 800-line guideline (`AuthService.swift` at 876). That is unusually disciplined for a codebase this size.
 
-The dominant _external_ risk is **GoogleMaps 10.8.0**, a binary xcframework. If it needs a vendor rebuild for iOS 27, no amount of local work unblocks you.
+~~The dominant _external_ risk is **GoogleMaps 10.8.0**~~ — **resolved October 28, 2026:** GoogleMaps is confirmed working on iOS 27.
 
-> **The single most important scheduling insight:** roughly 90% of the readiness work is verifiable and shippable _today_. Waiting for Xcode 27 to start would be the wrong call — arriving at Phase 7 with a hardened, warning-free, well-tested codebase turns the actual SDK migration from a multi-week unknown into a short verification pass.
+> **The single most important scheduling insight:** roughly 90% of the readiness work runs on the current Xcode 26.6 machine. Only Phase 7 needs the Xcode 27 computer — arriving there with a hardened, warning-free, well-tested codebase turns the SDK build into a short verification pass.
 
 ---
 
 ## Verified Baseline
 
+_Re-checked October 28, 2026 against 1.6.2 (62); only version numbers changed since September._
+
 | Item                             | Value                                                         |
 | -------------------------------- | ------------------------------------------------------------- |
-| Xcode installed                  | 26.6 (Build 17F113) — **Xcode 27 / iOS 27 SDK NOT installed** |
-| `IPHONEOS_DEPLOYMENT_TARGET`     | 17.0                                                          |
+| Xcode installed (this Mac)       | 26.6 (Build 17F113) — Xcode 27 to be used on a second computer |
+| `IPHONEOS_DEPLOYMENT_TARGET`     | 17.0 (**target: 18.0**, Step 6)                               |
 | `SWIFT_VERSION`                  | 5.0 (Swift 5 language mode, **not** Swift 6)                  |
 | `SWIFT_DEFAULT_ACTOR_ISOLATION`  | MainActor                                                     |
 | `SWIFT_APPROACHABLE_CONCURRENCY` | YES                                                           |
 | `SWIFT_STRICT_CONCURRENCY`       | **Not set** (defaults to `minimal`)                           |
 | `ENABLE_USER_SCRIPT_SANDBOXING`  | YES                                                           |
-| Version                          | `MARKETING_VERSION` 1.6.0 / `CURRENT_PROJECT_VERSION` 57      |
+| Version                          | `MARKETING_VERSION` 1.6.2 / `CURRENT_PROJECT_VERSION` 62      |
 | Swift sources                    | 108 files, 21,887 lines                                       |
 | Privacy manifest                 | **None found**                                                |
 | ATS                              | `NSAllowsLocalNetworking = true` in shared `Info.plist`       |
@@ -71,7 +92,7 @@ The dominant _external_ risk is **GoogleMaps 10.8.0**, a binary xcframework. If 
 
 | Package                   | Version       | Distribution       | Risk     |
 | ------------------------- | ------------- | ------------------ | -------- |
-| GoogleMaps `ios-maps-sdk` | 10.8.0        | Binary xcframework | **High** |
+| GoogleMaps `ios-maps-sdk` | 10.8.0        | Binary xcframework | Low — works on iOS 27 (Oct 28) |
 | GoogleMapsUtils           | 7.1.0         | Source             | Medium   |
 | KeychainAccess            | 4.2.2 (~2022) | Source             | Medium   |
 | Kingfisher                | 8.8.1         | Source             | Low      |
@@ -84,7 +105,7 @@ The dominant _external_ risk is **GoogleMaps 10.8.0**, a binary xcframework. If 
 
 | ID       | Area           | Sev                             | Finding                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Evidence                                                                                                                                                                                                                                                                                                                              | Recommendation                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | -------- | -------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **S-1**  | Security       | **Critical**                    | OAuth authorize request omits the `state` parameter; the callback handler never validates one. The `AuthorizationRequest` struct _defines_ `state` but it is unused dead code.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `AuthService.swift:225-233`, `:765-785`                                                                                                                                                                                                                                                                                               | Generate a CSPRNG `state`, send it, store it alongside `codeVerifier`, reject callbacks whose `state` does not match exactly once.                                                                                                                                                                                                                                                                                                                                |
+| **S-1**  | Security       | **High** (was Critical — PKCE already blocks most injected codes) | OAuth authorize request omits the `state` parameter; the callback handler never validates one. The `AuthorizationRequest` struct _defines_ `state` but it is unused dead code. **Web side (verified Oct 28):** `authorize/route.ts:121` already echoes `state` if sent, but `LoginForm.tsx:199-206` never sends it and `app/auth-callback/page.tsx:36,69` forwards only `code` to the app.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `AuthService.swift:225-233`, `:765-785`                                                                                                                                                                                                                                                                                               | Generate a CSPRNG `state`, send it, store it alongside `codeVerifier`, reject callbacks whose `state` does not match exactly once.                                                                                                                                                                                                                                                                                                                                |
 | **S-2**  | Security       | **Critical**                    | Any app or Safari page can open `fotolokashen://oauth-callback?code=…`. `DeepLinkManager.handleURL` returns `false` for that host, so `.onOpenURL` forwards it straight to `handleCallback` → `exchangeCodeForTokens`. If the user started and abandoned a login, `codeVerifier` is still populated, so the exchange proceeds with an attacker-supplied code.                                                                                                                                                                                                                                                                                                                          | `fotolokashenApp.swift:105-113`, `DeepLinkManager.swift:76-79`, `AuthService.swift:555-563`                                                                                                                                                                                                                                           | Fixed by S-1. Additionally: only accept OAuth callbacks delivered through the `ASWebAuthenticationSession` completion handler, and clear `codeVerifier`/`codeChallenge` whenever the session ends for any reason.                                                                                                                                                                                                                                                 |
 | **S-3**  | Security       | **High**                        | Keychain items use `.accessibility(.whenUnlocked)` (`kSecAttrAccessibleWhenUnlocked`), which is **not** device-bound. Access + refresh tokens are included in encrypted backups and restorable to another device.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `KeychainService.swift:26-28`                                                                                                                                                                                                                                                                                                         | Change to `.afterFirstUnlockThisDeviceOnly`. **This is a migration** — existing items must be deleted and re-written or reads fail silently, logging every user out. Ship with a one-time re-auth path.                                                                                                                                                                                                                                                           |
 | **S-4**  | Security       | **High**                        | `NSAllowsLocalNetworking = true` is in the shared `Info.plist`, so it applies to Release builds too. No runtime guard ensures a Release build's `backendBaseURL` is HTTPS; `ConfigLoader` prefers the xcconfig-injected value with no scheme validation.                                                                                                                                                                                                                                                                                                                                                                                                                               | `Info.plist:17-21`, `Debug.xcconfig:17`, `ConfigLoader.swift:35-43`                                                                                                                                                                                                                                                                   | Drive the ATS key from an xcconfig variable so it is `false` in Release. Add a Release-only HTTPS scheme assertion in `ConfigLoader.backendURL`.                                                                                                                                                                                                                                                                                                                  |
@@ -95,8 +116,8 @@ The dominant _external_ risk is **GoogleMaps 10.8.0**, a binary xcframework. If 
 | **S-9**  | Security       | Low                             | No certificate pinning; `URLSession` created with no delegate.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `APIClient.swift:75-79`                                                                                                                                                                                                                                                                                                               | Acceptable for a first-party HTTPS API with a public CA. Document as accepted risk, or pin only `/api/auth/*`.                                                                                                                                                                                                                                                                                                                                                    |
 | **S-10** | Security       | Low                             | Five `fatalError` calls in config/crypto paths turn recoverable conditions into launch crashes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `ConfigLoader.swift:26`, `:47`, `:72`; `PKCEGenerator.swift:25`                                                                                                                                                                                                                                                                       | Config loader failures are genuine programmer errors (bundled resource) — acceptable. The PKCE one should throw.                                                                                                                                                                                                                                                                                                                                                  |
 | **S-11** | Secrets        | Medium                          | The same Google Maps API key appears in three files, two of which are build config. `.gitignore` covers `*.xcconfig` and `Config.plist`, so they _should_ be untracked — but ignore rules do not retroactively untrack.                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `Debug.xcconfig:8`, `Release.xcconfig:8`, `Config.plist:11`, `.gitignore:11`, `:40-42`                                                                                                                                                                                                                                                | **MUST VERIFY** via `git ls-files`. A Maps client key is extractable from any shipped binary regardless — the real control is Google Cloud Console restriction to the iOS bundle ID + Maps SDK for iOS. **MUST VERIFY that restriction is active.**                                                                                                                                                                                                               |
-| **P-1**  | Privacy        | **Critical**                    | No `PrivacyInfo.xcprivacy` exists in the repo. Current App Store submission blocker.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Filesystem search across whole repo                                                                                                                                                                                                                                                                                                   | Author the manifest. See Phase 2.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| **P-2**  | Privacy        | High                            | Third-party SDK privacy manifests + signatures unverified. Kingfisher and GoogleMaps likely ship them; **KeychainAccess 4.2.2 (~2022) almost certainly does not**, and it is on Apple's "commonly used SDK" list requiring a signature + manifest.                                                                                                                                                                                                                                                                                                                                                                                                                                     | `Package.resolved`                                                                                                                                                                                                                                                                                                                    | **MUST VERIFY** each. Strongest fix: delete the dependency (see D-3).                                                                                                                                                                                                                                                                                                                                                                                             |
+| **P-1**  | Privacy        | **High** (was Critical)         | No `PrivacyInfo.xcprivacy` exists in the repo. Required work for 1.7.0; not an immediate blocker (app has passed review and uses no first-party required-reason APIs).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Filesystem search across whole repo                                                                                                                                                                                                                                                                                                   | Author the manifest. See Phase 2.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **P-2**  | Privacy        | Medium (was High)               | Third-party SDK privacy manifests unverified. Kingfisher and GoogleMaps likely ship them. **Correction (Oct 28):** KeychainAccess is **not** on Apple's commonly-used-SDK list, so a missing manifest there is not a submission blocker.                                                                                                                                                                                                                                                                                                                                                                                                                                     | `Package.resolved`                                                                                                                                                                                                                                                                                                                    | **MUST VERIFY** each. Strongest fix: delete the dependency (see D-3).                                                                                                                                                                                                                                                                                                                                                                                             |
 | **P-3**  | Privacy        | Low (positive)                  | Zero first-party usage of required-reason APIs — no `UserDefaults`, no `@AppStorage`, no file-timestamp reads, no disk-space or boot-time queries anywhere in app code.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Grep across all 108 source files returned **zero** matches                                                                                                                                                                                                                                                                            | `NSPrivacyAccessedAPITypes` may legitimately be small. **MUST VERIFY** against Xcode's generated privacy report rather than trusting the grep.                                                                                                                                                                                                                                                                                                                    |
 | **C-1**  | Concurrency    | **High**                        | `CameraService` is implicitly `@MainActor` (default isolation) yet captures `self` in ~11 `sessionQueue.async` / `DispatchQueue.main.async` closures. Under Swift 6 each is a `Sendable` capture error. **Single largest migration blocker.**                                                                                                                                                                                                                                                                                                                                                                                                                                          | `CameraService.swift:8`, `:30`, `:146`, `:171`, `:188`, `:214`, `:298`, `:365`, `:457`, `:490`                                                                                                                                                                                                                                        | Split into a `nonisolated` capture-engine type owning `sessionQueue` + AVFoundation state, plus a thin `@MainActor` facade for published state. Correct design regardless of Swift 6.                                                                                                                                                                                                                                                                             |
 | **C-2**  | Concurrency    | High                            | Unit and UI test targets **do not** set `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, while the app target does. Tests compile under different isolation rules than the code they test.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | app: `project.pbxproj:495`, `:542`; tests: `:563-566`, `:585-588`                                                                                                                                                                                                                                                                     | Move these settings to the project-level config so every target inherits identically.                                                                                                                                                                                                                                                                                                                                                                             |
@@ -105,7 +126,7 @@ The dominant _external_ risk is **GoogleMaps 10.8.0**, a binary xcframework. If 
 | **C-5**  | Perf           | Medium                          | `APIClient` has no explicit isolation, so default MainActor isolation makes it main-actor-bound — **every JSON decode runs on the main thread**. A large locations payload blocks UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `APIClient.swift:25`, `:29`, `:293`                                                                                                                                                                                                                                                                                                   | Mark `nonisolated final class APIClient: Sendable` (stored properties are all `let` and Sendable). Measurable win, low risk.                                                                                                                                                                                                                                                                                                                                      |
 | **C-6**  | Concurrency    | Low                             | `@preconcurrency import AVFoundation` masks real Sendable diagnostics.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `CameraService.swift:2`                                                                                                                                                                                                                                                                                                               | Remove after C-1.                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | **C-7**  | Concurrency    | Low (positive)                  | `ConfigLoader`'s `@unchecked Sendable` is genuinely justified — immutable after `init`. Only `@unchecked` in the codebase.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `ConfigLoader.swift:9`                                                                                                                                                                                                                                                                                                                | Leave as is.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| **D-1**  | Dependencies   | **High**                        | GoogleMaps 10.8.0 is a **binary xcframework**. If iOS 27 requires a vendor rebuild, you are fully blocked with no local workaround. It is also the app's primary UI surface.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `Package.resolved:14-20`                                                                                                                                                                                                                                                                                                              | Track Google's iOS SDK release notes ahead of the migration. Budget schedule contingency for "waiting on Google."                                                                                                                                                                                                                                                                                                                                                 |
+| **D-1**  | Dependencies   | ~~High~~ **Resolved**           | GoogleMaps 10.8.0 is a binary xcframework. **Oct 28, 2026: confirmed working on iOS 27** (1.6.2 device test). Re-check only when building against the iOS 27 SDK in Phase 7.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `Package.resolved:14-20`                                                                                                                                                                                                                                                                                                              | Track Google's iOS SDK release notes ahead of the migration. Budget schedule contingency for "waiting on Google."                                                                                                                                                                                                                                                                                                                                                 |
 | **D-2**  | Dependencies   | Medium                          | GoogleMapsUtils supplies `GMUClusterAlgorithm`/`GMUClusterItem`/`GMUClusterIconGenerator`, subclassed in three places. Source-distributed so patchable, but subclassing third-party ObjC types is brittle across Swift 6 isolation changes.                                                                                                                                                                                                                                                                                                                                                                                                                                            | `GeographicClusterAlgorithm.swift:11`, `:96`; `LocationClusterItem.swift:8`, `:28`, `:50`                                                                                                                                                                                                                                             | Expect `@preconcurrency import GoogleMapsUtils` to be needed. Low effort.                                                                                                                                                                                                                                                                                                                                                                                         |
 | **D-3**  | Dependencies   | Medium                          | KeychainAccess 4.2.2 — ~2022, minimal maintenance. The app uses a **tiny** surface: `Keychain(service:)`, `.synchronizable`, `.accessibility`, `set/get/remove`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `KeychainService.swift:1-117`                                                                                                                                                                                                                                                                                                         | **Highest-leverage dependency action: delete it.** ~80 lines of direct `SecItem*` code replaces it, removes a privacy-manifest liability (P-2), and lets you set `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` directly (S-3).                                                                                                                                                                                                                               |
 | **D-4**  | Dependencies   | Low                             | Kingfisher 8.8.1 — actively maintained, Swift 6 ready, ships a privacy manifest.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `Package.resolved:31-38`                                                                                                                                                                                                                                                                                                              | No action.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -135,7 +156,19 @@ The dominant _external_ risk is **GoogleMaps 10.8.0**, a binary xcframework. If 
 
 ## Phased Plan
 
-Each task states its own verification criterion. **Phases 0–6 are all executable today without Xcode 27.**
+Each task states its own verification criterion. **Phases 0–6 and 8 are all executable without Xcode 27.** Phase 7 needs the Xcode 27 computer.
+
+**Execution order (Steps 0–6).** Phases are groups of related tasks; Steps are the order they run in. The [Progress Checklist](#progress-checklist) follows the Steps.
+
+| Step | Name | Phases / tasks |
+| --- | --- | --- |
+| 0 | Check now | Pre-flight + 7.0 (port to Xcode 27 computer) |
+| 1 | Test baseline | Phase 0 |
+| 2 | Security | Phase 1 + web tasks (1.4w deploys first) |
+| 3 | Ship 1.7.0 | Phases 2, 5, 7.1–7.5 (iOS 27 SDK build) + release gate |
+| 4 | Swift 6 | Phase 3 → Phase 4 |
+| 5 | Accessibility (1.7.x) | Phase 6 |
+| 6 | Minimum iOS 18.0 | Phase 8 (8.1–8.4) |
 
 ### Phase 0 — Restore a trustworthy baseline `(BLOCKS EVERYTHING)`
 
@@ -163,7 +196,8 @@ Each task states its own verification criterion. **Phases 0–6 are all executab
 | 1.1  | Write `DeepLinkManagerTests` covering: valid `fotolokashen://location/123`; non-numeric id; `email-verified` with and without token; exact-host Universal Link; and the **spoofed** host `https://fotolokashen.com.attacker.test/shared/1`.                                                                                                      | New test file; the spoof case is red before 1.2, green after.                                                                                                               |
 | 1.2  | Fix **S-6**: replace `host.contains("fotolokashen.com")` at `DeepLinkManager.swift:83` with an exact allowlist.                                                                                                                                                                                                                                  | 1.1's spoof test passes.                                                                                                                                                    |
 | 1.3  | Write `PKCEGeneratorTests`: verifier length 43–128, base64url charset only (no `+`, `/`, `=`), 1000 generations all unique, challenge == base64url(SHA256(verifier)) against an RFC 7636 §B test vector.                                                                                                                                         | All pass against current implementation (already correct — this locks it in).                                                                                               |
-| 1.4  | Fix **S-1**: add CSPRNG `state` to `PKCEGenerator`; send it in the authorize query at `AuthService.swift:225-233`; store next to `codeVerifier`; reject any `oauth-callback` whose `state` does not match. Delete the unused `AuthorizationRequest` struct. **Coordinate with the web app — the Next.js `/login` route must echo `state` back.** | New test: a callback with missing/mismatched `state` sets `errorMessage` and performs **no** token exchange.                                                                |
+| 1.4w | **Web half of S-1 — deploy before 1.4.** In `fotolokashen`: `LoginForm.tsx` reads `state` from the query and includes it in the `/api/auth/oauth/authorize` POST; append the returned `state` (URL-encoded) to `/app/auth-callback`; `app/auth-callback/page.tsx` forwards it into both `fotolokashen://oauth-callback` redirects. Web passes `state` through only — it does not store or validate it. When no `state` arrives, omit it, so 1.6.x clients keep working. | Login from the current 1.6.2 build still works. A `/login?…&state=abc` request ends at `fotolokashen://oauth-callback?code=…&state=abc`. |
+| 1.4  | Fix **S-1**: add CSPRNG `state` to `PKCEGenerator`, regenerated on every `startLogin()`; send it in the authorize query at `AuthService.swift:210-217`; store it in memory next to `codeVerifier`; reject any `oauth-callback` whose `state` is missing or not an exact match, **before** any token exchange. Clear `state` + `codeVerifier` after every attempt (success or failure) so each value is single-use. Delete the unused `AuthorizationRequest` struct. **Requires 1.4w deployed first.** | New test: a callback with missing/mismatched `state` sets `errorMessage` and performs **no** token exchange. Manual end-to-end device login against the deployed web change. |
 | 1.5  | Fix **S-2**: clear `codeVerifier`/`codeChallenge`/`state` in **every** `ASWebAuthenticationSession` completion path — cancel, error, and success. In `fotolokashenApp.swift:105-113`, stop routing externally-delivered `oauth-callback` URLs to `handleCallback`.                                                                               | New test: start login → simulate cancel → deliver crafted `oauth-callback?code=X` via `onOpenURL` → assert zero network calls.                                              |
 | 1.6  | Fix **S-3**: change `KeychainService.swift:26-28` to `.afterFirstUnlockThisDeviceOnly`. **Add a one-time migration**: attempt a read with the old attribute; if found, delete and re-write with the new one; if re-write fails, clear tokens and force re-login.                                                                                 | Extend `KeychainServiceTests` to assert the stored item's `kSecAttrAccessible` value. Manually: install old build → sign in → upgrade → confirm still signed in.            |
 | 1.7  | Fix **S-4**: introduce `ATS_ALLOW_LOCAL_NETWORKING` xcconfig var referenced from `Info.plist:17-21`; `YES` in Debug, `NO` in Release. Add a Release-only HTTPS scheme assertion in `ConfigLoader.backendURL`.                                                                                                                                    | `plutil -p` on the Release `.app`'s Info.plist shows `NSAllowsLocalNetworking = false` or key absent. A Release build pointed at `http://` fails fast with a clear message. |
@@ -171,20 +205,20 @@ Each task states its own verification criterion. **Phases 0–6 are all executab
 | 1.9  | Fix **S-8**: change `DebugLog.swift:26` to `privacy: .private` by default. Redact email at `AuthService.swift:553`, PKCE challenge at `:217`, and truncate/redact response bodies at `APIClient.swift:302-308`.                                                                                                                                  | DEBUG build on device; `log stream --predicate 'subsystem == "com.fotolokashen.app"'` shows `<private>` for sensitive fields.                                               |
 | 1.10 | Resolve **S-11**: run `git ls-files -- '*.xcconfig' '**/Config.plist'` and `git log --all --oneline -- fotolokashen/Debug.xcconfig`. If the key was ever committed, **rotate it**. Independently confirm the key is restricted to the iOS bundle ID + Maps SDK for iOS.                                                                          | Written confirmation of both tracked-status and API-key restriction state.                                                                                                  |
 
-> **Dependencies:** 1.1→1.2; 1.3→1.4→1.5. Tasks 1.6–1.10 are independent. **1.6 needs careful release sequencing — it is the only task here that can log users out.**
+> **Dependencies:** 1.1→1.2; 1.3→1.4w→1.4→1.5. Tasks 1.6–1.10 are independent. **1.6 needs careful release sequencing — it is the only task here that can log users out.**
 
 ---
 
 ### Phase 2 — Privacy manifest & App Store compliance `(parallel with Phase 1)`
 
-**Goal:** Remove the current submission blocker.
+**Goal:** Ship a privacy manifest with 1.7.0. (Downgraded Oct 28 from "current submission blocker" — see P-1.)
 
 | #   | Task                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Verify                                                                                                                                                                 |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2.1 | Build and generate Xcode's **privacy report** (Product → Archive → Generate Privacy Report) to get the _actual_ required-reason API list rather than relying on source grep. Resolves **P-3**.                                                                                                                                                                                                                                                                             | A concrete list of `NSPrivacyAccessedAPITypes` entries with source attribution per SDK.                                                                                |
-| 2.2 | Inspect each SPM checkout for a bundled `PrivacyInfo.xcprivacy`: GoogleMaps, GoogleMapsUtils, KeychainAccess, Kingfisher. Resolves **P-2**.                                                                                                                                                                                                                                                                                                                                | A 4-row table: SDK → manifest Y/N → signed Y/N. Any "N" on Apple's commonly-used-SDK list is a blocker.                                                                |
+| 2.2 | Inspect each SPM checkout for a bundled `PrivacyInfo.xcprivacy`: GoogleMaps, GoogleMapsUtils, KeychainAccess, Kingfisher. Resolves **P-2**.                                                                                                                                                                                                                                                                                                                                | A 4-row table: SDK → manifest Y/N → signed Y/N. Only SDKs on Apple's commonly-used-SDK list are blockers (KeychainAccess is not on it).                                |
 | 2.3 | Author `fotolokashen/fotolokashen/PrivacyInfo.xcprivacy` and add to the app target's Copy Resources phase. `NSPrivacyCollectedDataTypes` must cover at minimum: **Email Address, Name, User ID, Photos or Videos, Precise Location, Coarse Location, Other User Content** (captions/notes/tags), plus **Product Interaction** if analytics exist. Set `NSPrivacyTracking = false` and empty `NSPrivacyTrackingDomains` unless tracking is actually present. Fixes **P-1**. | File exists, is in target resources, appears in the built `.app`, and the regenerated privacy report matches App Store Connect's questionnaire with no contradictions. |
-| 2.4 | If 2.2 finds KeychainAccess lacks a manifest/signature, execute **D-3**: replace with direct `SecItem*` calls. Keep `KeychainService`'s public API byte-identical so no call sites change.                                                                                                                                                                                                                                                                                 | `KeychainServiceTests` passes unchanged. `Package.resolved` no longer lists `keychainaccess`. Combines naturally with 1.6.                                             |
+| 2.4 | Execute **D-3** together with 1.6: replace KeychainAccess with direct `SecItem*` calls. Keep `KeychainService`'s public API byte-identical so no call sites change. (No longer conditional on 2.2 — done for S-3 and dependency reduction.)                                                                                                                                                                                                                                 | `KeychainServiceTests` passes unchanged. `Package.resolved` no longer lists `keychainaccess`. Combines naturally with 1.6.                                             |
 | 2.5 | Confirm `ITSAppUsesNonExemptEncryption = NO` (`project.pbxproj:470`) is still accurate — app uses CryptoKit SHA256 + HTTPS, both exempt.                                                                                                                                                                                                                                                                                                                                   | Written confirmation; no custom crypto found.                                                                                                                          |
 | 2.6 | **MUST VERIFY** the web `/login` and `/register` pages reachable inside `ASWebAuthenticationSession` do not offer Google/Facebook/Apple third-party sign-in. If they do, Guideline 4.8 obligations attach to the iOS app.                                                                                                                                                                                                                                                  | Screenshot or DOM inspection of both pages in the iOS flow.                                                                                                            |
 | 2.7 | Confirm account deletion meets Guideline 5.1.1(v) — the flow at `AccountSecurityView.swift:32-38` must fully delete server-side, not just deactivate.                                                                                                                                                                                                                                                                                                                      | End-to-end test against staging: delete → confirm account cannot be recovered by re-login.                                                                             |
@@ -216,7 +250,7 @@ Each task states its own verification criterion. **Phases 0–6 are all executab
 | 4.2 | Resolve remaining errors. Do **not** reach for `@unchecked Sendable` or `nonisolated(unsafe)` as a shortcut — the codebase currently has exactly one `@unchecked` and that discipline is worth keeping. | Clean build. `grep -rn "@unchecked Sendable\|nonisolated(unsafe)"` returns at most 2 hits, each with a written invariant comment. |
 | 4.3 | Full test-suite run + manual regression: login, token refresh (force-expire), deep links, map, camera, photo upload, profile edit, logout.                                                              | All tests pass. Manual checklist complete on a physical device.                                                                   |
 
-> **Checkpoint:** Swift 6 language mode is _not_ a prerequisite for running on iOS 27. If the schedule tightens, **Phase 4 can be deferred** — Phases 1, 2, 5, 6 cannot.
+> **Checkpoint:** Swift 6 language mode is _not_ a prerequisite for running on iOS 27 (1.6.2 already runs there in Swift 5 mode). It is the stated goal of this plan, but if the schedule tightens it can ship after 1.7.0.
 
 ---
 
@@ -232,7 +266,7 @@ Each task states its own verification criterion. **Phases 0–6 are all executab
 
 ---
 
-### Phase 6 — Accessibility `(parallel; gated before any Nutrition Label declaration)`
+### Phase 6 — Accessibility `(parallel; ships in 1.7.x, gated before any Nutrition Label declaration)`
 
 | #   | Task                                                                                                                                                                                                                         | Verify                                                                                                                      |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -244,30 +278,44 @@ Each task states its own verification criterion. **Phases 0–6 are all executab
 
 ---
 
-### Phase 7 — Actual iOS 27 SDK migration `(HARD GATE: requires Xcode 27)`
+### Phase 7 — Build against the iOS 27 SDK `(requires the Xcode 27 computer; 7.0 in Step 0, 7.1–7.5 in Step 3)`
 
-**Nothing in this phase can start before Xcode 27 is installed. Everything above can.**
+**Runtime compatibility is already confirmed** (1.6.2 tested on an iOS 27 device; GoogleMaps works). This phase is about **building** with the iOS 27 SDK, which needs Xcode 27 — available only on a second computer. Since GoogleMaps is no longer a blocker, 1.7.0 is built with the iOS 27 SDK; it does not wait for Swift 6 mode.
 
 | #   | Task                                                                                                                                                                                                                                                                     | Verify                                                                                                             |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| 7.1 | Install Xcode 27. Build the Phase-6 codebase against the iOS 27 SDK with deployment target unchanged at 17.0. Record every new error and warning.                                                                                                                        | A concrete, evidence-based delta list — replacing all current speculation.                                         |
+| 7.0 | **Port the project to the Xcode 27 computer.** Push all work to GitHub and clone there (do not copy the folder — it drags DerivedData and stale state). Recreate the gitignored, untracked files by hand: `Debug.xcconfig`, `Release.xcconfig`, `Config.plist` (start from `Config.example.plist`). Sign in to the Apple Developer account in Xcode, select the team, and let SPM resolve packages. Keep secrets out of git. | Clean clone builds and runs on a simulator with Xcode 26.6-equivalent behavior; `git status` shows no secrets staged. |
+| 7.1 | Build the current codebase against the iOS 27 SDK. Record every new error and warning.                                                                                                                                                                                  | A concrete, evidence-based delta list — replacing all current speculation.                                         |
 | 7.2 | Read Apple's iOS 27 release notes and Deprecations documentation end-to-end. Cross-reference against the 0.6 deprecation baseline.                                                                                                                                       | A written list of confirmed removals/behavior changes affecting this app.                                          |
-| 7.3 | Verify **D-1**: does GoogleMaps 10.8.0 (or then-latest) build and run against the iOS 27 SDK? **This is the go/no-go gate.**                                                                                                                                             | Map renders, clustering works, marker taps fire on iOS 27 simulator + device. If not, escalate to Google and halt. |
+| 7.3 | ~~Verify **D-1**~~ — **runtime confirmed Oct 28.** Remaining check: GoogleMaps still links and renders when the app is _built_ with the iOS 27 SDK.                                                                                                                      | Map renders, clustering works, marker taps fire in an Xcode 27 build on simulator + device.                       |
 | 7.4 | Verify the other three SPM packages build under the new SDK. Update `Package.resolved` only with deliberate, tested version bumps.                                                                                                                                       | Clean build; full test suite green.                                                                                |
 | 7.5 | Run the full regression suite + manual checklist on an iOS 27 device. Pay specific attention to: `ASWebAuthenticationSession` presentation, Keychain accessibility behavior, `PHPickerViewController`, SwiftData store migration, and deep-link/Universal-Link delivery. | Checklist complete. Any SwiftData migration issue is caught by the 1.8 recovery path rather than a crash.          |
-| 7.6 | Decide on raising `IPHONEOS_DEPLOYMENT_TARGET`. **Recommendation: leave at 17.0.** Raising it is an adoption decision, not a readiness requirement, and forfeits users for no migration benefit.                                                                         | Explicit written decision with rationale.                                                                          |
+| 7.6 | ~~Decide on raising `IPHONEOS_DEPLOYMENT_TARGET`~~ — **Decided Oct 28: iOS 18.0.** Executed in Step 6.                                                                                                                                                                 | Decision recorded.                                                                                                 |
+
+---
+
+### Phase 8 — Raise minimum iOS to 18.0 `(Step 6 of the plan; any machine)`
+
+**Why Step 6 (after 1.7.0):** the proposed plan places the minimum-iOS change last. A single release that both hardens security _and_ drops iOS 17 users makes it hard to tell which change caused a problem. Users on iOS 17 keep 1.7.x.
+
+| #   | Task                                                                                                                                                                      | Verify                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 8.1 | Set `IPHONEOS_DEPLOYMENT_TARGET = 18.0` at project level (`project.pbxproj:387`, `:445`) and update or remove the test-target overrides (`:558`, `:584`).                  | `xcodebuild -showBuildSettings` reports 18.0 for all four targets.                                       |
+| 8.2 | Remove the now-dead `if #available(iOS 17.4, *)` branch and its fallback in `AuthService.swift:348` (the only `#available` check in the app as of Oct 28).              | `grep -rn "#available(iOS 1[78]" fotolokashen/fotolokashen` returns zero hits. Login still works.        |
+| 8.3 | Centralise SF Symbol names in one file. Fallbacks are only needed for symbols introduced **after** iOS 18; check each with `UIImage(systemName:) != nil` on an iOS 18 simulator. | Every symbol renders on an iOS 18.0 simulator; no blank icons.                                           |
+| 8.4 | Update App Store Connect / marketing copy to state iOS 18 minimum.                                                                                                        | Listing shows "Requires iOS 18.0 or later".                                                              |
 
 ---
 
 ## Open Questions / MUST VERIFY against iOS 27 SDK
 
-> **Honesty note:** This evaluation has **no verified knowledge of iOS 27's APIs, deprecations, or behavior changes**, and the SDK is not installed. No iOS 27 API, deprecation, or release-note item is named anywhere in this document. Every deprecation listed (A-1..A-5) is verifiable _today_ against the iOS 26 SDK. The following require verification and **cannot be answered from this codebase**:
+> **Honesty note:** This evaluation has **no verified knowledge of iOS 27's APIs, deprecations, or behavior changes** beyond Rod's Oct 28 device test (1.6.2 works on iOS 27). No iOS 27 API, deprecation, or release-note item is named anywhere in this document. Every deprecation listed (A-1..A-5) is verifiable _today_ against the iOS 26 SDK. The following require verification and **cannot be answered from this codebase**:
 
 1. **Which currently-used APIs are deprecated or removed in iOS 27?** The iOS 27 delta is unknown. → Task 7.2
 2. **Does iOS 27 change `ASWebAuthenticationSession` behavior?** The auth flow is the app's most fragile integration and has already required version-conditional handling for iOS 17.4 (`AuthService.swift:327-344`). → Task 7.5
 3. **Does iOS 27 change Keychain accessibility semantics or backup behavior?** Directly affects the S-3 fix. → Task 7.5
 4. **Does iOS 27 ship a SwiftData schema migration requirement?** Three `@Model` types exist (`CachedLocation`, `CachedPhoto`, `OfflinePhoto`) with no `VersionedSchema` and no `SchemaMigrationPlan`. The S-5 recovery path is the mitigation, but actual risk is unknown. → Task 7.5
-5. **Does GoogleMaps 10.8.0 function on iOS 27?** Binary framework — unknowable without testing. Highest external risk. → Task 7.3
+5. ~~**Does GoogleMaps 10.8.0 function on iOS 27?**~~ **Answered Oct 28: yes** (1.6.2 device test). Re-confirm in an Xcode 27 build → Task 7.3
 6. **Does iOS 27 expand required-reason API categories or privacy-manifest requirements?** → Tasks 2.1, 7.2
 7. **Does iOS 27 alter SwiftUI animation/transaction timing?** Determines whether the A-3 `asyncAfter` hacks break. Task 5.4 makes this moot by removing them — which is why 5.4 is worth doing _before_ 7.1.
 
@@ -346,30 +394,144 @@ Genuinely solid work that was verified and should **not** be touched.
 
 ## Recommended Sequencing
 
+Follows the Steps 0–6 order in the [Phased Plan](#phased-plan).
+
 ```mermaid
 graph TD
-    P0["Phase 0<br/>Baseline &amp; test net<br/>BLOCKS ALL"] --> P1["Phase 1<br/>Security hardening"]
-    P0 --> P3["Phase 3<br/>Strict concurrency<br/>Swift 5 mode"]
-    P0 --> P5["Phase 5<br/>Deprecated API sweep"]
-    P2["Phase 2<br/>Privacy manifest<br/>SHIP BLOCKER"] --> REL["Ship 1.7.0<br/>on iOS 26"]
-    P1 --> REL
-    P5 --> REL
-    P6["Phase 6<br/>Accessibility"] --> REL
-    P3 --> P4["Phase 4<br/>Swift 6 language mode<br/>optional / deferrable"]
-    REL --> P7["Phase 7<br/>iOS 27 SDK<br/>GATED on Xcode 27"]
-    P4 --> P7
-    D1["GoogleMaps iOS 27 support<br/>EXTERNAL DEPENDENCY"] -.blocks.-> P7
+    S0["Step 0 — Check now<br/>iOS 27 device ✅ · GoogleMaps ✅<br/>port to Xcode 27 computer (7.0)"] --> S1["Step 1 — Test baseline<br/>Phase 0"]
+    S1 --> S2["Step 2 — Security<br/>Phase 1"]
+    W["Web: S-1 state passthrough (1.4w)<br/>DEPLOY FIRST"] --> S2
+    S1 --> P2["Phase 2<br/>Privacy manifest"]
+    S1 --> P5["Phase 5<br/>Deprecated API sweep"]
+    S2 --> S3["Step 3 — Ship 1.7.0<br/>built with iOS 27 SDK (7.1–7.5)"]
+    P2 --> S3
+    P5 --> S3
+    S0 --> S3
+    S3 --> S4["Step 4 — Swift 6<br/>Phase 3 → Phase 4"]
+    S3 --> S5["Step 5 — Accessibility<br/>Phase 6 · 1.7.x"]
+    S4 --> S6["Step 6 — Minimum iOS 18.0<br/>Phase 8"]
+    S5 --> S6
 ```
 
-**Critical path:** Phase 0 → Phases 1 + 2 → ship a hardened 1.7.0 on iOS 26 **before** Xcode 27 exists. Phases 3, 5, and 6 run in parallel and also ship pre-migration. Phase 4 (Swift 6 mode) is valuable but deferrable. Phase 7 is gated on both Xcode 27 availability and Google's SDK.
+**Critical path:** Step 0 → Step 1 → web `state` change → Step 2 + Phases 2 and 5 → Step 3 (ship 1.7.0 with the iOS 27 SDK). Then Step 4 (Swift 6) and Step 5 (accessibility), and finally Step 6 (iOS 18 minimum).
 
 ---
 
 ## Execution Notes for the Downstream Agent
 
-- **Start at Phase 0.** Tasks 0.4 and 0.5 are prerequisites for any meaningful effort estimate on Phase 3.
+- **Start at Step 0, then Step 1 (Phase 0).** Tasks 0.4 and 0.5 are prerequisites for any meaningful effort estimate on Phase 3.
 - **Every task above states its own verification criterion.** Do not mark a task complete without satisfying it.
-- **Task 1.4 (OAuth `state`) requires a coordinated change in the `fotolokashen` web app** — the Next.js `/login` route must echo the parameter back. Do not ship the iOS half alone.
+- **Task 1.4 (OAuth `state`) requires a coordinated change in the `fotolokashen` web app** — task 1.4w must be deployed (and verified backward-compatible with 1.6.x) before the iOS half ships.
+- **Web app work does not pause.** Freeze only `/api/v1/*` response shapes until Phase 0 tests are stable.
 - **Task 1.6 (Keychain accessibility) can log every user out** if the migration path is wrong. Treat as a release-gated change.
 - **Task 3.4 (CameraService split) is the riskiest single task** and requires physical-device testing; a simulator pass is insufficient.
 - **Do not** undertake H-3 (global DI refactor) or H-5 (`@Observable` migration) as part of this effort. Both are explicitly out of scope.
+
+---
+
+## Progress Checklist
+
+_Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 2:20 PM. Tick items as they land; add the date in parentheses. Each task's pass criteria are in the [Phased Plan](#phased-plan)._
+
+**Machine key:** 🖥️ current Mac (Xcode 26.6) · 🆕 Xcode 27 computer · 🌐 web repo
+
+### Step 0 — Check now
+
+- [x] Test 1.6.2 (62) on an iOS 27 device — all working (Oct 28, 2026)
+- [x] Confirm GoogleMaps SDK works on iOS 27 (Oct 28, 2026)
+- [x] Commit pending `project.pbxproj` changes — tree clean (Oct 28, 2026)
+- [ ] 🖥️ Confirm `xcodebuild` runs from Terminal on this Mac
+- [ ] 7.0 🆕 Clone on Xcode 27 computer; recreate `Debug.xcconfig`, `Release.xcconfig`, `Config.plist`; signing set; packages resolve; builds and runs on a simulator
+
+### Step 1 — Test baseline (Phase 0) 🖥️
+
+- [ ] 0.1 Fix UI-test build-products mismatch
+- [ ] 0.2 Real launch smoke test replaces `testExample`
+- [ ] 0.3 Shared `.xctestplan` committed
+- [ ] 0.4 Concurrency settings moved to project level (C-2)
+- [ ] 0.5 `SWIFT_STRICT_CONCURRENCY = complete`; warning baseline recorded → **count: ____**
+- [ ] 0.6 Deprecation baseline recorded
+
+### Step 2 — Security (Phase 1)
+
+- [ ] 1.1 🖥️ `DeepLinkManagerTests` (incl. spoofed host)
+- [ ] 1.2 🖥️ Exact host allowlist (S-6)
+- [ ] 1.3 🖥️ `PKCEGeneratorTests`
+- [ ] 1.4w 🌐 Web passes `state` through LoginForm → authorize → auth-callback → app — **deployed + verified with 1.6.2**
+- [ ] 1.4 🖥️ iOS generates, sends and validates `state`; rejection test passes (S-1)
+- [ ] 1.5 🖥️ Clear PKCE/state on every session end; block external `oauth-callback` (S-2)
+- [ ] 1.6 🖥️ Keychain → `.afterFirstUnlockThisDeviceOnly` with migration (S-3) — upgrade test: still signed in
+- [ ] 1.7 🖥️ ATS local networking off in Release + HTTPS assertion (S-4)
+- [ ] 1.8 🖥️ SwiftData store recovery instead of `fatalError` (S-5)
+- [ ] 1.9 🖥️ Private-by-default logging (S-8)
+- [ ] 1.10 🖥️ xcconfig/Config.plist not tracked; Maps key restricted in Google Cloud (S-11)
+- [ ] 🌐 Auto-login token single-use + short TTL verified (S-7)
+- [ ] 🌐 Fix `MOBILE_API_SCHEMAS.md` `id` mismatch (DB-2)
+
+### Step 3 — Ship 1.7.0
+
+**Privacy manifest (Phase 2) 🖥️**
+
+- [ ] 2.1 Xcode privacy report generated
+- [ ] 2.2 SDK manifest table (4 packages)
+- [ ] 2.3 `PrivacyInfo.xcprivacy` added to app target (P-1)
+- [ ] 2.4 KeychainAccess replaced with `SecItem*` (D-3, with 1.6)
+- [ ] 2.5 Encryption export answer confirmed
+- [ ] 2.6 No third-party sign-in on web `/login`, `/register`
+- [ ] 2.7 Account deletion fully deletes server-side
+
+**Deprecated API & timing sweep (Phase 5) 🖥️**
+
+- [ ] 5.1 `.navigationBarHidden` → `.toolbar(.hidden…)` (A-1)
+- [ ] 5.2 Soft-deprecated modifiers (A-4, A-5)
+- [ ] 5.3 `UIImagePickerController` → `PhotosPicker` (A-2)
+- [ ] 5.4 All 8 `asyncAfter` hacks removed (A-3)
+- [ ] 5.5 Split `AuthService.swift` under 800 lines (H-1)
+
+**iOS 27 SDK build (Phase 7) 🆕**
+
+- [ ] 7.1 Build with iOS 27 SDK; delta list recorded
+- [ ] 7.2 iOS 27 release notes / deprecations cross-checked
+- [ ] 7.3 GoogleMaps renders + clusters in Xcode 27 build
+- [ ] 7.4 Other SPM packages build; deliberate version bumps only
+- [ ] 7.5 Full regression on iOS 27 device
+
+**Release gate 🚀**
+
+- [ ] Step 2 and Phases 2, 5, 7.1–7.5 complete
+- [ ] Full test suite green; manual regression on device (login, refresh, deep links, map, camera, upload, profile, logout)
+- [ ] Keychain upgrade path tested from 1.6.2 → 1.7.0
+- [ ] Archived on the Xcode 27 computer; submitted / approved
+
+### Step 4 — Swift 6
+
+**Strict concurrency, Swift 5 mode (Phase 3) 🖥️**
+
+- [ ] 3.1 Legacy photo pipeline + flag deleted (H-2)
+- [ ] 3.2 `APIClient` nonisolated + Sendable (C-5)
+- [ ] 3.3 Delegate methods `nonisolated` (C-4)
+- [ ] 3.4 `CameraService` split — device-tested (C-1)
+- [ ] 3.5 `@preconcurrency` removed where possible (C-6, D-2)
+- [ ] 3.6 Zero strict-concurrency warnings, all targets
+
+**Swift 6 language mode (Phase 4) 🖥️**
+
+- [ ] 4.1 `SWIFT_VERSION = 6.0`; error count recorded → **count: ____**
+- [ ] 4.2 Clean build; ≤2 justified `@unchecked`/`nonisolated(unsafe)`
+- [ ] 4.3 Full tests + manual device regression (also build on 🆕 Xcode 27)
+
+### Step 5 — Accessibility, 1.7.x (Phase 6) 🖥️
+
+- [ ] 6.1 Labels on all icon-only controls (X-3)
+- [ ] 6.2 Map VoiceOver path (X-2)
+- [ ] 6.3 Dynamic Type at `.accessibility5` (X-4)
+- [ ] 6.4 Accessibility Inspector audit clean
+- [ ] 6.5 App Store Accessibility Nutrition Label (X-5)
+
+### Step 6 — Minimum iOS 18.0 (Phase 8)
+
+- [x] 7.6 Decision: iOS 18.0 (Oct 28, 2026)
+- [ ] 8.1 `IPHONEOS_DEPLOYMENT_TARGET = 18.0` on all targets
+- [ ] 8.2 Dead `#available(iOS 17.4, *)` branch removed
+- [ ] 8.3 SF Symbols centralised; verified on iOS 18.0 simulator
+- [ ] 8.4 App Store listing updated
