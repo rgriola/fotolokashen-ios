@@ -55,8 +55,8 @@ struct PhotoPickerView: UIViewControllerRepresentable {
                 // Load all photos concurrently via TaskGroup (A1)
                 let photos = await withTaskGroup(of: PipelinePhoto?.self, returning: [PipelinePhoto].self) { group in
                     for result in results {
-                        group.addTask { [weak self] in
-                            await self?.loadPhoto(from: result)
+                        group.addTask {
+                            await self.loadPhoto(from: result)
                         }
                     }
                     var collected: [PipelinePhoto] = []

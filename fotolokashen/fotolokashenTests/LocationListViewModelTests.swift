@@ -7,6 +7,7 @@ final class LocationListViewModelTests: XCTestCase {
 
     // MARK: - Helpers
 
+    @MainActor
     private func makeLocation(id: Int, name: String = "Own", type: String = "BROLL") -> Location {
         Location(
             id: id,
@@ -22,6 +23,7 @@ final class LocationListViewModelTests: XCTestCase {
         )
     }
 
+    @MainActor
     private func makeSocialLocation(id: Int, name: String = "Social", username: String = "friend1") -> MapSocialLocation {
         MapSocialLocation(
             id: id,
@@ -43,11 +45,13 @@ final class LocationListViewModelTests: XCTestCase {
 
     // MARK: - Tests
 
+    @MainActor
     func testMergeReturnsEmptyForEmptyInputs() {
         let result = LocationListViewModel.mergeLocations(own: [], friends: [], public: [])
         XCTAssertTrue(result.isEmpty)
     }
 
+    @MainActor
     func testMergeOwnOnlyPreservesOrderAndSource() {
         let own = [makeLocation(id: 1, name: "A"), makeLocation(id: 2, name: "B")]
 
@@ -57,6 +61,7 @@ final class LocationListViewModelTests: XCTestCase {
         XCTAssertTrue(result.allSatisfy { $0.source == .own })
     }
 
+    @MainActor
     func testMergeAppendsFriendsThenPublicAfterOwn() {
         let own = [makeLocation(id: 1)]
         let friends = [makeSocialLocation(id: 2)]
@@ -68,6 +73,7 @@ final class LocationListViewModelTests: XCTestCase {
         XCTAssertEqual(result.map { $0.source }, [.own, .friend, .public])
     }
 
+    @MainActor
     func testOwnLocationWinsOverDuplicateFriendId() {
         let own = [makeLocation(id: 5, name: "Mine")]
         let friends = [makeSocialLocation(id: 5, name: "Theirs")]
@@ -79,6 +85,7 @@ final class LocationListViewModelTests: XCTestCase {
         XCTAssertEqual(result.first?.location.name, "Mine")
     }
 
+    @MainActor
     func testFriendWinsOverDuplicatePublicId() {
         let friends = [makeSocialLocation(id: 7, name: "FromFriend")]
         let publicLocations = [makeSocialLocation(id: 7, name: "FromPublic")]
@@ -90,6 +97,7 @@ final class LocationListViewModelTests: XCTestCase {
         XCTAssertEqual(result.first?.location.name, "FromFriend")
     }
 
+    @MainActor
     func testDuplicateIdsWithinSameSourceListCollapseToOne() {
         let friends = [makeSocialLocation(id: 8, name: "First"), makeSocialLocation(id: 8, name: "Second")]
 
@@ -99,6 +107,7 @@ final class LocationListViewModelTests: XCTestCase {
         XCTAssertEqual(result.first?.location.name, "First")
     }
 
+    @MainActor
     func testFriendPublicSourcedLocationsCarrySocialLocationForNavigation() {
         let friendSocial = makeSocialLocation(id: 10)
         let result = LocationListViewModel.mergeLocations(own: [], friends: [friendSocial], public: [])
@@ -106,6 +115,7 @@ final class LocationListViewModelTests: XCTestCase {
         XCTAssertEqual(result.first?.socialLocation, friendSocial)
     }
 
+    @MainActor
     func testOwnSourcedLocationHasNoSocialLocation() {
         let result = LocationListViewModel.mergeLocations(own: [makeLocation(id: 1)], friends: [], public: [])
 

@@ -49,8 +49,8 @@ class AuthService: ObservableObject, TokenRefreshing {
     ///   only to let unit tests inject a stubbed `APIClient` (see
     ///   `APIClient(session:baseURL:)`); production call sites always use
     ///   the default.
-    init(apiClient: APIClient = .shared) {
-        self.apiClient = apiClient
+    init(apiClient: APIClient? = nil) {
+        self.apiClient = apiClient ?? .shared
         #if DEBUG
         let t0 = CFAbsoluteTimeGetCurrent()
         #endif

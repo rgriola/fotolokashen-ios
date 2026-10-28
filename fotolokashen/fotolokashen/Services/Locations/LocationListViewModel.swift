@@ -16,8 +16,8 @@ final class LocationListViewModel: ObservableObject {
 
     private let followService: FollowService
 
-    init(followService: FollowService = .shared) {
-        self.followService = followService
+    init(followService: FollowService? = nil) {
+        self.followService = followService ?? FollowService.shared
     }
 
     /// Merges the user's own locations with the currently-enabled friends/public sources.
@@ -92,7 +92,7 @@ final class LocationListViewModel: ObservableObject {
 
     /// Own locations take precedence, then friends, then public — first occurrence of
     /// a given location id wins, matching the web app's already-shipped merge behavior.
-    nonisolated static func mergeLocations(
+    static func mergeLocations(
         own: [Location],
         friends: [MapSocialLocation],
         public publicLocations: [MapSocialLocation]

@@ -11,7 +11,6 @@
 		676F6BDE2F19748D00CEBBE4 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 676F6BDD2F19748D00CEBBE4 /* GoogleMaps */; };
 		677061772F1B0BE500E97608 /* GoogleMapsUtils in Frameworks */ = {isa = PBXBuildFile; productRef = 677061762F1B0BE500E97608 /* GoogleMapsUtils */; };
 		785FFC3E2F9D198C00A995C4 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 785FFC3F2F9D198C00A995C4 /* Kingfisher */; };
-		78EFEEE52F44DC0200C8B53E /* Debug.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 78EFEEE42F44DC0200C8B53E /* Debug.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -204,7 +203,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2710;
 				TargetAttributes = {
 					676F6B872F196B7600CEBBE4 = {
 						CreatedOnToolsVersion = 26.2;
@@ -251,7 +250,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				78EFEEE52F44DC0200C8B53E /* Debug.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -390,6 +388,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -447,6 +446,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
