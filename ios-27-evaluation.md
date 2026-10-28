@@ -185,6 +185,29 @@ Each task states its own verification criterion. **Phases 0–6 and 8 are all ex
 
 > **Dependencies:** 0.1 blocks 0.2–0.3. 0.4 must precede 0.5, or the baseline is measured under inconsistent isolation rules.
 
+#### 0.5 baseline — strict concurrency `complete` (Oct 28, 2026)
+
+Clean Debug build of all 3 targets, Xcode 27.1, Swift 5 mode, after 0.4. Unique diagnostics in repo sources (packages excluded; they produced none). **0 errors; build and full test plan still green.**
+
+**Total: 138 warnings** — app 68 · `fotolokashenTests` 59 · `fotolokashenUITests` 11 — across 21 files.
+
+| # | File | Warnings |
+| --- | --- | --- |
+| 1 | `fotolokashen/Services/Camera/CameraService.swift` | 53 |
+| 2 | `fotolokashenTests/AuthServiceOAuthCallbackTests.swift` | 12 |
+| 3 | `fotolokashenTests/APIClientTests.swift` | 10 |
+| 4 | `fotolokashenUITests/fotolokashenUITestsLaunchTests.swift` | 6 |
+| 5 | `fotolokashen/Views/MapView.swift` | 6 |
+| 6 | `fotolokashenUITests/fotolokashenUITests.swift` | 5 |
+| 7 | `fotolokashenTests/fotolokashenTests.swift` | 5 |
+| 8 | `fotolokashenTests/LocationStoreTests.swift` | 5 |
+| 9 | `fotolokashenTests/AuthServiceTests.swift` | 5 |
+| 10 | `fotolokashenTests/KeychainServiceTests.swift` | 4 |
+
+**By kind:** 68 are *"main actor-isolated … has different actor isolation from nonisolated overridden declaration"* — 66 of them in the test targets (`XCTestCase` `init`/`setUp`/`tearDown`, `URLProtocol` overrides), a direct consequence of the test targets now defaulting to `MainActor` (0.4). 38 are main-actor state referenced or mutated from a `Sendable` closure (mostly `CameraService`, C-1). 21 are main-actor calls from a synchronous nonisolated context. 6 are region-isolation (`sending`) risks.
+
+**Implication for Phase 3:** roughly half the count is mechanical test-target isolation cleanup (e.g. `nonisolated` on `XCTestCase`/`URLProtocol` subclasses, `@MainActor` on individual tests). The real app work is concentrated in `CameraService` (53 of the app's 68).
+
 ---
 
 ### Phase 1 — Security hardening `(depends on Phase 0 for tests)`
@@ -449,7 +472,7 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 - [x] 0.2 Real launch smoke test replaces `testExample` — `testLaunchShowsLoginScreen` waits for `login.signInButton`; verified it fails when the identifier is broken (Oct 28, 2026)
 - [x] 0.3 Shared `.xctestplan` committed — `xcshareddata/fotolokashen.xctestplan` (unit + UI, 120 s test timeouts) wired into a new shared `fotolokashen` scheme; `-testPlan fotolokashen` runs 74 unit + 6 UI tests, all green (Oct 28, 2026)
 - [x] 0.4 Concurrency settings moved to project level (C-2) — all 3 targets (the project has 3, not 4) now inherit `MainActor` + approachable concurrency; test-only `Echo` marked `nonisolated`; clean build has 0 Swift warnings, full plan green (Oct 28, 2026)
-- [ ] 0.5 `SWIFT_STRICT_CONCURRENCY = complete`; warning baseline recorded → **count: ____**
+- [x] 0.5 `SWIFT_STRICT_CONCURRENCY = complete`; warning baseline recorded → **count: 138** (app 68, unit tests 59, UI tests 11; see [0.5 baseline](#05-baseline--strict-concurrency-complete-oct-28-2026)) (Oct 28, 2026)
 - [ ] 0.6 Deprecation baseline recorded
 
 ### Step 2 — Security (Phase 1)
