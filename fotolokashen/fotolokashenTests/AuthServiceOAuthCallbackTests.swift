@@ -102,6 +102,72 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
         XCTAssertEqual(CountingTokenExchangeStub.requestCount, 2)
     }
 
+    func testAuthorizationURLContainsOAuthState() throws {
+        let sut = AuthService(apiClient: makeStubbedAPIClient())
+        let state = PKCEGenerator.generateOAuthState()
+        let challenge = PKCEGenerator.generate().challenge
+
+        let loginURL = try XCTUnwrap(
+            sut.debugLoginAuthorizationURLForTesting(state: state, challenge: challenge)
+        )
+        let queryItems = try XCTUnwrap(URLComponents(url: loginURL, resolvingAgainstBaseURL: false)?.queryItems)
+
+        XCTAssertEqual(loginURL.path, "/login")
+        XCTAssertEqual(queryItems.first(where: { $0.name == "state" })?.value, state)
+        XCTAssertEqual(queryItems.first(where: { $0.name == "code_challenge" })?.value, challenge)
+    }
+
+    func testMatchingOAuthStateExchangesCode() async throws {
+        let sut = AuthService(apiClient: makeStubbedAPIClient())
+        sut.debugSeedCodeVerifierForTesting("test-code-verifier", state: "expected-state")
+        let callback = URL(string: "fotolokashen://oauth-callback?code=test-auth-code&state=expected-state")!
+
+        await sut.handleCallback(url: callback)
+
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 1)
+        XCTAssertTrue(sut.isAuthenticated)
+        XCTAssertNil(sut.errorMessage)
+    }
+
+    func testMismatchingOAuthStateMakesNoTokenRequest() async throws {
+        let sut = AuthService(apiClient: makeStubbedAPIClient())
+        sut.debugSeedCodeVerifierForTesting("test-code-verifier", state: "expected-state")
+        let callback = URL(string: "fotolokashen://oauth-callback?code=test-auth-code&state=attacker-state")!
+
+        await sut.handleCallback(url: callback)
+
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 0)
+        XCTAssertFalse(sut.isAuthenticated)
+        XCTAssertEqual(
+            sut.errorMessage,
+            "Unable to verify this sign-in attempt. Please try logging in again."
+        )
+    }
+
+    func testUnexpectedOAuthStateWithNoExpectedStateMakesNoTokenRequest() async throws {
+        let sut = AuthService(apiClient: makeStubbedAPIClient())
+        sut.debugSeedCodeVerifierForTesting("test-code-verifier", state: nil)
+
+        await sut.handleCallback(url: URL(string: "fotolokashen://oauth-callback?code=test-auth-code&state=unexpected")!)
+
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 0)
+        XCTAssertFalse(sut.isAuthenticated)
+        XCTAssertNotNil(sut.errorMessage)
+    }
+
+    func testMissingOAuthStateIsAcceptedDuringDocumentedWebRolloutCompatibility() async throws {
+        let sut = AuthService(apiClient: makeStubbedAPIClient())
+        sut.debugSeedCodeVerifierForTesting("test-code-verifier", state: "expected-state")
+
+        // Transitional 1.4w compatibility only: deployed web currently omits
+        // state passthrough. Strict missing-state enforcement follows deployment.
+        await sut.handleCallback(url: callbackURL)
+
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 1)
+        XCTAssertTrue(sut.isAuthenticated)
+        XCTAssertNil(sut.errorMessage)
+    }
+
     func testMissingCodeVerifierSurfacesAnErrorWithoutCrashing() async throws {
         // No debugSeedCodeVerifierForTesting call — simulates a callback
         // arriving with no PKCE state (e.g. after a process relaunch).

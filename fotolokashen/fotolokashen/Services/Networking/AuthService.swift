@@ -25,6 +25,8 @@ class AuthService: ObservableObject, TokenRefreshing {
     // PKCE state
     private var codeVerifier: String?
     private var codeChallenge: String?
+    /// Expected OAuth CSRF state for the currently active login. Never persisted.
+    private var oauthState: String?
     /// True only between `startLogin()` and the end of its browser session.
     /// Externally delivered OAuth callbacks are ignored when this is false.
     private var isAwaitingOAuthCallback = false
@@ -41,15 +43,22 @@ class AuthService: ObservableObject, TokenRefreshing {
     /// `ASWebAuthenticationSession` through `startLogin()`. Lets unit tests
     /// exercise `handleCallback(url:)` directly. Not intended for production
     /// use — compiled out of Release builds.
-    func debugSeedCodeVerifierForTesting(_ verifier: String) {
+    func debugSeedCodeVerifierForTesting(_ verifier: String, state: String? = "test-oauth-state") {
         self.codeVerifier = verifier
+        self.oauthState = state
         self.isAwaitingOAuthCallback = true
+    }
+
+    /// Test seam for checking the exact authorization URL assembled by login.
+    func debugLoginAuthorizationURLForTesting(state: String, challenge: String) -> URL? {
+        loginAuthorizationURL(state: state, challenge: challenge)
     }
     #endif
 
     private func clearPKCEState() {
         codeVerifier = nil
         codeChallenge = nil
+        oauthState = nil
         isAwaitingOAuthCallback = false
     }
     
@@ -206,8 +215,10 @@ class AuthService: ObservableObject, TokenRefreshing {
 
         // Generate PKCE
         let (verifier, challenge) = PKCEGenerator.generate()
+        let state = PKCEGenerator.generateOAuthState()
         self.codeVerifier = verifier
         self.codeChallenge = challenge
+        self.oauthState = state
         self.isAwaitingOAuthCallback = true
         
         #if DEBUG
@@ -221,20 +232,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         // cached on-device, which is unreliable on fresh installs and device restarts.
         // The custom scheme is intercepted directly by ASWebAuthenticationSession and
         // works consistently across all iOS versions.
-        let redirectUri = config.oauthRedirectUri
-
-        var components = URLComponents(url: config.backendURL, resolvingAgainstBaseURL: false)!
-        components.path = "/login"
-        components.queryItems = [
-            URLQueryItem(name: "client_id", value: config.oauthClientId),
-            URLQueryItem(name: "redirect_uri", value: redirectUri),
-            URLQueryItem(name: "code_challenge", value: challenge),
-            URLQueryItem(name: "code_challenge_method", value: "S256"),
-            URLQueryItem(name: "scope", value: config.oauthScopesString),
-            URLQueryItem(name: "response_type", value: "code")
-        ]
-        
-        guard let loginURL = components.url else {
+        guard let loginURL = loginAuthorizationURL(state: state, challenge: challenge) else {
             clearPKCEState()
             errorMessage = "Failed to build login URL"
             return
@@ -247,6 +245,22 @@ class AuthService: ObservableObject, TokenRefreshing {
         #endif
         
         startWebAuthSession(url: loginURL)
+    }
+
+    /// Builds the authorization URL used by `startLogin()`.
+    private func loginAuthorizationURL(state: String, challenge: String) -> URL? {
+        var components = URLComponents(url: config.backendURL, resolvingAgainstBaseURL: false)!
+        components.path = "/login"
+        components.queryItems = [
+            URLQueryItem(name: "client_id", value: config.oauthClientId),
+            URLQueryItem(name: "redirect_uri", value: config.oauthRedirectUri),
+            URLQueryItem(name: "code_challenge", value: challenge),
+            URLQueryItem(name: "code_challenge_method", value: "S256"),
+            URLQueryItem(name: "scope", value: config.oauthScopesString),
+            URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "state", value: state)
+        ]
+        return components.url
     }
     
     /// Start OAuth registration flow via in-app browser (ASWebAuthenticationSession)
@@ -461,7 +475,39 @@ class AuthService: ObservableObject, TokenRefreshing {
                   let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
                 errorMessage = "No authorization code in callback"
                 isLoading = false
+                clearPKCEState()
                 return
+            }
+
+            // A callback already exchanged successfully is an expected duplicate
+            // delivery from ASWebAuthenticationSession + onOpenURL. Ignore it
+            // before checking now-cleared per-login state.
+            if lastCompletedCodeExchange == code {
+                isLoading = false
+                return
+            }
+
+            let queryItems = components.queryItems ?? []
+            let stateItems = queryItems.filter { $0.name == "state" }
+            if !stateItems.isEmpty {
+                // If the server returns state, it must belong to this login.
+                // Never exchange a callback with an absent expected state or a
+                // non-identical value. Duplicate state parameters are ambiguous
+                // and rejected as well.
+                guard stateItems.count == 1,
+                      let receivedState = stateItems.first?.value,
+                      let expectedState = oauthState,
+                      receivedState == expectedState else {
+                    errorMessage = AuthError.invalidOAuthState.localizedDescription
+                    isLoading = false
+                    clearPKCEState()
+                    return
+                }
+            } else {
+                // ROLLOUT TODO (1.4w): the deployed web server currently omits
+                // OAuth state passthrough. Accept missing state temporarily to
+                // preserve login compatibility. Once 1.4w is deployed, remove
+                // this compatibility branch and require a matching state.
             }
 
             #if DEBUG
@@ -479,6 +525,7 @@ class AuthService: ObservableObject, TokenRefreshing {
                 }
                 #endif
                 errorMessage = error.localizedDescription
+                clearPKCEState()
             }
 
         case "await-verification":
@@ -973,6 +1020,7 @@ struct RevokeRequest: Codable {
 
 enum AuthError: Error, LocalizedError {
     case missingCodeVerifier
+    case invalidOAuthState
     case noRefreshToken
     case authorizationFailed
     
@@ -980,6 +1028,8 @@ enum AuthError: Error, LocalizedError {
         switch self {
         case .missingCodeVerifier:
             return "Missing PKCE code verifier"
+        case .invalidOAuthState:
+            return "Unable to verify this sign-in attempt. Please try logging in again."
         case .noRefreshToken:
             return "No refresh token available"
         case .authorizationFailed:

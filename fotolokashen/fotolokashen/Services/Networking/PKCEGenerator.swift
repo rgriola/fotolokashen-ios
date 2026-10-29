@@ -13,6 +13,21 @@ struct PKCEGenerator {
         let challenge = generateCodeChallenge(from: verifier)
         return (verifier, challenge)
     }
+
+    /// Generate an independent OAuth CSRF state value. The prefix keeps this
+    /// value structurally distinct from the 43-character PKCE verifier and
+    /// challenge while the random payload supplies 256 bits of entropy.
+    /// - Returns: Cryptographically random, URL-safe state for one login attempt
+    static func generateOAuthState() -> String {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        let result = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+
+        guard result == errSecSuccess else {
+            fatalError("Failed to generate random bytes for OAuth state")
+        }
+
+        return "oauth_" + Data(bytes).base64URLEncodedString()
+    }
     
     /// Generate a cryptographically secure code verifier
     /// - Returns: Base64URL-encoded random string (43-128 characters)

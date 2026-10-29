@@ -42,6 +42,24 @@ final class PKCEGeneratorTests: XCTestCase {
         XCTAssertEqual(challenges.count, 1_000, "All generated challenges must be unique")
     }
 
+    func testOAuthStateIsURLSafeUniqueAndDistinctFromPKCEValues() {
+        var states = Set<String>()
+
+        for _ in 0..<1_000 {
+            let (verifier, challenge) = PKCEGenerator.generate()
+            let state = PKCEGenerator.generateOAuthState()
+
+            XCTAssertTrue(state.hasPrefix("oauth_"))
+            XCTAssertEqual(state.utf8.count, 49)
+            XCTAssertTrue(state.utf8.allSatisfy(isBase64URLByte))
+            XCTAssertNotEqual(state, verifier)
+            XCTAssertNotEqual(state, challenge)
+            states.insert(state)
+        }
+
+        XCTAssertEqual(states.count, 1_000, "Every login attempt must receive a fresh state")
+    }
+
     private func s256Base64URL(_ verifier: String) -> String {
         let digest = SHA256.hash(data: Data(verifier.utf8))
         return Data(digest)
@@ -64,4 +82,5 @@ final class PKCEGeneratorTests: XCTestCase {
         (48...57).contains(byte) ||
         byte == 45 || byte == 95 // - _
     }
+
 }
