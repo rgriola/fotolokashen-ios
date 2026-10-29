@@ -49,7 +49,7 @@ struct LoginView: View {
                 Spacer()
                 
                 // Logo
-                Image("FLogo")
+                Image("Flogo")
                     .resizable()
                     .scaledToFit()
                    // .frame(width: 120, height: 120)
