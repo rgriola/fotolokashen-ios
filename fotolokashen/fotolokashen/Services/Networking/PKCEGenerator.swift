@@ -32,7 +32,7 @@ struct PKCEGenerator {
     /// Uses SHA256 hashing as required by S256 method
     /// - Parameter verifier: The code verifier string
     /// - Returns: Base64URL-encoded SHA256 hash of the verifier
-    private static func generateCodeChallenge(from verifier: String) -> String {
+    static func generateCodeChallenge(from verifier: String) -> String {
         guard let data = verifier.data(using: .utf8) else {
             fatalError("Failed to encode verifier to UTF-8")
         }

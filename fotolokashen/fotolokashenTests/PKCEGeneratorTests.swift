@@ -1,115 +1,67 @@
+import CryptoKit
 import XCTest
 @testable import fotolokashen
 
 final class PKCEGeneratorTests: XCTestCase {
-    
-    // MARK: - Code Verifier Tests
-    
-    func testGenerateCodeVerifier() {
-        // When
-        let (verifier, _) = PKCEGenerator.generate()
-        
-        // Then
-        XCTAssertGreaterThanOrEqual(verifier.count, 43, "Code verifier should be at least 43 characters")
-        XCTAssertLessThanOrEqual(verifier.count, 128, "Code verifier should be at most 128 characters")
-        
-        // Should only contain URL-safe characters
-        let allowedCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))
-        let verifierCharacterSet = CharacterSet(charactersIn: verifier)
-        XCTAssertTrue(allowedCharacters.isSuperset(of: verifierCharacterSet), "Code verifier should only contain URL-safe characters")
-    }
-    
-    func testGenerateCodeVerifierIsUnique() {
-        // When
-        let (verifier1, _) = PKCEGenerator.generate()
-        let (verifier2, _) = PKCEGenerator.generate()
-        
-        // Then
-        XCTAssertNotEqual(verifier1, verifier2, "Code verifiers should be unique")
-    }
-    
-    // MARK: - Code Challenge Tests
-    
-    func testGenerateCodeChallenge() {
-        // When
+
+    func testGeneratedVerifierAndChallengeMeetRFC7636EncodingRequirements() {
         let (verifier, challenge) = PKCEGenerator.generate()
-        
-        // Then
-        XCTAssertFalse(challenge.isEmpty, "Code challenge should not be empty")
-        XCTAssertNotEqual(verifier, challenge, "Code challenge should be different from verifier")
-        
-        // Should be base64url encoded
-        let allowedCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
-        let challengeCharacterSet = CharacterSet(charactersIn: challenge)
-        XCTAssertTrue(allowedCharacters.isSuperset(of: challengeCharacterSet), "Code challenge should be base64url encoded")
+
+        XCTAssertTrue((43...128).contains(verifier.utf8.count))
+        XCTAssertTrue(verifier.utf8.allSatisfy(isVerifierByte))
+        XCTAssertEqual(challenge.utf8.count, 43)
+        XCTAssertTrue(challenge.utf8.allSatisfy(isBase64URLByte))
     }
-    
-    func testGenerateCodeChallengeIsDeterministic() {
-        // Given — generate two pairs with the same public API
-        // Since verifiers are random, we can't test determinism of the private method directly.
-        // Instead, verify that the same generate() call produces a matching pair.
-        let (verifier1, challenge1) = PKCEGenerator.generate()
-        let (verifier2, challenge2) = PKCEGenerator.generate()
-        
-        // Then — different verifiers should produce different challenges
-        XCTAssertNotEqual(verifier1, verifier2)
-        XCTAssertNotEqual(challenge1, challenge2)
+
+    func testS256ChallengeMatchesRFC7636AppendixBKnownAnswer() {
+        let verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+        // RFC 7636 Appendix B's S256 value.
+        let expectedChallenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+
+        XCTAssertEqual(verifier.utf8.count, 43)
+        XCTAssertEqual(PKCEGenerator.generateCodeChallenge(from: verifier), expectedChallenge)
     }
-    
-    // MARK: - Full Generation Tests
-    
-    func testGenerate() {
-        // When
-        let (verifier, challenge) = PKCEGenerator.generate()
-        
-        // Then
-        XCTAssertFalse(verifier.isEmpty, "Verifier should not be empty")
-        XCTAssertFalse(challenge.isEmpty, "Challenge should not be empty")
-        XCTAssertNotEqual(verifier, challenge, "Verifier and challenge should be different")
+
+    func testOneThousandGeneratedVerifierAndChallengePairsAreUniqueAndValid() {
+        var verifiers = Set<String>()
+        var challenges = Set<String>()
+
+        for _ in 0..<1_000 {
+            let (verifier, challenge) = PKCEGenerator.generate()
+
+            XCTAssertTrue((43...128).contains(verifier.utf8.count))
+            XCTAssertTrue(verifier.utf8.allSatisfy(isVerifierByte))
+            XCTAssertEqual(challenge.utf8.count, 43)
+            XCTAssertTrue(challenge.utf8.allSatisfy(isBase64URLByte))
+            XCTAssertEqual(challenge, s256Base64URL(verifier))
+            verifiers.insert(verifier)
+            challenges.insert(challenge)
+        }
+
+        XCTAssertEqual(verifiers.count, 1_000, "All generated verifiers must be unique")
+        XCTAssertEqual(challenges.count, 1_000, "All generated challenges must be unique")
     }
-    
-    func testGenerateProducesUniqueValues() {
-        // When
-        let (verifier1, challenge1) = PKCEGenerator.generate()
-        let (verifier2, challenge2) = PKCEGenerator.generate()
-        
-        // Then
-        XCTAssertNotEqual(verifier1, verifier2, "Should generate unique verifiers")
-        XCTAssertNotEqual(challenge1, challenge2, "Should generate unique challenges")
+
+    private func s256Base64URL(_ verifier: String) -> String {
+        let digest = SHA256.hash(data: Data(verifier.utf8))
+        return Data(digest)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
     }
-    
-    // MARK: - RFC 7636 Compliance Tests
-    
-    func testCodeVerifierMeetsRFC7636Requirements() {
-        // RFC 7636 requires:
-        // - Length between 43 and 128 characters
-        // - Characters from [A-Z] / [a-z] / [0-9] / "-" / "." / "_" / "~"
-        
-        // When
-        let (verifier, _) = PKCEGenerator.generate()
-        
-        // Then
-        XCTAssertGreaterThanOrEqual(verifier.count, 43, "RFC 7636: minimum length 43")
-        XCTAssertLessThanOrEqual(verifier.count, 128, "RFC 7636: maximum length 128")
-        
-        let rfc7636Characters = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
-        let verifierCharSet = CharacterSet(charactersIn: verifier)
-        XCTAssertTrue(rfc7636Characters.isSuperset(of: verifierCharSet), "RFC 7636: allowed characters only")
+
+    private func isVerifierByte(_ byte: UInt8) -> Bool {
+        (65...90).contains(byte) ||
+        (97...122).contains(byte) ||
+        (48...57).contains(byte) ||
+        [45, 46, 95, 126].contains(byte) // - . _ ~
     }
-    
-    func testCodeChallengeMeetsRFC7636Requirements() {
-        // RFC 7636 requires:
-        // - code_challenge = BASE64URL(SHA256(ASCII(code_verifier)))
-        
-        // When
-        let (_, challenge) = PKCEGenerator.generate()
-        
-        // Then
-        XCTAssertFalse(challenge.isEmpty, "Challenge should not be empty")
-        
-        // Base64url should not contain +, /, or = (replaced with -, _, and removed respectively)
-        XCTAssertFalse(challenge.contains("+"), "Base64url should not contain +")
-        XCTAssertFalse(challenge.contains("/"), "Base64url should not contain /")
-        XCTAssertFalse(challenge.contains("="), "Base64url should not contain padding =")
+
+    private func isBase64URLByte(_ byte: UInt8) -> Bool {
+        (65...90).contains(byte) ||
+        (97...122).contains(byte) ||
+        (48...57).contains(byte) ||
+        byte == 45 || byte == 95 // - _
     }
 }

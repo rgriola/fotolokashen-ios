@@ -493,9 +493,9 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 
 ### Step 2 — Security (Phase 1)
 
-- [ ] 1.1 🖥️ `DeepLinkManagerTests` (incl. spoofed host)
-- [ ] 1.2 🖥️ Exact host allowlist (S-6)
-- [ ] 1.3 🖥️ `PKCEGeneratorTests`
+- [x] 1.1 🖥️ `DeepLinkManagerTests` (incl. spoofed host) — 4 tests pass (Oct 29, 2026)
+- [x] 1.2 🖥️ Exact host allowlist (S-6) — HTTPS `fotolokashen.com` only; spoofed host and non-HTTPS rejected (Oct 29, 2026)
+- [x] 1.3 🖥️ `PKCEGeneratorTests` — RFC 7636 vector, format and 1,000-pair uniqueness checks; 8 tests pass (Oct 29, 2026)
 - [ ] 1.4w 🌐 Web passes `state` through LoginForm → authorize → auth-callback → app — **deployed + verified with 1.6.2**
 - [ ] 1.4 🖥️ iOS generates, sends and validates `state`; rejection test passes (S-1)
 - [ ] 1.5 🖥️ Clear PKCE/state on every session end; block external `oauth-callback` (S-2)

@@ -6,6 +6,7 @@ import Combine
 @MainActor
 class DeepLinkManager: ObservableObject {
     static let shared = DeepLinkManager()
+    private static let universalLinkHosts: Set<String> = ["fotolokashen.com"]
 
     /// When set, the app should present a location detail view for this location ID.
     @Published var pendingLocationId: Int?
@@ -81,8 +82,12 @@ class DeepLinkManager: ObservableObject {
             }
         }
 
-        // Universal Link: https://fotolokashen.com/shared/123
-        if let host = url.host, host.contains("fotolokashen.com") {
+        // Universal Links are accepted only from the explicitly approved HTTPS host.
+        // Do not use substring matching: it also accepts attacker-controlled suffixes.
+        if url.scheme?.lowercased() == "https",
+           let host = url.host?.lowercased(),
+           Self.universalLinkHosts.contains(host) {
+            // Universal Link: https://fotolokashen.com/shared/123
             let pathComponents = url.pathComponents
             if pathComponents.count >= 3, pathComponents[1] == "shared", let id = Int(pathComponents[2]) {
                 navigateToLocation(id: id)
