@@ -1,4 +1,5 @@
 import XCTest
+import AuthenticationServices
 @testable import fotolokashen
 
 /// Regression coverage for the iOS "Token Exchange Failed" bug (Oct 2026):
@@ -111,6 +112,78 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
         XCTAssertEqual(CountingTokenExchangeStub.requestCount, 0)
         XCTAssertFalse(sut.isAuthenticated)
         XCTAssertNotNil(sut.errorMessage)
+    }
+
+    // MARK: - S-2: externally delivered OAuth callbacks
+
+    func testExternalCallbackAfterCancelledLoginMakesNoNetworkCall() async throws {
+        let sut = AuthService(apiClient: makeStubbedAPIClient())
+        sut.debugSeedCodeVerifierForTesting("test-code-verifier")
+
+        await sut.handleWebAuthSessionCompletion(
+            callbackURL: nil,
+            error: ASWebAuthenticationSessionError(.canceledLogin)
+        )
+        let crafted = URL(string: "fotolokashen://oauth-callback?code=attacker-code")!
+        await sut.handleExternalCallback(url: crafted)
+
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 0)
+        XCTAssertFalse(sut.isAuthenticated)
+        XCTAssertNil(sut.errorMessage, "A dropped external callback must not surface UI")
+    }
+
+    func testExternalCallbackAfterFailedSessionMakesNoNetworkCall() async throws {
+        let sut = AuthService(apiClient: makeStubbedAPIClient())
+        sut.debugSeedCodeVerifierForTesting("test-code-verifier")
+
+        await sut.handleWebAuthSessionCompletion(
+            callbackURL: nil,
+            error: ASWebAuthenticationSessionError(.presentationContextInvalid)
+        )
+        await sut.handleExternalCallback(url: callbackURL)
+
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 0)
+        XCTAssertFalse(sut.isAuthenticated)
+    }
+
+    func testExternalCallbackWithNoLoginInProgressIsIgnored() async throws {
+        let sut = AuthService(apiClient: makeStubbedAPIClient())
+
+        await sut.handleExternalCallback(url: callbackURL)
+        let universalLink = URL(string: "https://fotolokashen.com/app/auth-callback?code=attacker-code")!
+        await sut.handleExternalCallback(url: universalLink)
+
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 0)
+        XCTAssertFalse(sut.isAuthenticated)
+        XCTAssertNil(sut.errorMessage)
+    }
+
+    func testExternalCallbackAfterCompletedLoginIsIgnored() async throws {
+        let sut = AuthService(apiClient: makeStubbedAPIClient())
+        sut.debugSeedCodeVerifierForTesting("test-code-verifier")
+
+        await sut.handleWebAuthSessionCompletion(callbackURL: callbackURL, error: nil)
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 1)
+
+        let crafted = URL(string: "fotolokashen://oauth-callback?code=attacker-code")!
+        await sut.handleExternalCallback(url: crafted)
+
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 1)
+        XCTAssertNil(sut.errorMessage)
+    }
+
+    /// The `.onOpenURL` fallback must keep working while a login is active.
+    func testExternalCallbackDuringActiveLoginIsExchangedOnce() async throws {
+        let sut = AuthService(apiClient: makeStubbedAPIClient())
+        sut.debugSeedCodeVerifierForTesting("test-code-verifier")
+
+        async let external: Void = sut.handleExternalCallback(url: callbackURL)
+        async let session: Void = sut.handleWebAuthSessionCompletion(callbackURL: callbackURL, error: nil)
+        _ = await (external, session)
+
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 1)
+        XCTAssertTrue(sut.isAuthenticated)
+        XCTAssertNil(sut.errorMessage)
     }
 }
 

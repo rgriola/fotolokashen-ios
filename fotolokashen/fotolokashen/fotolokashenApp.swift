@@ -104,7 +104,7 @@ struct AppRootView: View {
             if !deepLinkManager.handleURL(url) {
                 if url.scheme == "fotolokashen" {
                     Task {
-                        await authService.handleCallback(url: url)
+                        await authService.handleExternalCallback(url: url)
                     }
                 }
             }

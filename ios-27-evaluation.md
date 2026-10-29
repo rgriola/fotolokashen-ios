@@ -337,6 +337,8 @@ Other build warnings: `SwiftLint not installed` (build script phase; SwiftLint i
 
 **Why Step 6 (after 1.7.0):** the proposed plan places the minimum-iOS change last. A single release that both hardens security _and_ drops iOS 17 users makes it hard to tell which change caused a problem. Users on iOS 17 keep 1.7.x.
 
+> **Decision (Oct 29, 2026):** the owner chose to raise the minimum to **iOS 18.6** now, on `feature/ios-27-ready`, so 1.7.0 will require iOS 18.6. All targets (project, app, unit tests, UI tests) are set to 18.6. Task 8.1 is therefore done early. Tasks 8.2–8.4 still apply, with 18.6 in place of 18.0. Users on iOS 17.x–18.5 stay on 1.6.2.
+
 | #   | Task                                                                                                                                                                      | Verify                                                                                                   |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | 8.1 | Set `IPHONEOS_DEPLOYMENT_TARGET = 18.0` at project level (`project.pbxproj:387`, `:445`) and update or remove the test-target overrides (`:558`, `:584`).                  | `xcodebuild -showBuildSettings` reports 18.0 for all four targets.                                       |
@@ -498,9 +500,9 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 - [x] 1.3 🖥️ `PKCEGeneratorTests` — RFC 7636 vector, format and 1,000-pair uniqueness checks; 8 tests pass (Oct 29, 2026)
 - [ ] 1.4w 🌐 Web passes `state` through LoginForm → authorize → auth-callback → app — implemented locally in web commit `77fcbcf`; **push/deploy + verification with 1.6.2 pending**
 - [ ] 1.4 🖥️ iOS generates, sends and validates `state`; rejection test passes (S-1)
-- [ ] 1.5 🖥️ Clear PKCE/state on every session end; block external `oauth-callback` (S-2)
+- [x] 1.5 🖥️ Clear PKCE/state on every session end; block external `oauth-callback` (S-2) — external callbacks are gated on an in-progress login rather than blocked outright, because the `.onOpenURL` duplicate delivery is a known legitimate path. 5 new tests incl. cancel → crafted callback → zero network calls (Oct 29, 2026)
 - [ ] 1.6 🖥️ Keychain → `.afterFirstUnlockThisDeviceOnly` with migration (S-3) — implementation and unit tests pass; **physical upgrade test: still signed in pending**
-- [x] 1.7 🖥️ ATS local networking off in Release + HTTPS assertion (S-4) — Release app build succeeded; built plist has local networking disabled; HTTPS/HTTP policy tests pass (Oct 29, 2026)
+- [x] 1.7 🖥️ ATS local networking off in Release + HTTPS assertion (S-4) — separate `Info-Debug.plist` (Debug) and `Info.plist` (Release); built plists verified true/false; HTTPS/HTTP policy tests pass. Info.plist preprocessing was dropped because Xcode's target editor rewrote the file as empty (Oct 29, 2026)
 - [x] 1.8 🖥️ SwiftData store recovery instead of `fatalError` (S-5) — quarantine/recovery tests and full Debug test plan pass (Oct 29, 2026)
 - [x] 1.9 🖥️ Private-by-default logging (S-8) — sensitive values removed from diagnostics; no direct `print()`, `debugPrint()`, or `NSLog()` in production Swift sources; full Debug test plan passes (Oct 29, 2026)
 - [ ] 1.10 🖥️ xcconfig/Config.plist not tracked; Maps key restricted in Google Cloud (S-11)
@@ -570,7 +572,7 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 ### Step 6 — Minimum iOS 18.0 (Phase 8)
 
 - [x] 7.6 Decision: iOS 18.0 (Oct 28, 2026)
-- [ ] 8.1 `IPHONEOS_DEPLOYMENT_TARGET = 18.0` on all targets
+- [x] 8.1 `IPHONEOS_DEPLOYMENT_TARGET` raised on all targets — **18.6** by owner decision, landed early in 1.7.0 (Oct 29, 2026)
 - [ ] 8.2 Dead `#available(iOS 17.4, *)` branch removed
 - [ ] 8.3 SF Symbols centralised; verified on iOS 18.0 simulator
 - [ ] 8.4 App Store listing updated

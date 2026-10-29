@@ -4,18 +4,23 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 ## [Unreleased] - iOS 27 readiness
 
+### ⚙️ Platform
+
+- **Minimum iOS raised to 18.6** for all targets (app, unit tests, UI tests). Users on iOS 17.x–18.5 remain on 1.6.2
+
 ### 🔒 Security Hardening (Step 2)
 
 - **Deep links**: Universal Links accepted only over HTTPS from exactly `fotolokashen.com`; spoofed hosts rejected (`DeepLinkManagerTests`)
 - **PKCE**: RFC 7636 known-answer vector, format and uniqueness tests (`PKCEGeneratorTests`)
-- **Transport**: `NSAllowsLocalNetworking` is now Debug-only (Info.plist preprocessing); Release requires an HTTPS backend URL (`BackendURLValidator`)
+- **Transport**: `NSAllowsLocalNetworking` is now Debug-only. Debug uses `Info-Debug.plist`, Release uses `Info.plist` — **keep the two files in sync** apart from that key. Release requires an HTTPS backend URL (`BackendURLValidator`)
+- **OAuth callbacks (S-2)**: PKCE state is cleared whenever the login browser session ends (cancel, error or success) and on logout. `fotolokashen://oauth-callback` URLs delivered via `.onOpenURL` are ignored unless a login is in progress, so a crafted link cannot trigger a token exchange
 - **Keychain**: Tokens migrated from KeychainAccess to `SecItem` with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Legacy items are preserved if migration fails, and read failures no longer sign users out. Physical upgrade test from 1.6.2 is still pending
 - **SwiftData**: A store that cannot be opened is quarantined and rebuilt instead of calling `fatalError`; users see a notice that unsynced local data may be missing (`PersistentStoreRecovery`)
 - **Logging**: `dlog` marks messages private; all direct `print()` calls removed from app code. Tokens, PKCE values, emails, coordinates, URLs, bodies and raw errors are no longer logged
 
 ### 🧪 Tests
 
-- Shared `fotolokashen.xctestplan` (unit + UI): 94 unit tests + 6 UI test runs passing on Xcode 27.1 / iOS 27 simulator
+- Shared `fotolokashen.xctestplan` (unit + UI): 99 unit tests + 6 UI test runs passing on Xcode 27.1 / iOS 27 simulator
 
 ## [1.6.0] - 2026-05-08
 

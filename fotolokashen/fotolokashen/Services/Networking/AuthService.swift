@@ -25,6 +25,9 @@ class AuthService: ObservableObject, TokenRefreshing {
     // PKCE state
     private var codeVerifier: String?
     private var codeChallenge: String?
+    /// True only between `startLogin()` and the end of its browser session.
+    /// Externally delivered OAuth callbacks are ignored when this is false.
+    private var isAwaitingOAuthCallback = false
     
     // ASWebAuthenticationSession (retained to keep the session alive)
     private var webAuthSession: ASWebAuthenticationSession?
@@ -40,8 +43,15 @@ class AuthService: ObservableObject, TokenRefreshing {
     /// use — compiled out of Release builds.
     func debugSeedCodeVerifierForTesting(_ verifier: String) {
         self.codeVerifier = verifier
+        self.isAwaitingOAuthCallback = true
     }
     #endif
+
+    private func clearPKCEState() {
+        codeVerifier = nil
+        codeChallenge = nil
+        isAwaitingOAuthCallback = false
+    }
     
     // MARK: - Initialization
 
@@ -198,6 +208,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         let (verifier, challenge) = PKCEGenerator.generate()
         self.codeVerifier = verifier
         self.codeChallenge = challenge
+        self.isAwaitingOAuthCallback = true
         
         #if DEBUG
         if config.enableDebugLogging {
@@ -224,6 +235,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         ]
         
         guard let loginURL = components.url else {
+            clearPKCEState()
             errorMessage = "Failed to build login URL"
             return
         }
@@ -315,39 +327,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         // Shared completion handler for both API versions
         let completionHandler: (URL?, Error?) -> Void = { [weak self] callbackURL, error in
             Task { @MainActor [weak self] in
-                guard let self = self else { return }
-                self.webAuthSession = nil
-
-                if let error = error as? ASWebAuthenticationSessionError,
-                   error.code == .canceledLogin {
-                    // User dismissed the browser — not an error
-                    self.isLoading = false
-                    #if DEBUG
-                    if self.config.enableDebugLogging {
-                        dlog("AuthService", "User cancelled authentication")
-                    }
-                    #endif
-                    return
-                }
-
-                if let error = error {
-                    self.isLoading = false
-                    self.errorMessage = error.localizedDescription
-                    #if DEBUG
-                    if self.config.enableDebugLogging {
-                        dlog("AuthService", "Authentication browser session failed")
-                    }
-                    #endif
-                    return
-                }
-
-                guard let callbackURL = callbackURL else {
-                    self.isLoading = false
-                    self.errorMessage = "No callback URL received"
-                    return
-                }
-
-                await self.handleCallback(url: callbackURL)
+                await self?.handleWebAuthSessionCompletion(callbackURL: callbackURL, error: error)
             }
         }
 
@@ -376,9 +356,73 @@ class AuthService: ObservableObject, TokenRefreshing {
         webAuthSession = session
         
         if !session.start() {
+            webAuthSession = nil
+            clearPKCEState()
             isLoading = false
             errorMessage = "Failed to start authentication session"
         }
+    }
+
+    /// Ends a browser session. PKCE state is cleared on every path — cancel,
+    /// error, and success — so a later externally delivered callback cannot
+    /// be exchanged with a verifier from an abandoned login (S-2).
+    func handleWebAuthSessionCompletion(callbackURL: URL?, error: Error?) async {
+        webAuthSession = nil
+        defer { clearPKCEState() }
+
+        if let error = error as? ASWebAuthenticationSessionError,
+           error.code == .canceledLogin {
+            // User dismissed the browser — not an error
+            isLoading = false
+            #if DEBUG
+            if config.enableDebugLogging {
+                dlog("AuthService", "User cancelled authentication")
+            }
+            #endif
+            return
+        }
+
+        if error != nil {
+            isLoading = false
+            errorMessage = error?.localizedDescription
+            #if DEBUG
+            if config.enableDebugLogging {
+                dlog("AuthService", "Authentication browser session failed")
+            }
+            #endif
+            return
+        }
+
+        guard let callbackURL else {
+            isLoading = false
+            errorMessage = "No callback URL received"
+            return
+        }
+
+        await handleCallback(url: callbackURL)
+    }
+
+    /// Entry point for auth URLs delivered outside `ASWebAuthenticationSession`
+    /// (for example `.onOpenURL`). Any app or web page can open the custom
+    /// scheme, so OAuth callbacks are accepted only while this app has a login
+    /// in progress; otherwise they are dropped without network access or UI.
+    func handleExternalCallback(url: URL) async {
+        if Self.isOAuthCallback(url), !isAwaitingOAuthCallback {
+            #if DEBUG
+            if config.enableDebugLogging {
+                dlog("AuthService", "Ignoring OAuth callback with no login in progress")
+            }
+            #endif
+            return
+        }
+        await handleCallback(url: url)
+    }
+
+    private static func isOAuthCallback(_ url: URL) -> Bool {
+        if url.scheme?.lowercased() == "https" {
+            return url.path == "/app/auth-callback"
+        }
+        return url.host?.lowercased() == "oauth-callback"
     }
     
     /// Handle callback URL from ASWebAuthenticationSession.
@@ -592,9 +636,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         currentUser = tokenResponse.user
         isAuthenticated = true
         
-        // Clear PKCE state
-        codeVerifier = nil
-        codeChallenge = nil
+        clearPKCEState()
     }
     
     // MARK: - Auto-Login (Post Email Verification)
@@ -800,6 +842,7 @@ class AuthService: ObservableObject, TokenRefreshing {
     /// Logout user
     func logout() async {
         isLoading = true
+        clearPKCEState()
         
         do {
             // Revoke refresh token on server
