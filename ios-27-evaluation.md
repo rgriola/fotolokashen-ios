@@ -498,7 +498,7 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 - [x] 1.1 🖥️ `DeepLinkManagerTests` (incl. spoofed host) — 4 tests pass (Oct 29, 2026)
 - [x] 1.2 🖥️ Exact host allowlist (S-6) — HTTPS `fotolokashen.com` only; spoofed host and non-HTTPS rejected (Oct 29, 2026)
 - [x] 1.3 🖥️ `PKCEGeneratorTests` — RFC 7636 vector, format and 1,000-pair uniqueness checks; 8 tests pass (Oct 29, 2026)
-- [ ] 1.4w 🌐 Web passes `state` through LoginForm → authorize → auth-callback → app — implemented locally in web commit `77fcbcf`; **push/deploy + verification with 1.6.2 pending**
+- [ ] 1.4w 🌐 Web passes `state` through LoginForm → authorize → auth-callback → app — web commit `77fcbcf` pushed and deployed to preview (merkelvision.com); feature build (sends `state`) verified on preview 2026-10-29: login → logout → login OK. **Pending: no-state (1.6.2) check on preview, production deploy, then 1.6.2 App Store build verified against production**
 - [ ] 1.4 🖥️ iOS generates and sends fresh `state`, rejects mismatches/unexpected state (S-1) — implemented and tested; **missing-state rejection remains gated on deployed 1.4w passthrough**
 - [x] 1.5 🖥️ Clear PKCE/state on every session end; block external `oauth-callback` (S-2) — external callbacks are gated on an in-progress login rather than blocked outright, because the `.onOpenURL` duplicate delivery is a known legitimate path. 5 new tests incl. cancel → crafted callback → zero network calls (Oct 29, 2026)
 - [ ] 1.6 🖥️ Keychain → `.afterFirstUnlockThisDeviceOnly` with migration (S-3) — implementation and unit tests pass; **physical upgrade test: still signed in pending**

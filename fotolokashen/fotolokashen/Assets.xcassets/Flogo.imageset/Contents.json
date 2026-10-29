@@ -1,11 +1,17 @@
 {
   "images" : [
     {
+      "filename" : "Compass.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
       "filename" : "Compass.png",
+      "idiom" : "universal",
+      "scale" : "2x"
+    },
+    {
+      "filename" : "FLogo.png",
       "idiom" : "universal",
       "scale" : "2x"
     },

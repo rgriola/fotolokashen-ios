@@ -338,7 +338,7 @@ struct LoggedInView: View {
             // Center camera tab - placeholder that triggers camera
             Color.clear
                 .tabItem {
-                    Label("Capture", systemImage: "camera.fill")
+                    Label("Create", systemImage: "camera.fill")
                 }
                 .tag(2)
 
@@ -352,7 +352,7 @@ struct LoggedInView: View {
             // Profile
             ProfileView()
                 .tabItem {
-                    Label("Profile", systemImage: "person.circle")
+                    Label("Settings", systemImage: "person.circle")
                 }
                 .tag(4)
         }

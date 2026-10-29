@@ -106,8 +106,8 @@ struct MapView: View {
                     }
                 }
             }
-            .navigationTitle("Map")
-            .navigationBarTitleDisplayMode(.inline)
+           // .navigationTitle("Map")
+           // .navigationBarTitleDisplayMode(.inline)
             .sheet(item: $selectedLocation) { location in
                 LocationDetailView(location: location)
             }
