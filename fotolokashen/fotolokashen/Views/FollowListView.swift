@@ -134,7 +134,7 @@ struct FollowListView: View {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[FollowListView] Load more failed: \(error)")
+                dlog("FollowListView", "Pagination failed")
             }
             #endif
         }

@@ -26,7 +26,7 @@ final class LocationRepository: ObservableObject {
     func fetchLocations() async {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationRepository] fetchLocations() called, isLoading: \(isLoading), count: \(locations.count)")
+            dlog("LocationRepository", "Fetching locations")
         }
         #endif
 
@@ -53,13 +53,13 @@ final class LocationRepository: ObservableObject {
             }
             #if DEBUG
             if config.enableDebugLogging {
-                print("[LocationRepository] Refreshed \(locations.count) locations")
+                dlog("LocationRepository", "Locations refreshed")
             }
             #endif
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[LocationRepository] Error refreshing locations: \(error)")
+                dlog("LocationRepository", "Location refresh failed")
             }
             #endif
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
@@ -71,7 +71,7 @@ final class LocationRepository: ObservableObject {
         locations.insert(location, at: 0)
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationRepository] Added location, now have \(locations.count)")
+            dlog("LocationRepository", "Location added")
         }
         #endif
     }
@@ -96,7 +96,7 @@ final class LocationRepository: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[LocationRepository] Error deleting location: \(error)")
+                dlog("LocationRepository", "Location deletion failed")
             }
             #endif
             errorMessage = "Failed to delete location: \(error.localizedDescription)"
@@ -126,7 +126,7 @@ final class LocationRepository: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[LocationRepository] Error updating location: \(error)")
+                dlog("LocationRepository", "Location update failed")
             }
             #endif
             errorMessage = "Failed to update location: \(error.localizedDescription)"
@@ -159,7 +159,7 @@ final class LocationRepository: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[LocationRepository] Error deleting photo: \(error)")
+                dlog("LocationRepository", "Photo deletion failed")
             }
             #endif
             errorMessage = "Failed to delete photo: \(error.localizedDescription)"

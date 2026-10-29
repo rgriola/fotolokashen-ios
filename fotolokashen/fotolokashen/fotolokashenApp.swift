@@ -14,11 +14,9 @@ import Kingfisher
 #if DEBUG
 /// Tracks elapsed time from app process start for launch diagnostics
 enum LaunchTimer {
-    static let processStart = CFAbsoluteTimeGetCurrent()
-    
     static func mark(_ label: String) {
-        let elapsed = (CFAbsoluteTimeGetCurrent() - processStart) * 1000
-        print("[⏱️ +\(String(format: "%7.0f", elapsed))ms] \(label)")
+        _ = label
+        dlog("LaunchTimer", "Launch checkpoint")
     }
 }
 #endif
@@ -90,7 +88,7 @@ struct AppRootView: View {
 
     var body: some View {
         #if DEBUG
-        let _ = LaunchTimer.mark("AppRootView.body evaluated (isAuth=\(authService.isAuthenticated), isLoading=\(authService.isLoading), error=\(authService.errorMessage ?? "nil"), user=\(authService.currentUser?.username ?? "nil"))")
+        let _ = LaunchTimer.mark("AppRootView.body evaluated")
         #endif
         Group {
             if authService.isAuthenticated {
@@ -143,7 +141,7 @@ struct AuthenticatedRootView: View {
 
     @ObservedObject private var deepLinkManager = DeepLinkManager.shared
     private let syncService = SyncService.shared
-    private let dataManager = DataManager.shared
+    @ObservedObject private var dataManager = DataManager.shared
 
     var body: some View {
         LoggedInView()
@@ -151,6 +149,23 @@ struct AuthenticatedRootView: View {
             .environmentObject(dataManager)
             .environmentObject(deepLinkManager)
             .modelContainer(dataManager.modelContainer)
+            .alert(
+                "Local data recovery",
+                isPresented: Binding(
+                    get: { dataManager.storeRecoveryMessage != nil },
+                    set: { isPresented in
+                        if !isPresented {
+                            dataManager.dismissStoreRecoveryNotice()
+                        }
+                    }
+                )
+            ) {
+                Button("OK", role: .cancel) {
+                    dataManager.dismissStoreRecoveryNotice()
+                }
+            } message: {
+                Text(dataManager.storeRecoveryMessage ?? "")
+            }
             .task(priority: .utility) {
                 guard networkMonitor.isConnected else { return }
                 await syncService.syncAll()

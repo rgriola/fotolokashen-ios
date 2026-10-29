@@ -128,7 +128,7 @@ final class EditLocationViewModel: ObservableObject {
             self.isLoadingPhotos = false
         } catch {
             #if DEBUG
-            print("[EditLocationViewModel] Failed to load photos: \(error)")
+            dlog("EditLocationViewModel", "Failed to load photos")
             #endif
             self.isLoadingPhotos = false
         }
@@ -198,7 +198,7 @@ final class EditLocationViewModel: ObservableObject {
             let success = await LocationStore.shared.deletePhoto(photoId: photoId, from: location)
             if !success {
                 #if DEBUG
-                print("[EditLocationViewModel] Failed to delete photo \(photoId)")
+                dlog("EditLocationViewModel", "Failed to delete photo")
                 #endif
             }
         }

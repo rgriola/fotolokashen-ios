@@ -77,7 +77,7 @@ final class CameraSessionViewModel: ObservableObject {
                 try jpegData.write(to: fileURL)
             } catch {
                 #if DEBUG
-                print("[Camera] Failed to write capture to disk: \(error)")
+                dlog("Camera", "Failed to write captured photo to disk")
                 #endif
                 await MainActor.run { [weak self] in self?.isWritingToDisk = false }
                 return
@@ -102,7 +102,7 @@ final class CameraSessionViewModel: ObservableObject {
                 self.sessionCaptures.append(capture)
                 self.isWritingToDisk = false
                 #if DEBUG
-                print("[Camera] Session capture \(self.sessionCaptures.count) saved to \(fileURL.lastPathComponent)")
+                dlog("Camera", "Captured photo saved")
                 #endif
             }
 

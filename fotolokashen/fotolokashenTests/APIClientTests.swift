@@ -76,6 +76,58 @@ final class APIClientTests: XCTestCase {
                        "https://test.fotolokashen.com/api/test")
     }
 
+    // MARK: - Backend URL Security
+
+    func testBackendURLValidatorAcceptsHTTPS() throws {
+        let url = URL(string: "https://api.example.test")!
+        XCTAssertEqual(try BackendURLValidator.validate(url, allowsInsecureHTTP: false), url)
+    }
+
+    func testBackendURLValidatorRejectsHTTPWhenInsecureTransportIsDisabled() {
+        let url = URL(string: "http://api.example.test")!
+        XCTAssertThrowsError(try BackendURLValidator.validate(url, allowsInsecureHTTP: false))
+    }
+
+    func testBackendURLValidatorAllowsHTTPWhenExplicitlyEnabledForDebug() throws {
+        let url = URL(string: "http://localhost:8080")!
+        XCTAssertEqual(try BackendURLValidator.validate(url, allowsInsecureHTTP: true), url)
+    }
+
+    func testBackendURLValidatorRejectsUnsupportedSchemesAndMalformedHosts() {
+        XCTAssertThrowsError(
+            try BackendURLValidator.validate(URL(string: "ftp://api.example.test")!, allowsInsecureHTTP: true)
+        )
+        XCTAssertThrowsError(
+            try BackendURLValidator.validate(URL(string: "https:///path")!, allowsInsecureHTTP: false)
+        )
+    }
+
+    func testBuiltAppInfoPlistUsesConfigurationSpecificLocalNetworkingValue() {
+        let appInfo = Bundle(for: ConfigLoader.self).infoDictionary
+        let transportSecurity = appInfo?["NSAppTransportSecurity"] as? [String: Any]
+
+        #if DEBUG
+        XCTAssertEqual(transportSecurity?["NSAllowsLocalNetworking"] as? Bool, true)
+        #else
+        XCTAssertEqual(transportSecurity?["NSAllowsLocalNetworking"] as? Bool, false)
+        #endif
+    }
+
+    func testBuiltAppBackendURLUsesHTTPSOutsideDebug() {
+        let appInfo = Bundle(for: ConfigLoader.self).infoDictionary
+        guard let backendURL = appInfo?["BackendBaseURL"] as? String,
+              let scheme = URLComponents(string: backendURL)?.scheme?.lowercased() else {
+            XCTFail("Built app must contain a valid BackendBaseURL")
+            return
+        }
+
+        #if DEBUG
+        XCTAssertTrue(scheme == "https" || scheme == "http")
+        #else
+        XCTAssertEqual(scheme, "https")
+        #endif
+    }
+
     // MARK: - Error Mapping
 
     func testDecodeFailureMapsToDecodingFailed() async {

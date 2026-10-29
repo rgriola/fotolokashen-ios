@@ -220,7 +220,7 @@ actor PhotoUploadQueue {
                 let backoff = UInt64(pow(2.0, Double(nextAttempts))) * 500_000_000  // 1s, 2s, 4s…
                 #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
-                    print("[PhotoUploadQueue] Job \(job.id) failed (attempt \(nextAttempts)), retrying in \(backoff / 1_000_000_000)s: \(error)")
+                    dlog("PhotoUploadQueue", "Upload retry scheduled")
                 }
                 #endif
                 try? await Task.sleep(nanoseconds: backoff)

@@ -113,7 +113,7 @@ final class LocationDetailViewModel: ObservableObject {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[LocationDetailVM] Failed to load photos: \(error)")
+                dlog("LocationDetailViewModel", "Failed to load photos")
             }
             #endif
             photos = DetailPhoto.fromLocationPhotos(currentLocation.photos ?? [])
@@ -140,14 +140,14 @@ final class LocationDetailViewModel: ObservableObject {
             } else {
                 #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
-                    print("[LocationDetailVM] Location \(targetId) not found in user's public locations")
+                    dlog("LocationDetailViewModel", "Location not found in public locations")
                 }
                 #endif
             }
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[LocationDetailVM] Failed to fetch photos from public profile: \(error)")
+                dlog("LocationDetailViewModel", "Failed to fetch public photos")
             }
             #endif
         }
@@ -175,7 +175,7 @@ final class LocationDetailViewModel: ObservableObject {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[LocationDetailVM] Failed to load user save details: \(error)")
+                dlog("LocationDetailViewModel", "Failed to load save details")
             }
             #endif
         }

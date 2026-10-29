@@ -46,9 +46,17 @@ nonisolated final class ConfigLoader: @unchecked Sendable {
     
     var backendURL: URL {
         guard let url = URL(string: backendBaseURL) else {
-            fatalError("Invalid backend URL: \(backendBaseURL)")
+            fatalError("Invalid backend URL configuration")
         }
-        return url
+        do {
+            #if DEBUG
+            return try BackendURLValidator.validate(url, allowsInsecureHTTP: true)
+            #else
+            return try BackendURLValidator.validate(url, allowsInsecureHTTP: false)
+            #endif
+        } catch {
+            fatalError("Invalid backend URL configuration")
+        }
     }
     
     // MARK: - Google Maps
@@ -181,23 +189,39 @@ nonisolated final class ConfigLoader: @unchecked Sendable {
     }
 }
 
+/// Validates the backend endpoint before it can be used for network requests.
+/// Release callers must require HTTPS; HTTP is only permitted in Debug builds.
+enum BackendURLValidator {
+    enum ValidationError: Error {
+        case invalidURL
+        case unsupportedScheme
+    }
+
+    static func validate(_ url: URL, allowsInsecureHTTP: Bool) throws -> URL {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let scheme = components.scheme?.lowercased(),
+              let host = components.host,
+              !host.isEmpty,
+              components.user == nil,
+              components.password == nil else {
+            throw ValidationError.invalidURL
+        }
+
+        guard scheme == "https" || (allowsInsecureHTTP && scheme == "http") else {
+            throw ValidationError.unsupportedScheme
+        }
+
+        return url
+    }
+}
+
 // MARK: - Convenience Extensions
 
 extension ConfigLoader {
     /// Print all configuration values (for debugging only)
     func printConfiguration() {
         #if DEBUG
-        print("=== fotolokashen Configuration ===")
-        print("Backend URL: \(backendBaseURL)")
-        print("OAuth Client ID: \(oauthClientId)")
-        print("OAuth Redirect URI: \(oauthRedirectUri)")
-        print("OAuth Scopes: \(oauthScopesString)")
-        print("ImageKit Endpoint: \(imagekitUrlEndpoint)")
-        print("Compression Target: \(ByteCountFormatter.string(fromByteCount: Int64(compressionTargetBytes), countStyle: .file))")
-        print("Max Dimension: \(Int(compressionMaxDimension))px")
-        print("Offline Mode: \(enableOfflineMode ? "Enabled" : "Disabled")")
-        print("Debug Logging: \(enableDebugLogging ? "Enabled" : "Disabled")")
-        print("================================")
+        dlog("ConfigLoader", "Configuration diagnostics requested")
         #endif
     }
 }
@@ -207,19 +231,14 @@ extension ConfigLoader {
  // Access configuration values
  let config = ConfigLoader.shared
  
- print("Backend URL: \(config.backendBaseURL)")
- print("OAuth Client ID: \(config.oauthClientId)")
- print("Google Maps Key: \(config.googleMapsAPIKey)")
- 
  // Get image compression config
  let compressionConfig = config.imageCompressionConfig
  let compressedData = ImageCompressor.compress(image, config: compressionConfig)
  
  // Check feature flags
  if config.enableDebugLogging {
-     print("Debug mode enabled")
  }
  
- // Print all configuration (for debugging)
+ // Log a static configuration diagnostic
  config.printConfiguration()
  */

@@ -66,7 +66,7 @@ final class LocationListViewModel: ObservableObject {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[LocationListViewModel] Failed to load friends locations: \(error)")
+                dlog("LocationListViewModel", "Failed to load friends locations")
             }
             #endif
         }
@@ -82,7 +82,7 @@ final class LocationListViewModel: ObservableObject {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[LocationListViewModel] Failed to load public locations: \(error)")
+                dlog("LocationListViewModel", "Failed to load public locations")
             }
             #endif
         }

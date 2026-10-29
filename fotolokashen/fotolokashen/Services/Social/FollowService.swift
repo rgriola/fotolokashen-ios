@@ -36,7 +36,7 @@ class FollowService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Followed @\(username)")
+                dlog("FollowService", "Follow completed")
             }
             #endif
 
@@ -44,7 +44,7 @@ class FollowService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Follow failed: \(error)")
+                dlog("FollowService", "Follow failed")
             }
             #endif
             throw error
@@ -65,7 +65,7 @@ class FollowService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Unfollowed @\(username)")
+                dlog("FollowService", "Unfollow completed")
             }
             #endif
 
@@ -73,7 +73,7 @@ class FollowService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Unfollow failed: \(error)")
+                dlog("FollowService", "Unfollow failed")
             }
             #endif
             throw error
@@ -92,7 +92,7 @@ class FollowService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Follow status for @\(username): following=\(response.isFollowing), followedBy=\(response.isFollowedBy)")
+                dlog("FollowService", "Follow status fetched")
             }
             #endif
 
@@ -100,7 +100,7 @@ class FollowService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Get follow status failed: \(error)")
+                dlog("FollowService", "Fetching follow status failed")
             }
             #endif
             throw error
@@ -120,7 +120,7 @@ class FollowService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Fetched profile for @\(username)")
+                dlog("FollowService", "Public profile fetched")
             }
             #endif
 
@@ -128,7 +128,7 @@ class FollowService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Get public profile failed: \(error)")
+                dlog("FollowService", "Fetching public profile failed")
             }
             #endif
             throw error
@@ -148,7 +148,7 @@ class FollowService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Fetched \(response.followers.count) followers for @\(username) (page \(page))")
+                dlog("FollowService", "Followers fetched")
             }
             #endif
 
@@ -156,7 +156,7 @@ class FollowService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Get followers failed: \(error)")
+                dlog("FollowService", "Fetching followers failed")
             }
             #endif
             throw error
@@ -174,7 +174,7 @@ class FollowService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Fetched \(response.following.count) following for @\(username) (page \(page))")
+                dlog("FollowService", "Following list fetched")
             }
             #endif
 
@@ -182,7 +182,7 @@ class FollowService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Get following failed: \(error)")
+                dlog("FollowService", "Fetching following list failed")
             }
             #endif
             throw error
@@ -202,7 +202,7 @@ class FollowService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Fetched \(response.locations.count) locations for @\(username)")
+                dlog("FollowService", "User locations fetched")
             }
             #endif
 
@@ -210,7 +210,7 @@ class FollowService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Get user locations failed: \(error)")
+                dlog("FollowService", "Fetching user locations failed")
             }
             #endif
             throw error
@@ -241,19 +241,19 @@ class FollowService: ObservableObject {
             }
 
             #if DEBUG
-            print("[FollowService] Calling GET \(path)")
+            dlog("FollowService", "Requesting follow-related data")
             #endif
 
             let response: MapSocialLocationsResponse = try await apiClient.get(path)
 
             #if DEBUG
-            print("[FollowService] Fetched \(response.locations.count) friends' locations")
+            dlog("FollowService", "Friends' locations fetched")
             #endif
 
             return response.locations
         } catch {
             #if DEBUG
-            print("[FollowService] Get friends locations failed: \(error)")
+            dlog("FollowService", "Fetching friends' locations failed")
             #endif
             throw error
         }
@@ -286,7 +286,7 @@ class FollowService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Fetched \(response.locations.count) public locations")
+                dlog("FollowService", "Public locations fetched")
             }
             #endif
 
@@ -294,7 +294,7 @@ class FollowService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Get public locations failed: \(error)")
+                dlog("FollowService", "Fetching public locations failed")
             }
             #endif
             throw error
@@ -326,7 +326,7 @@ class FollowService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Search found \(response.results.count) users for query '\(query)'")
+                dlog("FollowService", "User search completed")
             }
             #endif
 
@@ -334,7 +334,7 @@ class FollowService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Search users failed: \(error)")
+                dlog("FollowService", "User search failed")
             }
             #endif
             throw error
@@ -357,7 +357,7 @@ class FollowService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[FollowService] Get suggestions failed: \(error)")
+                dlog("FollowService", "Fetching suggestions failed")
             }
             #endif
             throw error

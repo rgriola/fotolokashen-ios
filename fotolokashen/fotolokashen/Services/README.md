@@ -34,4 +34,4 @@ Services/
 - **Singletons**: `XxxService.shared` for shared state; inject in constructors for testability.
 - **MainActor**: All `ObservableObject` services are `@MainActor` isolated.
 - **Errors**: New code presents user-facing errors via `ErrorPresenter.shared.present(...)` rather than per-service `@Published var errorMessage`.
-- **Logging**: Wrap all `print()` in `#if DEBUG` and gate on `ConfigLoader.shared.enableDebugLogging`. Use `[ServiceName]` prefix.
+- **Logging**: Use `dlog("ServiceName", "static message")` — never `print()`, `debugPrint()`, or `NSLog()` in app code. `dlog` is DEBUG-only and logs privately. Never log tokens, codes, emails, GPS coordinates, URLs with query strings, request/response bodies, or raw errors.

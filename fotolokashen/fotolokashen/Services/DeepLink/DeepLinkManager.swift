@@ -38,7 +38,7 @@ class DeepLinkManager: ObservableObject {
     func handleURL(_ url: URL) -> Bool {
         #if DEBUG
         if ConfigLoader.shared.enableDebugLogging {
-            print("[DeepLink] Received URL: \(url.absoluteString)")
+            dlog("DeepLink", "Received incoming URL")
         }
         #endif
 
@@ -57,7 +57,7 @@ class DeepLinkManager: ObservableObject {
 
                 #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
-                    print("[DeepLink] Email verified — auto-login token: \(token != nil ? "present" : "missing")")
+                    dlog("DeepLink", "Email verification callback received")
                 }
                 #endif
 
@@ -70,7 +70,7 @@ class DeepLinkManager: ObservableObject {
             if url.host == "password-reset-complete" {
                 #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
-                    print("[DeepLink] Password reset complete — prompting login")
+                    dlog("DeepLink", "Password reset callback received")
                 }
                 #endif
                 passwordResetComplete = true
@@ -110,7 +110,7 @@ class DeepLinkManager: ObservableObject {
     func navigateToLocation(id: Int) {
         #if DEBUG
         if ConfigLoader.shared.enableDebugLogging {
-            print("[DeepLink] Navigating to location ID: \(id)")
+            dlog("DeepLink", "Navigating to location")
         }
         #endif
 

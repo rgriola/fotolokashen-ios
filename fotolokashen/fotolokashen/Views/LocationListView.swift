@@ -378,7 +378,7 @@ struct LocationListView: View {
             groups = try await LocationGroupService.shared.fetchGroups()
         } catch {
             #if DEBUG
-            print("[LocationListView] Failed to load groups: \(error)")
+            dlog("LocationListView", "Failed to load groups")
             #endif
         }
     }

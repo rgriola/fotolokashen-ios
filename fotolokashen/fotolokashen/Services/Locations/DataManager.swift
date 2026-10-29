@@ -13,6 +13,7 @@ class DataManager: ObservableObject {
     // MARK: - Published Properties
     
     @Published var pendingUploads: Int = 0
+    @Published private(set) var storeRecoveryMessage: String?
     
     // MARK: - Properties
     
@@ -22,40 +23,73 @@ class DataManager: ObservableObject {
     // MARK: - Initialization
     
     private init() {
+        let schema = Schema([
+            CachedLocation.self,
+            CachedPhoto.self,
+            OfflinePhoto.self
+        ])
+
+        let storeURL: URL
         do {
-            let schema = Schema([
-                CachedLocation.self,
-                CachedPhoto.self,
-                OfflinePhoto.self
-            ])
-            
-            let modelConfiguration = ModelConfiguration(
-                schema: schema,
-                isStoredInMemoryOnly: false
+            let applicationSupportURL = try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
             )
-            
-            modelContainer = try ModelContainer(
-                for: schema,
-                configurations: [modelConfiguration]
-            )
-            
-            modelContext = ModelContext(modelContainer)
-            
-            // Update pending uploads count
-            Task {
-                await updatePendingCount()
-            }
-            
-            if ConfigLoader.shared.enableDebugLogging {
-                dlog("DataManager", "SwiftData initialized successfully")
-            }
-            
+            storeURL = applicationSupportURL.appendingPathComponent("default.store")
         } catch {
-            // REVIEW: fatalError() on SwiftData init failure is too aggressive.
-            // Consider providing an in-memory fallback container so the app can still
-            // function without offline caching, and surface the error to the user.
-            fatalError("Could not create ModelContainer: \(error)")
+            fatalError("Could not locate the SwiftData store: \(error)")
         }
+
+        let openedStore: StoreOpenResult<ModelContainer>
+        do {
+            openedStore = try PersistentStoreRecovery.open(
+                createStore: {
+                    let configuration = ModelConfiguration(
+                        "default",
+                        schema: schema,
+                        url: storeURL
+                    )
+                    return try ModelContainer(
+                        for: schema,
+                        configurations: [configuration]
+                    )
+                },
+                quarantineStore: {
+                    try PersistentStoreRecovery.quarantineSQLiteStore(at: storeURL)
+                }
+            )
+        } catch {
+            // Only ModelContainer creation failures reach recovery. A failed
+            // quarantine or a failed second creation is not hidden or retried.
+            fatalError("Could not create ModelContainer after store recovery: \(error)")
+        }
+
+        modelContainer = openedStore.store
+        modelContext = ModelContext(modelContainer)
+
+        if let quarantineURL = openedStore.quarantinedStoreURL {
+            storeRecoveryMessage = """
+            The previous local store could not be opened and was preserved on this device in a recovery folder. A fresh local store is now active. Server-backed data can sync again when online, but local-only changes and queued photo uploads may need to be restored or re-added.
+            """
+            if ConfigLoader.shared.enableDebugLogging {
+                dlog("DataManager", "Previous SwiftData store preserved at \(quarantineURL.path)")
+            }
+        }
+
+        // Update pending uploads count
+        Task {
+            await updatePendingCount()
+        }
+
+        if ConfigLoader.shared.enableDebugLogging {
+            dlog("DataManager", "SwiftData initialized successfully")
+        }
+    }
+
+    func dismissStoreRecoveryNotice() {
+        storeRecoveryMessage = nil
     }
     
     // MARK: - Location Operations

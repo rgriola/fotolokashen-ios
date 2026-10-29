@@ -212,7 +212,7 @@ struct ProfileView: View {
             followingCount = gResp.pagination.total
         } catch {
             #if DEBUG
-            print("[ProfileView] Social stats error: \(error)")
+            dlog("ProfileView", "Social stats load failed")
             #endif
         }
     }

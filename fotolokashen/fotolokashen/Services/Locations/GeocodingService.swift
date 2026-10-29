@@ -20,7 +20,7 @@ class GeocodingService {
     func getAddress(latitude: Double, longitude: Double) async throws -> String {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[GeocodingService] getAddress called with lat: \(latitude), lng: \(longitude)")
+            dlog("GeocodingService", "Address lookup requested")
         }
         #endif
         let geocodedAddress = try await getGeocodedAddress(latitude: latitude, longitude: longitude)
@@ -32,7 +32,7 @@ class GeocodingService {
     func getGeocodedAddress(latitude: Double, longitude: Double) async throws -> GeocodedAddress {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[GeocodingService] getGeocodedAddress for: \(latitude), \(longitude)")
+            dlog("GeocodingService", "Geocoding requested")
         }
         #endif
 
@@ -41,14 +41,14 @@ class GeocodingService {
             let result = try await getGeocodedAddressFromGoogle(latitude: latitude, longitude: longitude)
             #if DEBUG
             if config.enableDebugLogging {
-                print("[GeocodingService] Google Maps geocoding succeeded")
+                dlog("GeocodingService", "Google Maps geocoding completed")
             }
             #endif
             return result
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[GeocodingService] Google Maps failed: \(error), falling back to Apple CLGeocoder")
+                dlog("GeocodingService", "Google Maps geocoding failed; using fallback")
             }
             #endif
         }
@@ -79,7 +79,7 @@ class GeocodingService {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[GeocodingService] JSON decode error: \(error)")
+                dlog("GeocodingService", "Geocoding response decoding failed")
             }
             #endif
             throw error
@@ -128,10 +128,7 @@ class GeocodingService {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[GeocodingService] Google result: \(geocodedAddress.formattedAddress)")
-            print("  placeId: \(geocodedAddress.placeId)")
-            print("  fullStreet: \(geocodedAddress.fullStreet ?? "nil")")
-            print("  city: \(geocodedAddress.city ?? "nil"), state: \(geocodedAddress.state ?? "nil")")
+            dlog("GeocodingService", "Google Maps address resolved")
         }
         #endif
 
@@ -143,7 +140,7 @@ class GeocodingService {
     private func getGeocodedAddressFromApple(latitude: Double, longitude: Double) async throws -> GeocodedAddress {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[GeocodingService] Apple CLGeocoder starting...")
+            dlog("GeocodingService", "Apple geocoding started")
         }
         #endif
 
@@ -156,7 +153,7 @@ class GeocodingService {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[GeocodingService] Apple geocoding failed: \(error)")
+                dlog("GeocodingService", "Apple geocoding failed")
             }
             #endif
             throw GeocodingError.geocodingFailed
@@ -207,10 +204,7 @@ class GeocodingService {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[GeocodingService] Apple result: \(geocodedAddress.formattedAddress)")
-            print("  placeId: \(geocodedAddress.placeId)")
-            print("  fullStreet: \(geocodedAddress.fullStreet ?? "nil")")
-            print("  city: \(geocodedAddress.city ?? "nil"), state: \(geocodedAddress.state ?? "nil")")
+            dlog("GeocodingService", "Apple address resolved")
         }
         #endif
 

@@ -377,7 +377,7 @@ struct PublicProfileView: View {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[PublicProfileView] Error loading profile: \(error)")
+                dlog("PublicProfileView", "Profile loading failed")
             }
             #endif
             errorMessage = error.localizedDescription
@@ -393,7 +393,7 @@ struct PublicProfileView: View {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[PublicProfileView] Error loading locations: \(error)")
+                dlog("PublicProfileView", "Location loading failed")
             }
             #endif
         }
@@ -421,7 +421,7 @@ struct PublicProfileView: View {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[PublicProfileView] Toggle follow failed: \(error)")
+                dlog("PublicProfileView", "Follow action failed")
             }
             #endif
         }

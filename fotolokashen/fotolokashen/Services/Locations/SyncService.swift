@@ -16,6 +16,7 @@ class SyncService: ObservableObject {
     @Published var isSyncing: Bool = false
     @Published var progress: Double = 0.0
     @Published var lastSyncDate: Date?
+    @Published private(set) var credentialAccessError: String?
     
     // MARK: - Properties
     
@@ -63,7 +64,14 @@ class SyncService: ObservableObject {
         }
         
         // Don't attempt sync if not authenticated — API calls will just fail with 401
-        guard KeychainService.shared.getAccessToken() != nil else {
+        let hasAccessToken: Bool
+        do {
+            hasAccessToken = try KeychainService.shared.getAccessToken() != nil
+        } catch {
+            credentialAccessError = "Unable to access saved credentials. Synchronization was stopped."
+            return
+        }
+        guard hasAccessToken else {
             if config.enableDebugLogging {
                 dlog("Sync", "Skipping sync - no auth token")
             }

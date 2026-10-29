@@ -66,10 +66,5 @@ extension Data {
  // Store verifier securely (you'll need it later)
  // Send challenge to authorization endpoint
  
- print("Code Verifier: \(verifier)")
- print("Code Challenge: \(challenge)")
- 
- // Example output:
- // Code Verifier: dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
- // Code Challenge: E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
+ // Never log the verifier or challenge; these are OAuth security material.
  */

@@ -91,7 +91,7 @@ class PhotoUploadService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[PhotoUpload] Skip-recompression upload, size=\(compressedData.count / 1024)KB")
+                dlog("PhotoUpload", "Uploading pre-compressed photo")
             }
             #endif
 
@@ -104,7 +104,7 @@ class PhotoUploadService: ObservableObject {
             // Server performs: virus scan, format validation, additional compression
             #if DEBUG
             if config.enableDebugLogging {
-                print("[PhotoUpload] Uploading via secure endpoint...")
+                dlog("PhotoUpload", "Starting secure upload")
             }
             #endif
             
@@ -119,16 +119,14 @@ class PhotoUploadService: ObservableObject {
             
             #if DEBUG
             if config.enableDebugLogging {
-                print("[PhotoUpload] ✅ Secure upload complete")
-                print("[PhotoUpload] File ID: \(secureResponse.upload.fileId)")
-                print("[PhotoUpload] URL: \(secureResponse.upload.url)")
+                dlog("PhotoUpload", "Secure upload completed")
             }
             #endif
             
             // Step 4: Associate photo with location
             #if DEBUG
             if config.enableDebugLogging {
-                print("[PhotoUpload] Associating photo with location \(locationId)...")
+                dlog("PhotoUpload", "Associating uploaded photo")
             }
             #endif
             
@@ -159,7 +157,7 @@ class PhotoUploadService: ObservableObject {
             
             #if DEBUG
             if config.enableDebugLogging {
-                print("[PhotoUpload] ✅ Photo associated! ID: \(photo.id)")
+                dlog("PhotoUpload", "Photo association completed")
             }
             #endif
             
@@ -171,7 +169,7 @@ class PhotoUploadService: ObservableObject {
             
             #if DEBUG
             if config.enableDebugLogging {
-                print("[PhotoUpload] ❌ Upload failed: \(error)")
+                dlog("PhotoUpload", "Photo upload failed")
             }
             #endif
             
@@ -196,7 +194,7 @@ class PhotoUploadService: ObservableObject {
     ) async throws -> SecureUploadResponse {
         
         // Get auth token
-        guard let accessToken = KeychainService.shared.getAccessToken() else {
+        guard let accessToken = try KeychainService.shared.getAccessToken() else {
             throw PhotoUploadError.unauthorized
         }
         
@@ -239,8 +237,7 @@ class PhotoUploadService: ObservableObject {
         
         #if DEBUG
         if config.enableDebugLogging {
-            print("[PhotoUpload] POST \(uploadURL.absoluteString)")
-            print("[PhotoUpload] Body size: \(body.count / 1024)KB")
+            dlog("PhotoUpload", "Sending secure upload request")
         }
         #endif
         
@@ -254,10 +251,7 @@ class PhotoUploadService: ObservableObject {
         
         #if DEBUG
         if config.enableDebugLogging {
-            print("[PhotoUpload] Response status: \(httpResponse.statusCode)")
-            if let responseString = String(data: responseData, encoding: .utf8) {
-                print("[PhotoUpload] Response: \(responseString.prefix(500))")
-            }
+            dlog("PhotoUpload", "Received secure upload response")
         }
         #endif
         

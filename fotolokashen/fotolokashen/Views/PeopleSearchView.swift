@@ -154,7 +154,7 @@ private struct DiscoverTab: View {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[DiscoverTab] Search failed: \(error)")
+                dlog("DiscoverTab", "User search failed")
             }
             #endif
         }
@@ -310,7 +310,7 @@ private struct MyFollowingTab: View {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[MyFollowingTab] Load failed: \(error)")
+                dlog("MyFollowingTab", "Following list load failed")
             }
             #endif
         }
@@ -330,7 +330,7 @@ private struct MyFollowingTab: View {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[MyFollowingTab] Load more failed: \(error)")
+                dlog("MyFollowingTab", "Following list pagination failed")
             }
             #endif
         }
@@ -407,7 +407,7 @@ private struct MyFollowersTab: View {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[MyFollowersTab] Load failed: \(error)")
+                dlog("MyFollowersTab", "Followers list load failed")
             }
             #endif
         }
@@ -427,7 +427,7 @@ private struct MyFollowersTab: View {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[MyFollowersTab] Load more failed: \(error)")
+                dlog("MyFollowersTab", "Followers list pagination failed")
             }
             #endif
         }

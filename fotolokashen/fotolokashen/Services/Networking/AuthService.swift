@@ -51,18 +51,11 @@ class AuthService: ObservableObject, TokenRefreshing {
     ///   the default.
     init(apiClient: APIClient? = nil) {
         self.apiClient = apiClient ?? .shared
-        #if DEBUG
-        let t0 = CFAbsoluteTimeGetCurrent()
-        #endif
         checkAuthStatus()
-        #if DEBUG
-        let t1 = CFAbsoluteTimeGetCurrent()
-        print("[⏱️ AuthService] checkAuthStatus() took \(Int((t1 - t0) * 1000))ms")
-        #endif
         setupSessionInvalidationObserver()
         APIClient.setTokenRefresher(self)
         #if DEBUG
-        print("[⏱️ AuthService] init() total: \(Int((CFAbsoluteTimeGetCurrent() - t0) * 1000))ms")
+        dlog("AuthService", "Initialization completed")
         #endif
     }
     
@@ -82,7 +75,7 @@ class AuthService: ObservableObject, TokenRefreshing {
                 
                 if self.config.enableDebugLogging {
                     #if DEBUG
-                    print("[AuthService] ⚠️ Session invalidated (401 received) - logging out")
+                    dlog("AuthService", "Session invalidated; logging out")
                     #endif
                 }
                 
@@ -109,19 +102,29 @@ class AuthService: ObservableObject, TokenRefreshing {
             LaunchTimer.mark("checkAuthStatus() Task started")
             #endif
             
-            // Check if we have any tokens at all
-            guard keychainService.getRefreshToken() != nil else {
-                // Only update if values actually changed — avoid unnecessary @Published re-renders
-                if isAuthenticated { isAuthenticated = false }
-                if currentUser != nil { currentUser = nil }
-                #if DEBUG
-                LaunchTimer.mark("checkAuthStatus() — no refresh token, done")
-                #endif
+            let storedRefreshToken: String?
+            let tokenNeedsRefresh: Bool
+            do {
+                storedRefreshToken = try keychainService.getRefreshToken()
+                guard storedRefreshToken != nil else {
+                    if isAuthenticated { isAuthenticated = false }
+                    if currentUser != nil { currentUser = nil }
+                    #if DEBUG
+                    LaunchTimer.mark("checkAuthStatus() — no refresh token, done")
+                    #endif
+                    return
+                }
+                let expired = try keychainService.isTokenExpired()
+                let nearingExpiry = try keychainService.needsRefresh()
+                tokenNeedsRefresh = expired || nearingExpiry
+            } catch {
+                // A failed migration/read must not be interpreted as missing credentials.
+                errorMessage = "Unable to access saved credentials. Your session has been preserved."
                 return
             }
-            
+
             // If token is expired or needs refresh, try to refresh it
-            if keychainService.isTokenExpired() || keychainService.needsRefresh() {
+            if tokenNeedsRefresh {
                 do {
                     try await refreshToken()
                     #if DEBUG
@@ -130,10 +133,14 @@ class AuthService: ObservableObject, TokenRefreshing {
                 } catch {
                     #if DEBUG
                     if config.enableDebugLogging {
-                        print("[AuthService] Token refresh failed on launch: \(error)")
+                        dlog("AuthService", "Token refresh failed on launch")
                     }
                     LaunchTimer.mark("checkAuthStatus() — token refresh FAILED")
                     #endif
+                    if error is KeychainAccessFailure {
+                        errorMessage = "Unable to access saved credentials. Your session has been preserved."
+                        return
+                    }
                     if isUnrecoverableAuthError(error) {
                         if isAuthenticated { isAuthenticated = false }
                         if currentUser != nil { currentUser = nil }
@@ -142,7 +149,12 @@ class AuthService: ObservableObject, TokenRefreshing {
                     }
                     // Offline or server-side failure — keep the tokens. Stay signed in only
                     // if the cached access token has not actually expired yet.
-                    if keychainService.isTokenExpired() { return }
+                    do {
+                        if try keychainService.isTokenExpired() { return }
+                    } catch {
+                        errorMessage = "Unable to access saved credentials. Your session has been preserved."
+                        return
+                    }
                 }
             }
             
@@ -163,17 +175,13 @@ class AuthService: ObservableObject, TokenRefreshing {
             self.currentUser = user
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Fetched current user: \(user.username)")
-                print("[AuthService] Avatar field: \(user.avatar ?? "nil")")
-                print("[AuthService] Avatar URL: \(user.avatarURL?.absoluteString ?? "nil")")
-                print("[AuthService] Banner field: \(user.bannerImage ?? "nil")")
-                print("[AuthService] Banner URL: \(user.bannerURL?.absoluteString ?? "nil")")
+                dlog("AuthService", "Fetched current user")
             }
             #endif
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Failed to fetch current user: \(error)")
+                dlog("AuthService", "Failed to fetch current user")
             }
             #endif
         }
@@ -193,8 +201,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Starting OAuth flow")
-            print("[AuthService] Code challenge: \(challenge)")
+            dlog("AuthService", "Starting OAuth flow")
         }
         #endif
         
@@ -223,7 +230,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Opening in-app browser: \(loginURL.absoluteString)")
+            dlog("AuthService", "Opening login browser session")
         }
         #endif
         
@@ -237,7 +244,7 @@ class AuthService: ObservableObject, TokenRefreshing {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Starting registration flow")
+            dlog("AuthService", "Starting registration flow")
         }
         #endif
         
@@ -256,7 +263,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Opening in-app browser for registration: \(registerURL.absoluteString)")
+            dlog("AuthService", "Opening registration browser session")
         }
         #endif
         
@@ -270,7 +277,7 @@ class AuthService: ObservableObject, TokenRefreshing {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Starting forgot password flow")
+            dlog("AuthService", "Starting forgot password flow")
         }
         #endif
 
@@ -288,7 +295,7 @@ class AuthService: ObservableObject, TokenRefreshing {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Opening in-app browser for forgot password: \(forgotURL.absoluteString)")
+            dlog("AuthService", "Opening password-recovery browser session")
         }
         #endif
 
@@ -317,7 +324,7 @@ class AuthService: ObservableObject, TokenRefreshing {
                     self.isLoading = false
                     #if DEBUG
                     if self.config.enableDebugLogging {
-                        print("[AuthService] User cancelled authentication")
+                        dlog("AuthService", "User cancelled authentication")
                     }
                     #endif
                     return
@@ -328,7 +335,7 @@ class AuthService: ObservableObject, TokenRefreshing {
                     self.errorMessage = error.localizedDescription
                     #if DEBUG
                     if self.config.enableDebugLogging {
-                        print("[AuthService] ASWebAuthenticationSession error: \(error)")
+                        dlog("AuthService", "Authentication browser session failed")
                     }
                     #endif
                     return
@@ -382,7 +389,7 @@ class AuthService: ObservableObject, TokenRefreshing {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Handling callback: \(url.absoluteString)")
+            dlog("AuthService", "Handling authentication callback")
         }
         #endif
 
@@ -415,7 +422,7 @@ class AuthService: ObservableObject, TokenRefreshing {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Authorization code received")
+                dlog("AuthService", "OAuth authorization callback received")
             }
             #endif
 
@@ -424,7 +431,7 @@ class AuthService: ObservableObject, TokenRefreshing {
             } catch {
                 #if DEBUG
                 if config.enableDebugLogging {
-                    print("[AuthService] Token exchange error: \(error)")
+                    dlog("AuthService", "OAuth token exchange failed")
                 }
                 #endif
                 errorMessage = error.localizedDescription
@@ -434,7 +441,7 @@ class AuthService: ObservableObject, TokenRefreshing {
             // Registration success — panel closed, show native "check email" UI
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Registration complete — awaiting email verification")
+                dlog("AuthService", "Registration complete; awaiting verification")
             }
             #endif
             awaitingVerification = true
@@ -443,7 +450,7 @@ class AuthService: ObservableObject, TokenRefreshing {
             // Forgot password submitted — panel closed, show native "check email" UI
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Forgot password submitted — awaiting reset email")
+                dlog("AuthService", "Password recovery submitted")
             }
             #endif
             awaitingPasswordReset = true
@@ -456,7 +463,7 @@ class AuthService: ObservableObject, TokenRefreshing {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Auth redirect — action: \(action ?? "nil"), reason: \(reason ?? "nil")")
+                dlog("AuthService", "Received authentication redirect")
             }
             #endif
 
@@ -469,7 +476,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         default:
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Unhandled callback host: \(host)")
+                dlog("AuthService", "Unhandled authentication callback")
             }
             #endif
             break
@@ -508,7 +515,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         if lastCompletedCodeExchange == code {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Duplicate OAuth callback for already-exchanged code — ignoring")
+                dlog("AuthService", "Ignoring duplicate completed OAuth callback")
             }
             #endif
             return
@@ -517,7 +524,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         if let inFlight = inFlightCodeExchange, inFlight.code == code {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Duplicate OAuth callback for same code — reusing in-flight exchange")
+                dlog("AuthService", "Reusing in-flight OAuth token exchange")
             }
             #endif
             try await inFlight.task.value
@@ -573,7 +580,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Tokens received for user: \(tokenResponse.user.email)")
+            dlog("AuthService", "OAuth tokens received")
         }
         #endif
         
@@ -602,7 +609,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Starting auto-login with verification token")
+            dlog("AuthService", "Starting verification auto-login")
         }
         #endif
         
@@ -645,7 +652,7 @@ class AuthService: ObservableObject, TokenRefreshing {
             
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Auto-login successful for user: \(tokenResponse.user.email)")
+                dlog("AuthService", "Verification auto-login succeeded")
             }
             #endif
             
@@ -664,7 +671,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Auto-login failed: \(error)")
+                dlog("AuthService", "Verification auto-login failed")
             }
             #endif
             // If auto-login fails, fall back to manual login
@@ -684,10 +691,10 @@ class AuthService: ObservableObject, TokenRefreshing {
         // that 401s just after a refresh completed would otherwise start a second exchange,
         // superseding the session again. If the Keychain already holds a different token,
         // the 401 was caused by the caller's stale token — nothing to refresh.
-        if let staleAccessToken, keychainService.getAccessToken() != staleAccessToken {
+        if let staleAccessToken, try keychainService.getAccessToken() != staleAccessToken {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Token already rotated; retrying without a new exchange")
+                dlog("AuthService", "Token already rotated; retrying without refresh")
             }
             #endif
             return
@@ -699,10 +706,10 @@ class AuthService: ObservableObject, TokenRefreshing {
     /// Refresh access token using refresh token
     func refreshTokenIfNeeded() async throws {
         // Check if refresh is needed
-        guard keychainService.needsRefresh() else {
+        guard try keychainService.needsRefresh() else {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Token still valid, no refresh needed")
+                dlog("AuthService", "Token is valid; refresh not needed")
             }
             #endif
             return
@@ -710,7 +717,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Token needs refresh, refreshing...")
+            dlog("AuthService", "Refreshing access token")
         }
         #endif
         
@@ -748,7 +755,7 @@ class AuthService: ObservableObject, TokenRefreshing {
     }
 
     private func performTokenRefresh() async throws {
-        guard let refreshToken = keychainService.getRefreshToken() else {
+        guard let refreshToken = try keychainService.getRefreshToken() else {
             throw AuthError.noRefreshToken
         }
         
@@ -779,7 +786,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         
         #if DEBUG
         if config.enableDebugLogging {
-            print("[AuthService] Token refreshed successfully")
+            dlog("AuthService", "Access token refreshed")
         }
         #endif
         
@@ -796,7 +803,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         
         do {
             // Revoke refresh token on server
-            if let refreshToken = keychainService.getRefreshToken() {
+            if let refreshToken = try keychainService.getRefreshToken() {
                 let revokeRequest = RevokeRequest(
                     token: refreshToken,
                     clientId: config.oauthClientId
@@ -810,7 +817,7 @@ class AuthService: ObservableObject, TokenRefreshing {
                 
                 #if DEBUG
                 if config.enableDebugLogging {
-                    print("[AuthService] Token revoked on server")
+                    dlog("AuthService", "Server token revocation completed")
                 }
                 #endif
             }
@@ -823,9 +830,14 @@ class AuthService: ObservableObject, TokenRefreshing {
             currentUser = nil
             
         } catch {
+            if error is KeychainAccessFailure {
+                errorMessage = "Unable to access saved credentials. Your session has been preserved."
+                isLoading = false
+                return
+            }
             #if DEBUG
             if config.enableDebugLogging {
-                print("[AuthService] Logout error: \(error)")
+                dlog("AuthService", "Logout failed")
             }
             #endif
             // Clear tokens anyway

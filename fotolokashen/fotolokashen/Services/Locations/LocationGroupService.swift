@@ -26,7 +26,7 @@ class LocationGroupService: ObservableObject {
     func fetchGroups() async throws -> [LocationGroup] {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Fetching groups...")
+            dlog("LocationGroupService", "Fetching groups")
         }
         #endif
 
@@ -34,7 +34,7 @@ class LocationGroupService: ObservableObject {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Fetched \(response.groups.count) groups")
+            dlog("LocationGroupService", "Groups fetched")
         }
         #endif
 
@@ -45,7 +45,7 @@ class LocationGroupService: ObservableObject {
     func fetchGroup(id: Int) async throws -> LocationGroup {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Fetching group \(id)...")
+            dlog("LocationGroupService", "Fetching group")
         }
         #endif
 
@@ -70,7 +70,7 @@ class LocationGroupService: ObservableObject {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Creating group: \(name)")
+            dlog("LocationGroupService", "Creating group")
         }
         #endif
 
@@ -98,7 +98,7 @@ class LocationGroupService: ObservableObject {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Group created with ID: \(response.group.id)")
+            dlog("LocationGroupService", "Group created")
         }
         #endif
 
@@ -115,7 +115,7 @@ class LocationGroupService: ObservableObject {
     ) async throws -> LocationGroup {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Updating group \(id)...")
+            dlog("LocationGroupService", "Updating group")
         }
         #endif
 
@@ -149,7 +149,7 @@ class LocationGroupService: ObservableObject {
     func deleteGroup(id: Int) async throws {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Deleting group \(id)...")
+            dlog("LocationGroupService", "Deleting group")
         }
         #endif
 
@@ -157,7 +157,7 @@ class LocationGroupService: ObservableObject {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Group \(id) deleted")
+            dlog("LocationGroupService", "Group deleted")
         }
         #endif
     }
@@ -168,7 +168,7 @@ class LocationGroupService: ObservableObject {
     func addLocationToGroup(locationId: Int, groupId: Int) async throws {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Linking location \(locationId) to group \(groupId)")
+            dlog("LocationGroupService", "Linking location to group")
         }
         #endif
 
@@ -186,7 +186,7 @@ class LocationGroupService: ObservableObject {
     func removeLocationFromGroup(locationId: Int) async throws {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Unlinking location \(locationId) from group")
+            dlog("LocationGroupService", "Unlinking location from group")
         }
         #endif
 
@@ -206,7 +206,7 @@ class LocationGroupService: ObservableObject {
     func fetchGroupTypes() async throws -> (presets: [String], custom: [CustomGroupType]) {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Fetching group types...")
+            dlog("LocationGroupService", "Fetching group types")
         }
         #endif
 
@@ -218,7 +218,7 @@ class LocationGroupService: ObservableObject {
     func createCustomType(name: String) async throws -> CustomGroupType {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Creating custom type: \(name)")
+            dlog("LocationGroupService", "Creating custom group type")
         }
         #endif
 
@@ -238,7 +238,7 @@ class LocationGroupService: ObservableObject {
     func deleteCustomType(name: String) async throws {
         #if DEBUG
         if config.enableDebugLogging {
-            print("[LocationGroupService] Deleting custom type: \(name)")
+            dlog("LocationGroupService", "Deleting custom group type")
         }
         #endif
 

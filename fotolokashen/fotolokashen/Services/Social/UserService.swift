@@ -37,7 +37,7 @@ class UserService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[UserService] Profile updated for user: \(response.user.username)")
+                dlog("UserService", "Profile updated")
             }
             #endif
 
@@ -45,7 +45,7 @@ class UserService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[UserService] Profile update failed: \(error)")
+                dlog("UserService", "Profile update failed")
             }
             #endif
             throw error
@@ -67,7 +67,7 @@ class UserService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[UserService] Privacy settings updated")
+                dlog("UserService", "Privacy settings updated")
             }
             #endif
 
@@ -75,7 +75,7 @@ class UserService: ObservableObject {
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[UserService] Privacy update failed: \(error)")
+                dlog("UserService", "Privacy update failed")
             }
             #endif
             throw error
@@ -115,7 +115,7 @@ class UserService: ObservableObject {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[UserService] Avatar uploaded: \(url)")
+            dlog("UserService", "Avatar upload completed")
         }
         #endif
 
@@ -131,7 +131,7 @@ class UserService: ObservableObject {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[UserService] Avatar deleted")
+            dlog("UserService", "Avatar deleted")
         }
         #endif
     }
@@ -149,13 +149,13 @@ class UserService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                print("[UserService] Account deleted successfully")
+                dlog("UserService", "Account deletion completed")
             }
             #endif
         } catch {
             #if DEBUG
             if config.enableDebugLogging {
-                print("[UserService] Account deletion failed: \(error)")
+                dlog("UserService", "Account deletion failed")
             }
             #endif
             throw error
@@ -195,7 +195,7 @@ class UserService: ObservableObject {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[UserService] Banner uploaded: \(url)")
+            dlog("UserService", "Banner upload completed")
         }
         #endif
 
@@ -211,7 +211,7 @@ class UserService: ObservableObject {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[UserService] Banner deleted")
+            dlog("UserService", "Banner deleted")
         }
         #endif
     }
@@ -226,7 +226,7 @@ class UserService: ObservableObject {
         filename: String
     ) async throws -> ImageUploadResponse {
 
-        guard let accessToken = KeychainService.shared.getAccessToken() else {
+        guard let accessToken = try KeychainService.shared.getAccessToken() else {
             throw UserServiceError.unauthorized
         }
 
@@ -258,7 +258,7 @@ class UserService: ObservableObject {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[UserService] POST \(url.absoluteString) (\(body.count / 1024)KB)")
+            dlog("UserService", "Sending profile media request")
         }
         #endif
 
@@ -272,7 +272,7 @@ class UserService: ObservableObject {
 
         #if DEBUG
         if config.enableDebugLogging {
-            print("[UserService] Response status: \(httpResponse.statusCode)")
+            dlog("UserService", "Received profile media response")
         }
         #endif
 

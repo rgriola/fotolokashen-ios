@@ -130,7 +130,7 @@ final class CreateLocationViewModel: ObservableObject {
         } catch {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[CreateLocationViewModel] Geocoding failed: \(error.localizedDescription)")
+                dlog("CreateLocationViewModel", "Geocoding failed")
             }
             #endif
             isLoadingAddress = false
@@ -202,7 +202,7 @@ final class CreateLocationViewModel: ObservableObject {
         guard !name.isEmpty, !details.isEmpty else { return }
 
         #if DEBUG
-        print("[CreateLocation] Saving '\(name)' with \(photoViewModel.photos.count) photo(s)")
+        dlog("CreateLocation", "Saving location")
         #endif
 
         guard let location = photoLocation else { return }
@@ -254,14 +254,14 @@ final class CreateLocationViewModel: ObservableObject {
             }
 
             #if DEBUG
-            print("[CreateLocation] ✅ Created location \(createdLoc.id) with \(photoViewModel.photos.count) photo(s)")
+            dlog("CreateLocation", "Location created")
             #endif
 
             createdLocation = createdLoc
             showingSuccess = true
         } catch {
             #if DEBUG
-            print("[CreateLocation] ❌ Failed: \(error)")
+            dlog("CreateLocation", "Location creation failed")
             #endif
             ErrorPresenter.shared.present(
                 message: "Couldn't create location: \(error.localizedDescription)"
@@ -297,11 +297,11 @@ final class CreateLocationViewModel: ObservableObject {
                 photoViewModel.uploadProgress = Double(index + 1) / total
 
                 #if DEBUG
-                print("[CreateLocation] Uploaded photo \(index + 1)/\(Int(total))")
+                dlog("CreateLocation", "Photo upload completed")
                 #endif
             } catch {
                 #if DEBUG
-                print("[CreateLocation] Failed to upload photo \(index + 1): \(error)")
+                dlog("CreateLocation", "Photo upload failed")
                 #endif
                 // Continue with remaining photos
             }

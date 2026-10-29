@@ -193,14 +193,14 @@ class PhotoPickerViewModel: ObservableObject {
 
                 #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
-                    print("[PhotoPipeline] Uploaded \(index + 1)/\(Int(total))")
+                    dlog("PhotoPipeline", "Photo upload completed")
                 }
                 #endif
 
             } catch {
                 #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
-                    print("[PhotoPipeline] Failed to upload photo \(index + 1): \(error)")
+                    dlog("PhotoPipeline", "Photo upload failed")
                 }
                 #endif
                 updateStage(id: id, to: .failed(reason: error.localizedDescription, retryable: true))

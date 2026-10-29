@@ -193,7 +193,7 @@ struct CompressionMetadata {
  // Basic usage
  let image = UIImage(named: "photo.jpg")!
  if let compressedData = ImageCompressor.compress(image) {
-     print("Compressed size: \(compressedData.count) bytes")
+     dlog("ImageCompressor", "Image compressed")
  }
  
  // With custom configuration
@@ -204,13 +204,11 @@ struct CompressionMetadata {
      maxDimension: 4000
  )
  if let compressedData = ImageCompressor.compress(image, config: config) {
-     print("Compressed size: \(compressedData.count) bytes")
+     dlog("ImageCompressor", "Image compressed")
  }
  
  // With metadata
  if let result = ImageCompressor.compressWithMetadata(image) {
-     print(result.metadata.summary)
-     print("Final quality: \(result.metadata.finalQuality)")
-     print("Iterations: \(result.metadata.iterations)")
+     dlog("ImageCompressor", "Compression metadata available")
  }
  */

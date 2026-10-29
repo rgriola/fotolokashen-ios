@@ -78,7 +78,7 @@ class APIClient {
             return true
         } catch {
             #if DEBUG
-            print("[APIClient] Token refresh for 401 retry failed: \(error)")
+            dlog("APIClient", "Token refresh for retry failed")
             #endif
             return false
         }
@@ -271,31 +271,17 @@ class APIClient {
         
         if let body = body {
             request.httpBody = body
-            
-            #if DEBUG
-            if ConfigLoader.shared.enableDebugLogging {
-                if let jsonString = String(data: body, encoding: .utf8) {
-                    print("[APIClient] Request body: \(jsonString)")
-                }
-            }
-            #endif
         }
-        
-        #if DEBUG
-        if ConfigLoader.shared.enableDebugLogging {
-            print("[APIClient] \(method) \(url.absoluteString)")
-        }
-        #endif
         
         return request
     }
     
     /// Add Bearer token authentication header
     private func addAuthenticationHeader(to request: inout URLRequest) throws {
-        guard let accessToken = KeychainService.shared.getAccessToken() else {
+        guard let accessToken = try KeychainService.shared.getAccessToken() else {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[APIClient] No access token found in Keychain")
+                dlog("APIClient", "No access token available in Keychain")
             }
             #endif
             throw APIError.unauthorized
@@ -303,7 +289,7 @@ class APIClient {
         
         #if DEBUG
         if ConfigLoader.shared.enableDebugLogging {
-            print("[APIClient] Using access token: [REDACTED]")
+            dlog("APIClient", "Authenticated request prepared")
         }
         #endif
         
@@ -318,7 +304,7 @@ class APIClient {
         
         #if DEBUG
         if ConfigLoader.shared.enableDebugLogging {
-            print("[APIClient] Response: \(httpResponse.statusCode)")
+            dlog("APIClient", "Received HTTP response")
         }
         #endif
         
@@ -333,22 +319,11 @@ class APIClient {
         switch statusCode {
         case 200...299:
             do {
-                #if DEBUG
-                if ConfigLoader.shared.enableDebugLogging {
-                    if let jsonString = String(data: data, encoding: .utf8) {
-                        let preview = jsonString.prefix(500)
-                        print("[APIClient] Response data (\(data.count) bytes): \(preview)\(jsonString.count > 500 ? "…[truncated]" : "")")
-                    }
-                }
-                #endif
                 return try decoder.decode(T.self, from: data)
             } catch {
                 #if DEBUG
                 if ConfigLoader.shared.enableDebugLogging {
-                    print("[APIClient] Decode error: \(error)")
-                    if let jsonString = String(data: data, encoding: .utf8) {
-                        print("[APIClient] Failed response data: \(jsonString)")
-                    }
+                    dlog("APIClient", "Response decoding failed")
                 }
                 #endif
                 throw APIError.decodingFailed(error)
@@ -357,7 +332,7 @@ class APIClient {
         case 401:
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
-                print("[APIClient] 401 Unauthorized - token is invalid or expired")
+                dlog("APIClient", "Unauthenticated request returned 401")
             }
             #endif
             // Reached only for unauthenticated requests (e.g. login). Authenticated 401s are

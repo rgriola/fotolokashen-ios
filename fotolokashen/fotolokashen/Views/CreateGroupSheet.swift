@@ -159,7 +159,7 @@ struct CreateGroupSheet: View {
             customTypes = custom
         } catch {
             #if DEBUG
-            print("[CreateGroupSheet] Failed to load types: \(error)")
+            dlog("CreateGroupSheet", "Failed to load group types")
             #endif
         }
     }
@@ -195,7 +195,7 @@ struct CreateGroupSheet: View {
             )
 
             #if DEBUG
-            print("[CreateGroupSheet] ✅ Created group \(group.id): \(group.name)")
+            dlog("CreateGroupSheet", "Group created")
             #endif
 
             onGroupCreated(group)
@@ -210,7 +210,7 @@ struct CreateGroupSheet: View {
 
 #Preview {
     CreateGroupSheet(
-        onGroupCreated: { group in print("Created: \(group.name)") },
-        onCancel: { print("Cancelled") }
+        onGroupCreated: { _ in dlog("CreateGroupSheet", "Preview group creation completed") },
+        onCancel: { dlog("CreateGroupSheet", "Preview cancelled") }
     )
 }
