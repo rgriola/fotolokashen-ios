@@ -496,13 +496,13 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 - [x] 1.1 🖥️ `DeepLinkManagerTests` (incl. spoofed host) — 4 tests pass (Oct 29, 2026)
 - [x] 1.2 🖥️ Exact host allowlist (S-6) — HTTPS `fotolokashen.com` only; spoofed host and non-HTTPS rejected (Oct 29, 2026)
 - [x] 1.3 🖥️ `PKCEGeneratorTests` — RFC 7636 vector, format and 1,000-pair uniqueness checks; 8 tests pass (Oct 29, 2026)
-- [ ] 1.4w 🌐 Web passes `state` through LoginForm → authorize → auth-callback → app — **deployed + verified with 1.6.2**
+- [ ] 1.4w 🌐 Web passes `state` through LoginForm → authorize → auth-callback → app — implemented locally in web commit `77fcbcf`; **push/deploy + verification with 1.6.2 pending**
 - [ ] 1.4 🖥️ iOS generates, sends and validates `state`; rejection test passes (S-1)
 - [ ] 1.5 🖥️ Clear PKCE/state on every session end; block external `oauth-callback` (S-2)
-- [ ] 1.6 🖥️ Keychain → `.afterFirstUnlockThisDeviceOnly` with migration (S-3) — upgrade test: still signed in
-- [ ] 1.7 🖥️ ATS local networking off in Release + HTTPS assertion (S-4)
-- [ ] 1.8 🖥️ SwiftData store recovery instead of `fatalError` (S-5)
-- [ ] 1.9 🖥️ Private-by-default logging (S-8)
+- [ ] 1.6 🖥️ Keychain → `.afterFirstUnlockThisDeviceOnly` with migration (S-3) — implementation and unit tests pass; **physical upgrade test: still signed in pending**
+- [x] 1.7 🖥️ ATS local networking off in Release + HTTPS assertion (S-4) — Release app build succeeded; built plist has local networking disabled; HTTPS/HTTP policy tests pass (Oct 29, 2026)
+- [x] 1.8 🖥️ SwiftData store recovery instead of `fatalError` (S-5) — quarantine/recovery tests and full Debug test plan pass (Oct 29, 2026)
+- [x] 1.9 🖥️ Private-by-default logging (S-8) — sensitive values removed from diagnostics; no direct `print()`, `debugPrint()`, or `NSLog()` in production Swift sources; full Debug test plan passes (Oct 29, 2026)
 - [ ] 1.10 🖥️ xcconfig/Config.plist not tracked; Maps key restricted in Google Cloud (S-11)
 - [ ] 🌐 Auto-login token single-use + short TTL verified (S-7)
 - [ ] 🌐 Fix `MOBILE_API_SCHEMAS.md` `id` mismatch (DB-2)

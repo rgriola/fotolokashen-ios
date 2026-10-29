@@ -81,7 +81,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Use best practices for file size and purpose.
 - When appropriate create logical subviews, maintain separate concerns and create utility functions for repeated code like buttons.
 - Theme.swift is our style file.
-- For easy Xcode tests use print("Specfic Message") for iOS actions; buttons, toggles, panels open/close.
+- For easy Xcode tests use dlog("Tag", "Specific Message") for iOS actions; buttons, toggles, panels open/close. Do not use print(); keep messages static (no user data, tokens, or locations).
 - Always add unit testing
 - Xcode CLI is available.
 - Add Comments to give context to the purpose of each file

@@ -2,6 +2,21 @@
 
 All notable changes to Fotolokashen iOS are documented in this file.
 
+## [Unreleased] - iOS 27 readiness
+
+### 🔒 Security Hardening (Step 2)
+
+- **Deep links**: Universal Links accepted only over HTTPS from exactly `fotolokashen.com`; spoofed hosts rejected (`DeepLinkManagerTests`)
+- **PKCE**: RFC 7636 known-answer vector, format and uniqueness tests (`PKCEGeneratorTests`)
+- **Transport**: `NSAllowsLocalNetworking` is now Debug-only (Info.plist preprocessing); Release requires an HTTPS backend URL (`BackendURLValidator`)
+- **Keychain**: Tokens migrated from KeychainAccess to `SecItem` with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Legacy items are preserved if migration fails, and read failures no longer sign users out. Physical upgrade test from 1.6.2 is still pending
+- **SwiftData**: A store that cannot be opened is quarantined and rebuilt instead of calling `fatalError`; users see a notice that unsynced local data may be missing (`PersistentStoreRecovery`)
+- **Logging**: `dlog` marks messages private; all direct `print()` calls removed from app code. Tokens, PKCE values, emails, coordinates, URLs, bodies and raw errors are no longer logged
+
+### 🧪 Tests
+
+- Shared `fotolokashen.xctestplan` (unit + UI): 94 unit tests + 6 UI test runs passing on Xcode 27.1 / iOS 27 simulator
+
 ## [1.6.0] - 2026-05-08
 
 ### 🎞️ Camera & Upload Pipeline Hardening
