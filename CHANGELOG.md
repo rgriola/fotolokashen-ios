@@ -4,6 +4,8 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 ## [Unreleased] - iOS 27 readiness
 
+Updated October 29, 2026, 18:40 EDT.
+
 ### ⚙️ Platform
 
 - **Minimum iOS raised to 18.6** for all targets (app, unit tests, UI tests). Users on iOS 17.x–18.5 remain on 1.6.2
@@ -12,7 +14,7 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 - **Deep links**: Universal Links accepted only over HTTPS from exactly `fotolokashen.com`; spoofed hosts rejected (`DeepLinkManagerTests`)
 - **PKCE**: RFC 7636 known-answer vector, format and uniqueness tests (`PKCEGeneratorTests`)
-- **OAuth state (S-1)**: iOS generates and sends a fresh CSPRNG state for each login; any returned state must exactly match the expected value. Missing state is temporarily accepted because the deployed web app does not yet pass it through; enable strict enforcement after 1.4w is deployed and verified
+- **OAuth state (S-1)**: iOS now requires exactly one nonempty callback state matching the current login before token exchange; missing, empty, duplicate, mismatched and unexpected state are rejected. All 15 OAuth callback tests pass, including duplicate callback delivery. User-reported 1.6.2 login checks passed against preview and production; physical production login with this stricter build remains pending.
 - **Transport**: `NSAllowsLocalNetworking` is now Debug-only. Debug uses `Info-Debug.plist`, Release uses `Info.plist` — **keep the two files in sync** apart from that key. Release requires an HTTPS backend URL (`BackendURLValidator`)
 - **OAuth callbacks (S-2)**: PKCE state is cleared whenever the login browser session ends (cancel, error or success) and on logout. `fotolokashen://oauth-callback` URLs delivered via `.onOpenURL` are ignored unless a login is in progress, so a crafted link cannot trigger a token exchange
 - **Keychain**: Tokens migrated from KeychainAccess to `SecItem` with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Legacy items are preserved if migration fails, and read failures no longer sign users out. Physical upgrade test from 1.6.2 is still pending

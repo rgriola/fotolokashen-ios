@@ -11,7 +11,7 @@ import AuthenticationServices
 @MainActor
 final class AuthServiceOAuthCallbackTests: XCTestCase {
 
-    private let callbackURL = URL(string: "fotolokashen://oauth-callback?code=test-auth-code")!
+    private let callbackURL = URL(string: "fotolokashen://oauth-callback?code=test-auth-code&state=test-oauth-state")!
     private let baseURL = URL(string: "https://test.fotolokashen.com")!
 
     override func setUp() {
@@ -95,8 +95,8 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
 
         // A later, independent login (new code, new verifier) must not be
         // suppressed by the earlier call's now-finished in-flight guard.
-        sut.debugSeedCodeVerifierForTesting("another-code-verifier")
-        let secondURL = URL(string: "fotolokashen://oauth-callback?code=another-auth-code")!
+        sut.debugSeedCodeVerifierForTesting("another-code-verifier", state: "another-state")
+        let secondURL = URL(string: "fotolokashen://oauth-callback?code=another-auth-code&state=another-state")!
         await sut.handleCallback(url: secondURL)
 
         XCTAssertEqual(CountingTokenExchangeStub.requestCount, 2)
@@ -155,17 +155,48 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
         XCTAssertNotNil(sut.errorMessage)
     }
 
-    func testMissingOAuthStateIsAcceptedDuringDocumentedWebRolloutCompatibility() async throws {
+    func testInvalidOAuthStateMakesNoTokenRequestAndClearsLoginAttempt() async throws {
+        let invalidStates = [
+            "",
+            "&state",
+            "&state=",
+            "&state=expected-state&state=expected-state",
+            "&state=expected-state&state=attacker-state"
+        ]
+        for query in invalidStates {
+            let sut = AuthService(apiClient: makeStubbedAPIClient())
+            sut.debugSeedCodeVerifierForTesting("test-code-verifier", state: "expected-state")
+            let callback = try XCTUnwrap(
+                URL(string: "fotolokashen://oauth-callback?code=test-auth-code\(query)")
+            )
+
+            await sut.handleCallback(url: callback)
+
+            XCTAssertEqual(CountingTokenExchangeStub.requestCount, 0)
+            XCTAssertFalse(sut.isAuthenticated)
+            XCTAssertFalse(sut.isLoading)
+            XCTAssertEqual(
+                sut.errorMessage,
+                "Unable to verify this sign-in attempt. Please try logging in again."
+            )
+
+            // A valid external callback cannot revive the rejected login attempt.
+            let validCallback = URL(string: "fotolokashen://oauth-callback?code=test-auth-code&state=expected-state")!
+            await sut.handleExternalCallback(url: validCallback)
+            XCTAssertEqual(CountingTokenExchangeStub.requestCount, 0)
+        }
+    }
+
+    func testEmptyExpectedOAuthStateMakesNoTokenRequest() async throws {
         let sut = AuthService(apiClient: makeStubbedAPIClient())
-        sut.debugSeedCodeVerifierForTesting("test-code-verifier", state: "expected-state")
+        sut.debugSeedCodeVerifierForTesting("test-code-verifier", state: "")
+        let callback = URL(string: "fotolokashen://oauth-callback?code=test-auth-code&state=")!
 
-        // Transitional 1.4w compatibility only: deployed web currently omits
-        // state passthrough. Strict missing-state enforcement follows deployment.
-        await sut.handleCallback(url: callbackURL)
+        await sut.handleCallback(url: callback)
 
-        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 1)
-        XCTAssertTrue(sut.isAuthenticated)
-        XCTAssertNil(sut.errorMessage)
+        XCTAssertEqual(CountingTokenExchangeStub.requestCount, 0)
+        XCTAssertFalse(sut.isAuthenticated)
+        XCTAssertNotNil(sut.errorMessage)
     }
 
     func testMissingCodeVerifierSurfacesAnErrorWithoutCrashing() async throws {

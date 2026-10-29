@@ -1,5 +1,7 @@
 # iOS Authentication Flow
 
+Updated October 29, 2026, 19:43 EDT.
+
 > How the Fotolokashen iOS app authenticates via OAuth 2.0 PKCE, handles email verification, and manages deep links.
 >
 > **Full cross-platform docs**: See `fotolokashen/docs/guides/authentication-flow.md` in the web repo.
@@ -11,14 +13,64 @@
 ```
 LoginView → AuthService.startLogin()
   → ASWebAuthenticationSession opens fotolokashen.com/login
-    (ephemeral session — no Safari cookies shared)
+    (fresh random state + PKCE challenge; ephemeral session — no Safari cookies shared)
   → User logs in on web
-  → OAuth redirect: fotolokashen://oauth-callback?code=xxx
+  → OAuth redirect: fotolokashen://oauth-callback?code=xxx&state=yyy
   → AuthService.handleCallback()
+  → Require exactly one nonempty state matching this login; reject before token exchange otherwise
   → POST /api/auth/oauth/token (code exchange, redirect_uri: fotolokashen://oauth-callback)
   → access_token + refresh_token saved to Keychain
   → isAuthenticated = true
 ```
+
+Missing, empty, duplicate, mismatched or unexpected state ends the login attempt
+with a sign-in verification error and clears PKCE/state. A successfully exchanged
+code delivered again is still ignored, preserving the browser/deep-link duplicate
+callback behavior.
+
+**Rollout verification (October 29, 2026):** The user reports successful 1.6.2
+login against preview and production. That older client does not send state;
+web passthrough must remain optional for it. The new iOS build enforces state
+locally. All 15 OAuth callback regression tests pass on iPhone 17 / iOS 27.0.
+Physical production login with the stricter new build remains pending.
+
+**Production retry (18:51 EDT):** The Xcode-installed strict build, still labeled
+1.6.2 (62), rejected a production callback with the sign-in verification error.
+Local web source was found to omit state forwarding in LoginForm and both
+auth-callback redirects; that path is now corrected locally. Production's deployed
+commit is unverified. Deploy the web correction, then repeat strict-build login,
+logout, and login. The displayed version alone does not identify the older
+App Store client.
+
+**Preview verification (19:05 EDT):** Public JavaScript served by
+`https://merkelvision.com/login` still omits state capture/forwarding, and
+`/app/auth-callback` still constructs code-only custom-scheme redirects in both
+paths. This was checked using synthetic callback values, without signing in.
+The web fix is committed locally as `21ab0db`, but that domain is not serving
+the corrected flow. Verify the Vercel deployment commit and domain assignment,
+then repeat the login check; strict validation remains enabled.
+
+**Redeploy follow-up (19:11 EDT):** After the reported fresh deployment,
+`merkelvision.com` still served the same code-only callback and login chunks
+(`07lm6hpruy36f.js` and `3ygtqx_67_a6y.js`). The user identified source commit
+`21ab0db` and branch alias `fotolokashen-git-main-rodczaro.vercel.app`; direct
+inspection of that alias redirects to Vercel authentication, so its deployed
+application code could not be independently compared. Check the custom domain's
+assigned deployment in Vercel; do not bypass deployment protection.
+
+**Domain assignment confirmed by user (19:21 EDT):** `merkelvision.com` was
+pointing to production, not preview. The recent attempts therefore did not test
+the corrected preview deployment. Assign the test domain to the intended preview
+deployment, then verify strict-build login, logout, and login again. Earlier
+checks described as preview checks through this domain do not establish preview
+compatibility; retest the older App Store client against the corrected preview
+as well. No successful strict-build preview login has been confirmed yet.
+
+**Login restored, user-confirmed (19:43 EDT):** Login now works with the new iOS
+build after correcting domain/protection configuration. This supersedes the
+preview-login blocker above. Logout/relogin, older App Store client compatibility
+against the corrected preview, and strict-build production verification have not
+yet been explicitly confirmed.
 
 > **Note (fixed 2026-04-26):** `prefersEphemeralWebBrowserSession` is set to `true` so each OAuth
 > session starts with a clean cookie jar. Previously `false` caused stale Safari web-session cookies

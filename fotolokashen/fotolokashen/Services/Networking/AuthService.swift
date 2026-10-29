@@ -489,25 +489,16 @@ class AuthService: ObservableObject, TokenRefreshing {
 
             let queryItems = components.queryItems ?? []
             let stateItems = queryItems.filter { $0.name == "state" }
-            if !stateItems.isEmpty {
-                // If the server returns state, it must belong to this login.
-                // Never exchange a callback with an absent expected state or a
-                // non-identical value. Duplicate state parameters are ambiguous
-                // and rejected as well.
-                guard stateItems.count == 1,
-                      let receivedState = stateItems.first?.value,
-                      let expectedState = oauthState,
-                      receivedState == expectedState else {
-                    errorMessage = AuthError.invalidOAuthState.localizedDescription
-                    isLoading = false
-                    clearPKCEState()
-                    return
-                }
-            } else {
-                // ROLLOUT TODO (1.4w): the deployed web server currently omits
-                // OAuth state passthrough. Accept missing state temporarily to
-                // preserve login compatibility. Once 1.4w is deployed, remove
-                // this compatibility branch and require a matching state.
+            guard stateItems.count == 1,
+                  let receivedState = stateItems.first?.value,
+                  !receivedState.isEmpty,
+                  let expectedState = oauthState,
+                  !expectedState.isEmpty,
+                  receivedState == expectedState else {
+                errorMessage = AuthError.invalidOAuthState.localizedDescription
+                isLoading = false
+                clearPKCEState()
+                return
             }
 
             #if DEBUG
