@@ -1,6 +1,6 @@
 # iOS Authentication Flow
 
-Updated October 29, 2026, 19:43 EDT.
+Updated October 29, 2026, 20:18 EDT.
 
 > How the Fotolokashen iOS app authenticates via OAuth 2.0 PKCE, handles email verification, and manages deep links.
 >
@@ -33,6 +33,27 @@ login against preview and production. That older client does not send state;
 web passthrough must remain optional for it. The new iOS build enforces state
 locally. All 15 OAuth callback regression tests pass on iPhone 17 / iOS 27.0.
 Physical production login with the stricter new build remains pending.
+
+**Superseding rollout result (20:08 EDT):** The user explicitly confirmed
+“1.4w/1.4 works. I tested the new app against production.” The strict-client
+production login gate is closed. Earlier pending-production statements and
+domain/protection failures below describe the rollout history, not current
+blockers.
+
+**Auto-login hardening (20:11 EDT):** The web exchange now requires a non-null
+future expiry and atomically clears the matching token before generating
+credentials. Concurrent requests cannot both consume it; expired-token cleanup
+also matches the original hash/expiry to avoid clearing a replacement token.
+Generation remains 32 random bytes with hashed storage and five-minute validity.
+Five focused regression tests pass locally. At 20:18 EDT the user confirmed this
+web fix was deployed and tested on old and new iOS builds. Phase 1 is complete;
+Phase 2 is paused by request. This does not change standard OAuth login.
+
+**Current status (user-confirmed, 19:47 EDT):** Everything is working correctly
+after the domain/protection corrections. The earlier failed attempts below are
+historical, not an active login blocker. The exact client/environment matrix was
+not specified in this final confirmation; retain explicit release checks for
+older-client compatibility and strict-build production login.
 
 **Production retry (18:51 EDT):** The Xcode-installed strict build, still labeled
 1.6.2 (62), rejected a production callback with the sign-in verification error.

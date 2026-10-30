@@ -4,7 +4,11 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 ## [Unreleased] - iOS 27 readiness
 
-Updated October 29, 2026, 18:40 EDT.
+Updated October 29, 2026, 20:18 EDT.
+
+Phase 1 completed: production OAuth, physical-device upgrade, native Maps key
+restrictions, and deployed auto-login compatibility confirmed by the user.
+Phase 2 is paused pending a fresh start from `main`.
 
 ### ⚙️ Platform
 
@@ -12,12 +16,14 @@ Updated October 29, 2026, 18:40 EDT.
 
 ### 🔒 Security Hardening (Step 2)
 
+- **Configuration tracking (October 29, 2026, 20:11 EDT)**: Removed the app's local `Config.plist` from version control without deleting it locally; existing ignore rules and `Config.example.plist` setup apply. Maps key restriction verification and any necessary credential rotation remain owner tasks.
+
 - **Deep links**: Universal Links accepted only over HTTPS from exactly `fotolokashen.com`; spoofed hosts rejected (`DeepLinkManagerTests`)
 - **PKCE**: RFC 7636 known-answer vector, format and uniqueness tests (`PKCEGeneratorTests`)
 - **OAuth state (S-1)**: iOS now requires exactly one nonempty callback state matching the current login before token exchange; missing, empty, duplicate, mismatched and unexpected state are rejected. All 15 OAuth callback tests pass, including duplicate callback delivery. User-reported 1.6.2 login checks passed against preview and production; physical production login with this stricter build remains pending.
 - **Transport**: `NSAllowsLocalNetworking` is now Debug-only. Debug uses `Info-Debug.plist`, Release uses `Info.plist` — **keep the two files in sync** apart from that key. Release requires an HTTPS backend URL (`BackendURLValidator`)
 - **OAuth callbacks (S-2)**: PKCE state is cleared whenever the login browser session ends (cancel, error or success) and on logout. `fotolokashen://oauth-callback` URLs delivered via `.onOpenURL` are ignored unless a login is in progress, so a crafted link cannot trigger a token exchange
-- **Keychain**: Tokens migrated from KeychainAccess to `SecItem` with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Legacy items are preserved if migration fails, and read failures no longer sign users out. Physical upgrade test from 1.6.2 is still pending
+- **Keychain**: Tokens migrated from KeychainAccess to `SecItem` with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Legacy items are preserved if migration fails, and read failures no longer sign users out. User confirmed the physical-device upgrade test passed October 29, 2026.
 - **SwiftData**: A store that cannot be opened is quarantined and rebuilt instead of calling `fatalError`; users see a notice that unsynced local data may be missing (`PersistentStoreRecovery`)
 - **Logging**: `dlog` marks messages private; all direct `print()` calls removed from app code. Tokens, PKCE values, emails, coordinates, URLs, bodies and raw errors are no longer logged
 

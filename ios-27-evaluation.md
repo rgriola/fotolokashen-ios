@@ -1,12 +1,25 @@
 # iOS 27 Readiness Evaluation — fotolokashen iOS
 
-**Last updated:** October 28, 2026 — 2:20 PM
+**Last updated:** October 29, 2026 — 20:18 EDT
 **Originally assessed:** 1.6.0 (build 57) on September 20, 2026
 **Current version:** 1.6.2 (build 62)
 **Scope:** Research and analysis only. No source files were modified during this evaluation.
 **Paths:** All file paths in this document are relative to the `fotolokashen-ios` repository root.
 
 > **Progress tracking:** see the [Progress Checklist](#progress-checklist) for the current state of every task. Update it as work lands.
+
+### Phase 1 closeout — October 29, 2026, 20:18 EDT
+
+Phase 1 is complete based on implementation/tests and the user's production,
+physical-upgrade, Maps-restriction, and old/new iOS auto-login confirmations.
+The user confirmed the auto-login fix was deployed and tested on both old and
+new iOS builds. **Phase 2 is paused by request.** Its preliminary SDK inventory
+below is retained as research only; no dependency removal or app privacy
+manifest implementation has begun. Merge the completed iOS feature work into
+`main` before resuming Phase 2.
+
+Pre-merge signed simulator validation: 15 OAuth callback tests and seven
+Keychain tests passed (22 total, zero failures) on iPhone 17 / iOS 27.0.
 
 ### Update — October 28, 2026
 
@@ -498,19 +511,19 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 - [x] 1.1 🖥️ `DeepLinkManagerTests` (incl. spoofed host) — 4 tests pass (Oct 29, 2026)
 - [x] 1.2 🖥️ Exact host allowlist (S-6) — HTTPS `fotolokashen.com` only; spoofed host and non-HTTPS rejected (Oct 29, 2026)
 - [x] 1.3 🖥️ `PKCEGeneratorTests` — RFC 7636 vector, format and 1,000-pair uniqueness checks; 8 tests pass (Oct 29, 2026)
-- [ ] 1.4w 🌐 **Reopened October 29, 2026, 18:55 EDT:** prior preview success and user-reported 1.6.2 preview/production success did not verify the current strict build against production. The user confirmed the failing production installation was built from Xcode after strict enforcement, despite its unchanged 1.6.2 label. Current local web source lacked LoginForm and callback-page state forwarding; corrected locally with URL-encoding/legacy-client regression coverage. **Pending: deploy corrected web source, verify strict-build production login → logout → login, and reconfirm older App Store client login. Production's deployed commit remains unverified.**
-- [x] 1.4 🖥️ Strict OAuth state validation (S-1) — missing, empty, duplicate, mismatched and unexpected state rejected before token exchange; completed-code duplicates remain ignored. **15 callback tests pass on iPhone 17 / iOS 27.0 (October 29, 2026, 18:40 EDT). Physical production login with the stricter new build remains pending.**
+- [x] 1.4w 🌐 **Closed by user confirmation October 29, 2026, 20:08 EDT:** “1.4w/1.4 works. I tested the new app against production.” Web state passthrough and strict-client production login are confirmed working. Prior domain/protection failures below are historical. The final confirmation does not claim a separate older App Store client retest.
+- [x] 1.4 🖥️ Strict OAuth state validation (S-1) — missing, empty, duplicate, mismatched and unexpected state rejected before token exchange; completed-code duplicates remain ignored. **15 callback tests pass on iPhone 17 / iOS 27.0; user confirmed the new app works against production October 29, 2026, 20:08 EDT.**
   - **Preview blocker verified October 29, 2026, 19:05 EDT:** `merkelvision.com` publicly serves old LoginForm and auth-callback JavaScript that drops state, despite local web fix commit `21ab0db`. Synthetic callback inspection confirmed code-only redirects; no account login was attempted. Verify the Vercel deployment commit/domain assignment before retrying the strict client.
   - **User correction October 29, 2026, 19:21 EDT:** `merkelvision.com` was assigned to production, not preview. The recent attempts did not exercise the corrected preview build. Preview verification remains open for both the strict new build and older App Store client; correct the domain assignment before retesting.
   - **User-confirmed October 29, 2026, 19:43 EDT:** new-build login works after correcting domain/protection configuration. Remaining explicit checks: logout/relogin, older App Store client against corrected preview, and strict-build production login.
 - [x] 1.5 🖥️ Clear PKCE/state on every session end; block external `oauth-callback` (S-2) — external callbacks are gated on an in-progress login rather than blocked outright, because the `.onOpenURL` duplicate delivery is a known legitimate path. 5 new tests incl. cancel → crafted callback → zero network calls (Oct 29, 2026)
-- [ ] 1.6 🖥️ Keychain → `.afterFirstUnlockThisDeviceOnly` with migration (S-3) — implementation and unit tests pass; **physical upgrade test: still signed in pending**
+- [x] 1.6 🖥️ Keychain → `.afterFirstUnlockThisDeviceOnly` with migration (S-3) — implementation and unit tests pass; **user confirmed physical-device upgrade preserves sign-in and protected data access October 29, 2026.**
 - [x] 1.7 🖥️ ATS local networking off in Release + HTTPS assertion (S-4) — separate `Info-Debug.plist` (Debug) and `Info.plist` (Release); built plists verified true/false; HTTPS/HTTP policy tests pass. Info.plist preprocessing was dropped because Xcode's target editor rewrote the file as empty (Oct 29, 2026)
 - [x] 1.8 🖥️ SwiftData store recovery instead of `fatalError` (S-5) — quarantine/recovery tests and full Debug test plan pass (Oct 29, 2026)
 - [x] 1.9 🖥️ Private-by-default logging (S-8) — sensitive values removed from diagnostics; no direct `print()`, `debugPrint()`, or `NSLog()` in production Swift sources; full Debug test plan passes (Oct 29, 2026)
-- [ ] 1.10 🖥️ xcconfig/Config.plist not tracked; Maps key restricted in Google Cloud (S-11)
-- [ ] 🌐 Auto-login token single-use + short TTL verified (S-7)
-- [ ] 🌐 Fix `MOBILE_API_SCHEMAS.md` `id` mismatch (DB-2)
+- [x] 1.10 🖥️ **Tracking cleanup complete locally October 29, 2026:** xcconfigs already untracked/ignored; removed the remaining app `Config.plist` from the Git index while preserving the local file. Existing `Config.example.plist` setup instructions remain applicable. **User confirmed the native key is restricted to the iOS bundle ID and Maps SDK for iOS**, separately from web preview/production/dev restrictions. Untracking does not remove prior history; assess/rotate previously committed credentials as appropriate without publishing their values.
+- [x] 🌐 Auto-login token single-use + short TTL (S-7) — generation uses 32 random bytes, hashed storage and five-minute expiry. Exchange rejects missing/expired expiry and atomically consumes a matching unexpired token before issuing credentials. Five focused regression tests and 41 related auth/API-contract tests passed locally, plus TypeScript and focused lint. **User confirmed deployment and testing on old and new iOS builds October 29, 2026, 20:18 EDT.**
+- [x] 🌐 DB-2 verified October 29, 2026, 20:11 EDT: current `MOBILE_API_SCHEMAS.md` already documents map results as `Location.id`, matching public/friends handlers (`id: save.location.id`). Profile `SocialLocation.id` is intentionally `UserSave.id`; no response-shape change needed.
 
 ### Step 3 — Ship 1.7.0
 
@@ -523,6 +536,32 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 - [ ] 2.5 Encryption export answer confirmed
 - [ ] 2.6 No third-party sign-in on web `/login`, `/register`
 - [ ] 2.7 Account deletion fully deletes server-side
+
+#### Phase 2 SDK inventory — October 29, 2026, 19:55 EDT
+
+OAuth handoff: the user confirmed everything is working at 19:47 EDT following
+domain/protection corrections. No active login blocker is reported. This does
+not establish the exact older-client/production verification matrix or the
+physical Keychain upgrade result.
+
+Task 2.2 inspection used the resolved checkouts and artifacts in Xcode's
+`Fotolokashen-bhloxtinidhovlhipdglofaaruif/SourcePackages`, not SDK documentation
+alone. All three discovered manifests passed `plutil -lint`.
+
+| Resolved SDK | Manifest present | Vendor binary signed? | Packaging evidence |
+| --- | --- | --- | --- |
+| GoogleMaps 10.8.0 | Yes, `Maps/Resources/GoogleMapsResources/GoogleMaps.bundle/PrivacyInfo.xcprivacy` | No signature on the inspected static-library XCFramework (`codesign --verify --strict` reports unsigned) | `Package.swift` copies the resource bundle; manifest also found in existing Debug device build products. |
+| GoogleMapsUtils 7.1.0 | Yes, checkout-root `PrivacyInfo.xcprivacy` | N/A: source package | Production targets have no manifest resource declaration. The sole `.process("Resources")` declaration belongs to a test target. Manifest presence in the checkout does not prove app inclusion. |
+| KeychainAccess 4.2.2 | No manifest found | N/A: source package | Still listed in `Package.resolved`; dependency removal remains task 2.4 even though the app's Keychain implementation has migrated. |
+| Kingfisher 8.8.1 | Yes, `Sources/PrivacyInfo.xcprivacy` | N/A: source package | `Package@swift-5.9.swift` processes the manifest; also found in existing Debug device build products. |
+
+**Findings, not App Store clearance:** task 2.2 remains open for disposition of
+the Maps artifact signature and Utils manifest packaging. Do not edit dependency
+checkouts or treat app signing as evidence of a vendor signature. Existing build
+products are corroborating evidence, not a newly generated archive/privacy
+report. Next: generate the archive privacy report (2.1), resolve these SDK
+findings, then author the app manifest (2.3) using verified required-reason APIs
+and data practices. No app privacy manifest was found in the source tree.
 
 **Deprecated API & timing sweep (Phase 5) 🖥️**
 
@@ -544,7 +583,7 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 
 - [ ] Step 2 and Phases 2, 5, 7.1–7.5 complete
 - [ ] Full test suite green; manual regression on device (login, refresh, deep links, map, camera, upload, profile, logout)
-- [ ] Keychain upgrade path tested from 1.6.2 → 1.7.0
+- [x] Keychain upgrade path tested from 1.6.2 → candidate build — user confirmed physical-device upgrade passes October 29, 2026
 - [ ] Archived on the Xcode 27 computer; submitted / approved
 
 ### Step 4 — Swift 6
