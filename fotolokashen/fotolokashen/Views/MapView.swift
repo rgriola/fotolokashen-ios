@@ -86,6 +86,13 @@ struct MapView: View {
                             .clipShape(Circle())
                             .shadow(radius: 4)
                         }
+                        .accessibilityLabel(showFriendsLocations
+                            ? "Hide friends' locations"
+                            : "Show friends' locations")
+                        .accessibilityValue(showFriendsLocations ? "On" : "Off")
+                        .accessibilityHint(showFriendsLocations
+                            ? "Hides friends' locations from the map."
+                            : "Shows friends' locations on the map.")
                         .padding(.leading)
 
                         Spacer()
@@ -102,6 +109,8 @@ struct MapView: View {
                                 .clipShape(Circle())
                                 .shadow(radius: 4)
                         }
+                        .accessibilityLabel("Center on my location")
+                        .accessibilityHint("Moves the map to your current location.")
                         .padding()
                     }
                 }
@@ -152,7 +161,7 @@ struct MapView: View {
             #endif
         } catch {
             #if DEBUG
-            dlog("MapView", "Failed to load friends locations: \(error)")
+            dlog("MapView", "Failed to load friends locations")
             #endif
         }
         isLoadingFriends = false
@@ -167,7 +176,7 @@ struct MapView: View {
             searchedPlacePin = SearchedPlacePin(coordinate: coordinate, name: mapItem.name ?? suggestion.title)
         } catch {
             #if DEBUG
-            dlog("MapView", "Failed to resolve search selection: \(error)")
+            dlog("MapView", "Failed to resolve search selection")
             #endif
         }
         placeSearchService.clear()
@@ -238,7 +247,7 @@ struct ClusteredMapView: UIViewRepresentable {
                     zoom: 15.0
                 )
                 mapView.animate(to: camera)
-                dlog("MapView", "Centered on user location: \(userLocation.coordinate)")
+                dlog("MapView", "Centered on user location")
             } else {
                 dlog("MapView", "User location not available yet")
             }
@@ -461,7 +470,7 @@ struct ClusteredMapView: UIViewRepresentable {
                 )
                 mapView.animate(to: camera)
                 #if DEBUG
-                dlog("MapView", "GPS fix → centered on user: \(location.coordinate)")
+                dlog("MapView", "GPS fix - centered on user")
                 #endif
             }
         }
@@ -491,5 +500,3 @@ struct ClusteredMapView: UIViewRepresentable {
 #Preview {
     MapView()
 }
-
-

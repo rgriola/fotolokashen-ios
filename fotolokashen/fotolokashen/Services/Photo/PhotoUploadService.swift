@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import UIKit
 import CoreLocation
 import Combine
@@ -59,6 +60,7 @@ class PhotoUploadService: ObservableObject {
         // Compress and delegate to the data-based path so both entry points
         // share a single network/association implementation.
         guard let compressedData = ImageCompressor.compress(image) else {
+            Log.photos.error("Photo compression failed")
             throw PhotoUploadError.compressionFailed
         }
         return try await uploadCompressedPhoto(
@@ -162,10 +164,12 @@ class PhotoUploadService: ObservableObject {
             #endif
             
             isUploading = false
+            Log.photos.notice("Photo upload and association completed")
             return photo
             
         } catch {
             isUploading = false
+            Log.photos.error("Photo upload failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
             
             #if DEBUG
             if config.enableDebugLogging {

@@ -76,7 +76,7 @@ extension LocationManager: CLLocationManagerDelegate {
             self.location = location
             
             if config.enableDebugLogging {
-                dlog("LocationManager", "Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+                dlog("LocationManager", "Location updated")
                 dlog("LocationManager", "Accuracy: \(location.horizontalAccuracy)m")
             }
         }
@@ -86,7 +86,7 @@ extension LocationManager: CLLocationManagerDelegate {
         Task { @MainActor in
             
             if config.enableDebugLogging {
-                dlog("LocationManager", "Error: \(error.localizedDescription)")
+                dlog("LocationManager", "Location update failed")
             }
         }
     }

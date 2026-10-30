@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import SwiftUI
 import Combine
 import AuthenticationServices
@@ -397,6 +398,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         }
 
         if error != nil {
+            Log.auth.error("Authentication browser session failed")
             isLoading = false
             errorMessage = error?.localizedDescription
             #if DEBUG
@@ -408,6 +410,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         }
 
         guard let callbackURL else {
+            Log.auth.error("Authentication browser completed without callback")
             isLoading = false
             errorMessage = "No callback URL received"
             return
@@ -495,6 +498,7 @@ class AuthService: ObservableObject, TokenRefreshing {
                   let expectedState = oauthState,
                   !expectedState.isEmpty,
                   receivedState == expectedState else {
+                Log.auth.error("OAuth callback rejected; stateCount=\(stateItems.count, privacy: .public); expectedStatePresent=\(self.oauthState != nil, privacy: .public)")
                 errorMessage = AuthError.invalidOAuthState.localizedDescription
                 isLoading = false
                 clearPKCEState()
@@ -510,6 +514,7 @@ class AuthService: ObservableObject, TokenRefreshing {
             do {
                 try await exchangeCodeForTokens(code: code)
             } catch {
+                Log.auth.error("OAuth token exchange failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
                 #if DEBUG
                 if config.enableDebugLogging {
                     dlog("AuthService", "OAuth token exchange failed")
@@ -673,6 +678,7 @@ class AuthService: ObservableObject, TokenRefreshing {
         // Update state
         currentUser = tokenResponse.user
         isAuthenticated = true
+        Log.auth.notice("OAuth sign-in completed")
         
         clearPKCEState()
     }
@@ -747,8 +753,10 @@ class AuthService: ObservableObject, TokenRefreshing {
             // Update state
             currentUser = tokenResponse.user
             isAuthenticated = true
+            Log.auth.notice("Verification auto-login completed")
             
         } catch {
+            Log.auth.error("Verification auto-login failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
             #if DEBUG
             if config.enableDebugLogging {
                 dlog("AuthService", "Verification auto-login failed")

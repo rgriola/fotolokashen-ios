@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 // MARK: - Bounded Async Timeout
 
@@ -220,10 +221,33 @@ class APIClient {
         )
         
         // Make request
-        let (data, response) = try await session.data(for: request)
+        #if DEBUG
+        let started = ContinuousClock.now
+        #endif
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            if Log.failure(error) == .cancelled {
+                Log.debug("Request cancelled", logger: Log.network)
+            } else {
+                Log.network.error("Request transport failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
+            }
+            throw error
+        }
 
         // Validate response
         let httpResponse = try validateResponse(response)
+        #if DEBUG
+        if Log.debugEnabled {
+            let elapsed = started.duration(to: .now)
+            Log.network.debug("Request completed; status=\(httpResponse.statusCode, privacy: .public); duration=\(elapsed, privacy: .public)")
+        }
+        #endif
+        if httpResponse.statusCode >= 400 {
+            Log.network.error("HTTP request rejected; status=\(httpResponse.statusCode, privacy: .public)")
+        }
 
         // A 401 on an authenticated request is far more often a stale access token than a
         // dead session. Refresh once and retry before tearing the user's session down —
@@ -245,6 +269,7 @@ class APIClient {
                 )
             }
             await Self.notifySessionInvalidated()
+            Log.auth.notice("Session invalidated after unauthorized request")
             throw APIError.unauthorized
         }
 
@@ -299,6 +324,7 @@ class APIClient {
     /// Validate and extract HTTPURLResponse
     private func validateResponse(_ response: URLResponse) throws -> HTTPURLResponse {
         guard let httpResponse = response as? HTTPURLResponse else {
+            Log.network.error("Non-HTTP response rejected")
             throw APIError.invalidResponse
         }
         
@@ -321,11 +347,7 @@ class APIClient {
             do {
                 return try decoder.decode(T.self, from: data)
             } catch {
-                #if DEBUG
-                if ConfigLoader.shared.enableDebugLogging {
-                    dlog("APIClient", "Response decoding failed")
-                }
-                #endif
+                Log.network.error("Response decoding failed")
                 throw APIError.decodingFailed(error)
             }
             
@@ -346,9 +368,6 @@ class APIClient {
             throw APIError.notFound
             
         default:
-            // REVIEW: Status 400 (and other 4xx/5xx) tries to decode ErrorResponse but silently
-            // falls back to .unknownError if decoding fails. Consider logging the raw response
-            // body in DEBUG builds to aid debugging malformed server responses.
             if let errorResponse = try? decoder.decode(ErrorResponse.self, from: data) {
                 throw APIError.apiError(errorResponse.error, errorResponse.code)
             }

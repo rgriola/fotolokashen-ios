@@ -4,8 +4,389 @@ import UIKit
 import Combine
 import Photos
 
+/// A value-only snapshot used to update camera controls on the main actor.
+nonisolated private struct CameraDeviceState: Sendable {
+    let isFrontCamera: Bool
+    let currentZoom: CGFloat
+    let minZoom: CGFloat
+    let maxZoom: CGFloat
+    let exposureBias: Float
+    let minExposureBias: Float
+    let maxExposureBias: Float
+    let revision: UInt64
+}
+
+nonisolated private enum CameraFlashMode: Sendable {
+    case auto
+    case on
+    case off
+
+    init(_ mode: AVCaptureDevice.FlashMode) {
+        switch mode {
+        case .auto: self = .auto
+        case .on: self = .on
+        case .off: self = .off
+        @unknown default: self = .auto
+        }
+    }
+
+    var avCaptureMode: AVCaptureDevice.FlashMode {
+        switch self {
+        case .auto: return .auto
+        case .on: return .on
+        case .off: return .off
+        }
+    }
+}
+
+/// Owns every mutable capture-session object. All access to its AVFoundation
+/// state is serialized on `sessionQueue`; callbacks carry only Sendable values
+/// back to the main-actor CameraService.
+///
+/// `@unchecked Sendable` is limited to this boundary: mutable state is only
+/// read or written on `sessionQueue` (including asynchronous device callbacks,
+/// which re-enter that queue), and the preview session is read via `sync`.
+nonisolated private final class CameraSessionController: NSObject, AVCapturePhotoCaptureDelegate, @unchecked Sendable {
+    private let sessionQueue = DispatchQueue(label: "camera.session.queue")
+    private let captureSession = AVCaptureSession()
+    private let capturePhotoOutput = AVCapturePhotoOutput()
+    private var videoDeviceInput: AVCaptureDeviceInput?
+    private var displayZoomMultiplier: CGFloat = 1
+    private var currentPosition: AVCaptureDevice.Position?
+    private var generation: UInt64 = 0
+    private var exposureRequest: UInt64 = 0
+    private var pendingPhotoCompletions: [Int64: @Sendable (Data?, String?) -> Void] = [:]
+    private var revision: UInt64 = 0
+
+    /// The preview layer needs the session reference. Read it synchronously
+    /// through the owning queue; session configuration/mutation remains here.
+    func previewSession() -> AVCaptureSession {
+        dispatchPrecondition(condition: .notOnQueue(sessionQueue))
+        return sessionQueue.sync {
+            dispatchPrecondition(condition: .onQueue(sessionQueue))
+            return captureSession
+        }
+    }
+
+    func configure(
+        completion: @escaping @Sendable (Result<CameraDeviceState, Error>) -> Void
+    ) {
+        sessionQueue.async { [self] in
+            dispatchPrecondition(condition: .onQueue(sessionQueue))
+            captureSession.beginConfiguration()
+            captureSession.sessionPreset = .photo
+
+            guard let camera = Self.preferredBackCamera() else {
+                captureSession.commitConfiguration()
+                completion(.failure(CameraError.noCameraAvailable))
+                return
+            }
+
+            do {
+                let input = try AVCaptureDeviceInput(device: camera)
+                guard captureSession.canAddInput(input) else {
+                    captureSession.commitConfiguration()
+                    completion(.failure(CameraError.cannotAddInput))
+                    return
+                }
+                captureSession.addInput(input)
+
+                guard captureSession.canAddOutput(capturePhotoOutput) else {
+                    captureSession.removeInput(input)
+                    captureSession.commitConfiguration()
+                    completion(.failure(CameraError.cannotAddOutput))
+                    return
+                }
+                captureSession.addOutput(capturePhotoOutput)
+                captureSession.commitConfiguration()
+
+                videoDeviceInput = input
+                currentPosition = camera.position
+                displayZoomMultiplier = Self.zoomMultiplier(for: camera)
+                generation &+= 1
+                revision &+= 1
+
+                do {
+                    try camera.lockForConfiguration()
+                    camera.videoZoomFactor = displayZoomMultiplier
+                    camera.setExposureTargetBias(0, completionHandler: nil)
+                    camera.unlockForConfiguration()
+                } catch {
+                    // Configuration is still usable; report its actual device
+                    // bounds and retain the prior 1x UI default.
+                    completion(.success(makeState(for: camera, zoom: 1, exposure: 0)))
+                    return
+                }
+
+                completion(.success(makeState(for: camera, zoom: 1, exposure: 0)))
+                dlog("CameraService", "Session configured successfully")
+            } catch {
+                captureSession.commitConfiguration()
+                completion(.failure(error))
+            }
+        }
+    }
+
+    func start(completion: @escaping @Sendable (Bool, UInt64) -> Void) {
+        sessionQueue.async { [self] in
+            dispatchPrecondition(condition: .onQueue(sessionQueue))
+            if !captureSession.isRunning {
+                captureSession.startRunning()
+            }
+            revision &+= 1
+            completion(captureSession.isRunning, revision)
+        }
+    }
+
+    func stop(completion: @escaping @Sendable (UInt64) -> Void) {
+        sessionQueue.async { [self] in
+            dispatchPrecondition(condition: .onQueue(sessionQueue))
+            if captureSession.isRunning {
+                captureSession.stopRunning()
+            }
+            revision &+= 1
+            completion(revision)
+        }
+    }
+
+    func setZoom(
+        _ requestedZoom: CGFloat,
+        completion: @escaping @Sendable ((CGFloat, UInt64)?) -> Void
+    ) {
+        sessionQueue.async { [self] in
+            dispatchPrecondition(condition: .onQueue(sessionQueue))
+            guard let device = videoDeviceInput?.device else {
+                completion(nil)
+                return
+            }
+
+            let minZoom = 1 / displayZoomMultiplier
+            let maxZoom = min(device.activeFormat.videoMaxZoomFactor / displayZoomMultiplier, 10)
+            let displayZoom = min(max(requestedZoom, minZoom), maxZoom)
+            let deviceZoom = min(
+                max(displayZoom * displayZoomMultiplier, 1),
+                device.activeFormat.videoMaxZoomFactor
+            )
+            do {
+                try device.lockForConfiguration()
+                device.videoZoomFactor = deviceZoom
+                device.unlockForConfiguration()
+                revision &+= 1
+                completion((displayZoom, revision))
+            } catch {
+                dlog("CameraService", "Zoom adjustment failed")
+                completion(nil)
+            }
+        }
+    }
+
+    func focus(at point: CGPoint, completion: @escaping @Sendable () -> Void) {
+        sessionQueue.async { [self] in
+            dispatchPrecondition(condition: .onQueue(sessionQueue))
+            guard let device = videoDeviceInput?.device else {
+                completion()
+                return
+            }
+            do {
+                try device.lockForConfiguration()
+                if device.isFocusPointOfInterestSupported {
+                    device.focusPointOfInterest = point
+                    device.focusMode = .autoFocus
+                }
+                if device.isExposurePointOfInterestSupported {
+                    device.exposurePointOfInterest = point
+                    device.exposureMode = .autoExpose
+                }
+                device.unlockForConfiguration()
+            } catch {
+                dlog("CameraService", "Focus adjustment failed")
+            }
+            completion()
+        }
+    }
+
+    func setExposureBias(
+        _ requestedBias: Float,
+        completion: @escaping @Sendable ((Float, UInt64)?) -> Void
+    ) {
+        sessionQueue.async { [self] in
+            dispatchPrecondition(condition: .onQueue(sessionQueue))
+            guard let device = videoDeviceInput?.device else {
+                completion(nil)
+                return
+            }
+            let boundedBias = min(
+                max(requestedBias, device.minExposureTargetBias),
+                device.maxExposureTargetBias
+            )
+            let requestGeneration = generation
+            exposureRequest &+= 1
+            let requestID = exposureRequest
+            do {
+                try device.lockForConfiguration()
+                device.setExposureTargetBias(boundedBias) { [weak self] _ in
+                    guard let self else { return }
+                    self.sessionQueue.async {
+                        dispatchPrecondition(condition: .onQueue(self.sessionQueue))
+                        // Ignore a late completion from a device that has since
+                        // been replaced by switchCamera().
+                        guard self.generation == requestGeneration else {
+                            completion(nil)
+                            return
+                        }
+                        guard self.exposureRequest == requestID else {
+                            completion(nil)
+                            return
+                        }
+                        self.revision &+= 1
+                        completion((boundedBias, self.revision))
+                    }
+                }
+                device.unlockForConfiguration()
+            } catch {
+                dlog("CameraService", "Exposure bias adjustment failed")
+                completion(nil)
+            }
+        }
+    }
+
+    func switchCamera(
+        completion: @escaping @Sendable (CameraDeviceState?) -> Void
+    ) {
+        sessionQueue.async { [self] in
+            dispatchPrecondition(condition: .onQueue(sessionQueue))
+            guard let activePosition: AVCaptureDevice.Position = self.currentPosition else {
+                completion(nil)
+                return
+            }
+            let newPosition: AVCaptureDevice.Position = activePosition == .front ? .back : .front
+            let device = newPosition == .back
+                ? Self.preferredBackCamera()
+                : AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+            guard let device,
+                  let newInput = try? AVCaptureDeviceInput(device: device) else {
+                completion(nil)
+                return
+            }
+
+            let oldInput = videoDeviceInput
+            captureSession.beginConfiguration()
+            if let oldInput {
+                captureSession.removeInput(oldInput)
+            }
+            guard captureSession.canAddInput(newInput) else {
+                if let oldInput, captureSession.canAddInput(oldInput) {
+                    captureSession.addInput(oldInput)
+                }
+                captureSession.commitConfiguration()
+                completion(nil)
+                return
+            }
+            captureSession.addInput(newInput)
+
+            let multiplier = Self.zoomMultiplier(for: device)
+            do {
+                try device.lockForConfiguration()
+                device.videoZoomFactor = multiplier
+                device.setExposureTargetBias(0, completionHandler: nil)
+                device.unlockForConfiguration()
+            } catch {
+                captureSession.removeInput(newInput)
+                if let oldInput, captureSession.canAddInput(oldInput) {
+                    captureSession.addInput(oldInput)
+                }
+                captureSession.commitConfiguration()
+                completion(nil)
+                return
+            }
+
+            captureSession.commitConfiguration()
+            videoDeviceInput = newInput
+            currentPosition = device.position
+            displayZoomMultiplier = multiplier
+            generation &+= 1
+            revision &+= 1
+            completion(makeState(for: device, zoom: 1, exposure: 0))
+        }
+    }
+
+    func capturePhoto(
+        flashMode: CameraFlashMode,
+        completion: @escaping @Sendable (Data?, String?) -> Void
+    ) {
+        sessionQueue.async { [self] in
+            dispatchPrecondition(condition: .onQueue(sessionQueue))
+            guard captureSession.isRunning else {
+                completion(nil, "Camera session not running")
+                return
+            }
+            let settings = AVCapturePhotoSettings()
+            settings.flashMode = videoDeviceInput?.device.hasFlash == true
+                ? flashMode.avCaptureMode
+                : .off
+            pendingPhotoCompletions[settings.uniqueID] = completion
+            capturePhotoOutput.capturePhoto(with: settings, delegate: self)
+            dlog("CameraService", "Capturing photo...")
+        }
+    }
+
+    nonisolated func photoOutput(
+        _ output: AVCapturePhotoOutput,
+        didFinishProcessingPhoto photo: AVCapturePhoto,
+        error: Error?
+    ) {
+        let id = photo.resolvedSettings.uniqueID
+        let imageData = photo.fileDataRepresentation()
+        let errorMessage = error?.localizedDescription
+        sessionQueue.async { [self] in
+            dispatchPrecondition(condition: .onQueue(sessionQueue))
+            let completion = pendingPhotoCompletions.removeValue(forKey: id)
+            completion?(imageData, errorMessage)
+        }
+    }
+
+    private func makeState(
+        for device: AVCaptureDevice,
+        zoom: CGFloat,
+        exposure: Float
+    ) -> CameraDeviceState {
+        dispatchPrecondition(condition: .onQueue(sessionQueue))
+        return CameraDeviceState(
+            isFrontCamera: device.position == .front,
+            currentZoom: zoom,
+            minZoom: 1 / displayZoomMultiplier,
+            maxZoom: min(device.activeFormat.videoMaxZoomFactor / displayZoomMultiplier, 10),
+            exposureBias: exposure,
+            minExposureBias: device.minExposureTargetBias,
+            maxExposureBias: device.maxExposureTargetBias,
+            revision: revision
+        )
+    }
+
+    private static func zoomMultiplier(for device: AVCaptureDevice) -> CGFloat {
+        let firstSwitchOver = device.virtualDeviceSwitchOverVideoZoomFactors.first?.doubleValue ?? 1
+        return CGFloat(firstSwitchOver > 0 ? firstSwitchOver : 1)
+    }
+
+    private static func preferredBackCamera() -> AVCaptureDevice? {
+        let preferredTypes: [AVCaptureDevice.DeviceType] = [
+            .builtInTripleCamera,
+            .builtInDualWideCamera,
+            .builtInDualCamera,
+            .builtInWideAngleCamera
+        ]
+        for type in preferredTypes {
+            if let device = AVCaptureDevice.default(type, for: .video, position: .back) {
+                return device
+            }
+        }
+        return nil
+    }
+}
+
 /// Camera service for capturing photos
-class CameraService: NSObject, ObservableObject {
+@MainActor
+final class CameraService: NSObject, ObservableObject {
     
     // MARK: - Published Properties
     
@@ -25,33 +406,20 @@ class CameraService: NSObject, ObservableObject {
     
     // MARK: - Properties
     
-    private let captureSession = AVCaptureSession()
-    private var photoOutput = AVCapturePhotoOutput()
-    private let sessionQueue = DispatchQueue(label: "camera.session.queue")
-    private var videoDeviceInput: AVCaptureDeviceInput?
-
-    /// Multiplier mapping user-facing display zoom → device `videoZoomFactor`.
-    /// On a virtual device that includes the ultra-wide lens (e.g. `.builtInTripleCamera`,
-    /// `.builtInDualWideCamera`), the ultra-wide sits at `videoZoomFactor = 1.0` and the
-    /// wide "1x" lens sits at the first switch-over factor (typically 2.0). We expose a
-    /// display zoom where 0.5 == ultra-wide and 1.0 == wide.
-    /// On a single wide-only device this stays 1.0, so 1.0x display == 1.0x device.
-    private var displayZoomMultiplier: CGFloat = 1.0
+    private let sessionController = CameraSessionController()
+    private var minDisplayZoom: CGFloat = 1
+    private var maxDisplayZoom: CGFloat = 5
+    private var minBias: Float = -8
+    private var maxBias: Float = 8
+    private var lastAppliedRevision: UInt64 = 0
 
     /// Min/max zoom range (in user-facing display units)
-    var minZoom: CGFloat { 1.0 / displayZoomMultiplier }
-    var maxZoom: CGFloat {
-        guard let device = videoDeviceInput?.device else { return 5.0 }
-        return min(device.activeFormat.videoMaxZoomFactor / displayZoomMultiplier, 10.0)
-    }
+    var minZoom: CGFloat { minDisplayZoom }
+    var maxZoom: CGFloat { maxDisplayZoom }
     
     /// Exposure bias range from device
-    var minExposureBias: Float {
-        videoDeviceInput?.device.minExposureTargetBias ?? -8.0
-    }
-    var maxExposureBias: Float {
-        videoDeviceInput?.device.maxExposureTargetBias ?? 8.0
-    }
+    var minExposureBias: Float { minBias }
+    var maxExposureBias: Float { maxBias }
     
     // Check if running on simulator
     private var isSimulator: Bool {
@@ -94,84 +462,26 @@ class CameraService: NSObject, ObservableObject {
             throw CameraError.notAuthorized
         }
         
-        // Configure session on background queue
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            sessionQueue.async { [self] in
-                captureSession.beginConfiguration()
-                captureSession.sessionPreset = .photo
-
-                // Prefer a virtual multi-camera that includes the ultra-wide lens so the
-                // 0.5x preset is selectable. Fall back to wide-only on devices without it.
-                let camera = Self.preferredBackCamera()
-                guard let camera else {
-                    captureSession.commitConfiguration()
-                    continuation.resume(throwing: CameraError.noCameraAvailable)
-                    return
-                }
-
-                // Determine the display-zoom multiplier from the device's switch-over
-                // factors. For dual/triple cameras the first switch-over (typically 2.0)
-                // is the wide lens, which we treat as the user's "1x".
-                let firstSwitchOver = camera.virtualDeviceSwitchOverVideoZoomFactors.first?.doubleValue ?? 1.0
-                self.displayZoomMultiplier = CGFloat(firstSwitchOver > 0 ? firstSwitchOver : 1.0)
-
-                do {
-                    let input = try AVCaptureDeviceInput(device: camera)
-                    self.videoDeviceInput = input
-                    
-                    if captureSession.canAddInput(input) {
-                        captureSession.addInput(input)
-                    } else {
-                        captureSession.commitConfiguration()
-                        continuation.resume(throwing: CameraError.cannotAddInput)
-                        return
-                    }
-                    
-                    if captureSession.canAddOutput(photoOutput) {
-                        captureSession.addOutput(photoOutput)
-                    } else {
-                        captureSession.commitConfiguration()
-                        continuation.resume(throwing: CameraError.cannotAddOutput)
-                        return
-                    }
-                    
-                    captureSession.commitConfiguration()
-                    dlog("CameraService", "Session configured successfully (device: \(camera.localizedName), multiplier: \(self.displayZoomMultiplier))")
-
-                    // Start at the wide lens (display 1.0x) so framing matches the prior default.
-                    do {
-                        try camera.lockForConfiguration()
-                        camera.videoZoomFactor = self.displayZoomMultiplier
-                        camera.unlockForConfiguration()
-                        DispatchQueue.main.async { self.currentZoom = 1.0 }
-                    } catch {
-                        dlog("CameraService", "Initial zoom set failed: \(error)")
-                    }
-
-                    continuation.resume()
-                    
-                } catch {
-                    captureSession.commitConfiguration()
-                    continuation.resume(throwing: error)
-                }
+        let state = try await withCheckedThrowingContinuation {
+            (continuation: CheckedContinuation<CameraDeviceState, Error>) in
+            sessionController.configure { result in
+                continuation.resume(with: result)
             }
         }
+        apply(state)
     }
     
     /// Start camera session
     func startSession() {
         guard !isSimulator else { return }
         
-        sessionQueue.async { [self] in
-            if !captureSession.isRunning {
-                captureSession.startRunning()
-                dlog("CameraService", "Session started, isRunning: \(captureSession.isRunning)")
-                
-                // Confirm session is running on main thread
-                DispatchQueue.main.async {
-                    self.isSessionReady = self.captureSession.isRunning
-                    dlog("CameraService", "isSessionReady set to: \(self.isSessionReady)")
-                }
+        sessionController.start { [weak self] isRunning, revision in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard revision >= self.lastAppliedRevision else { return }
+                self.lastAppliedRevision = revision
+                self.isSessionReady = isRunning
+                dlog("CameraService", "Session started, isRunning: \(isRunning)")
             }
         }
     }
@@ -180,21 +490,20 @@ class CameraService: NSObject, ObservableObject {
     func stopSession() {
         guard !isSimulator else { return }
         
-        sessionQueue.async { [self] in
-            if captureSession.isRunning {
-                captureSession.stopRunning()
+        sessionController.stop { [weak self] revision in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard revision >= self.lastAppliedRevision else { return }
+                self.lastAppliedRevision = revision
+                self.isSessionReady = false
                 dlog("CameraService", "Session stopped")
-                
-                DispatchQueue.main.async {
-                    self.isSessionReady = false
-                }
             }
         }
     }
     
     /// Get capture session for preview
     func getCaptureSession() -> AVCaptureSession {
-        return captureSession
+        sessionController.previewSession()
     }
     
     // MARK: - Zoom
@@ -202,43 +511,15 @@ class CameraService: NSObject, ObservableObject {
     /// Set zoom factor in user-facing display units (e.g. 0.5, 1.0, 2.0).
     /// Internally translated to the device's `videoZoomFactor` via `displayZoomMultiplier`.
     func setZoom(_ factor: CGFloat) {
-        guard let device = videoDeviceInput?.device else { return }
-        let clampedDisplay = min(max(factor, minZoom), maxZoom)
-        let deviceFactor = clampedDisplay * displayZoomMultiplier
-        sessionQueue.async {
-            do {
-                try device.lockForConfiguration()
-                let bounded = min(max(deviceFactor, 1.0), device.activeFormat.videoMaxZoomFactor)
-                device.videoZoomFactor = bounded
-                device.unlockForConfiguration()
-                DispatchQueue.main.async {
-                    self.currentZoom = clampedDisplay
-                }
-            } catch {
-                #if DEBUG
-                dlog("CameraService", "Zoom error: \(error)")
-                #endif
+        sessionController.setZoom(factor) { [weak self] result in
+            guard let (zoom, revision) = result else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard revision >= self.lastAppliedRevision else { return }
+                self.currentZoom = zoom
+                self.lastAppliedRevision = revision
             }
         }
-    }
-
-    // MARK: - Device Selection
-
-    /// Choose the best back camera. Prefer virtual devices that include the ultra-wide
-    /// lens so the 0.5x preset is available; fall back to wide-only otherwise.
-    private static func preferredBackCamera() -> AVCaptureDevice? {
-        let preferredTypes: [AVCaptureDevice.DeviceType] = [
-            .builtInTripleCamera,      // ultra-wide + wide + tele
-            .builtInDualWideCamera,    // ultra-wide + wide
-            .builtInDualCamera,        // wide + tele (no ultra-wide)
-            .builtInWideAngleCamera    // wide only
-        ]
-        for type in preferredTypes {
-            if let device = AVCaptureDevice.default(type, for: .video, position: .back) {
-                return device
-            }
-        }
-        return nil
     }
     
     /// Zoom in by a step
@@ -260,50 +541,25 @@ class CameraService: NSObject, ObservableObject {
     
     /// Focus and meter at a normalised point (0…1, 0…1) in the preview
     func focusAt(point: CGPoint, in viewSize: CGSize) {
-        guard let device = videoDeviceInput?.device else { return }
         // Convert SwiftUI point (origin top-left) to AVCapture device point
         let focusPoint = CGPoint(x: point.y / viewSize.height,
                                  y: 1.0 - point.x / viewSize.width)
-        sessionQueue.async {
-            do {
-                try device.lockForConfiguration()
-                if device.isFocusPointOfInterestSupported {
-                    device.focusPointOfInterest = focusPoint
-                    device.focusMode = .autoFocus
-                }
-                if device.isExposurePointOfInterestSupported {
-                    device.exposurePointOfInterest = focusPoint
-                    device.exposureMode = .autoExpose
-                }
-                device.unlockForConfiguration()
-                #if DEBUG
-                dlog("CameraService", "Focus at \(focusPoint)")
-                #endif
-            } catch {
-                #if DEBUG
-                dlog("CameraService", "Focus error: \(error)")
-                #endif
-            }
+        sessionController.focus(at: focusPoint) {
+            #if DEBUG
+            dlog("CameraService", "Focus at \(focusPoint)")
+            #endif
         }
     }
-    
+
     /// Set exposure compensation bias (in EV)
     func setExposureBias(_ bias: Float) {
-        guard let device = videoDeviceInput?.device else { return }
-        let clamped = min(max(bias, device.minExposureTargetBias), device.maxExposureTargetBias)
-        sessionQueue.async {
-            do {
-                try device.lockForConfiguration()
-                device.setExposureTargetBias(clamped) { _ in
-                    DispatchQueue.main.async {
-                        self.currentExposureBias = clamped
-                    }
-                }
-                device.unlockForConfiguration()
-            } catch {
-                #if DEBUG
-                dlog("CameraService", "Exposure bias error: \(error)")
-                #endif
+        sessionController.setExposureBias(bias) { [weak self] result in
+            guard let (bias, revision) = result else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard revision >= self.lastAppliedRevision else { return }
+                self.currentExposureBias = bias
+                self.lastAppliedRevision = revision
             }
         }
     }
@@ -318,55 +574,28 @@ class CameraService: NSObject, ObservableObject {
     /// Toggle between front and back cameras.
     func switchCamera() {
         guard !isSimulator else { return }
-
-        sessionQueue.async { [self] in
-            captureSession.beginConfiguration()
-
-            // Remove existing input
-            if let currentInput = videoDeviceInput {
-                captureSession.removeInput(currentInput)
-            }
-
-            let newPosition: AVCaptureDevice.Position = isUsingFrontCamera ? .back : .front
-
-            let device: AVCaptureDevice?
-            if newPosition == .back {
-                device = Self.preferredBackCamera()
-            } else {
-                device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
-            }
-
-            guard let device else {
-                captureSession.commitConfiguration()
+        sessionController.switchCamera { [weak self] state in
+            guard let state else {
+                dlog("CameraService", "Switch camera failed")
                 return
             }
-
-            do {
-                let input = try AVCaptureDeviceInput(device: device)
-                if captureSession.canAddInput(input) {
-                    captureSession.addInput(input)
-                    self.videoDeviceInput = input
-
-                    // Recalculate zoom multiplier for new device
-                    let firstSwitchOver = device.virtualDeviceSwitchOverVideoZoomFactors.first?.doubleValue ?? 1.0
-                    self.displayZoomMultiplier = CGFloat(firstSwitchOver > 0 ? firstSwitchOver : 1.0)
-
-                    // Reset zoom to 1x for the new device
-                    try device.lockForConfiguration()
-                    device.videoZoomFactor = self.displayZoomMultiplier
-                    device.unlockForConfiguration()
-                }
-            } catch {
-                dlog("CameraService", "Switch camera error: \(error)")
-            }
-
-            captureSession.commitConfiguration()
-
-            DispatchQueue.main.async {
-                self.isUsingFrontCamera = !self.isUsingFrontCamera
-                self.currentZoom = 1.0
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.apply(state)
             }
         }
+    }
+
+    private func apply(_ state: CameraDeviceState) {
+        guard state.revision >= lastAppliedRevision else { return }
+        lastAppliedRevision = state.revision
+        isUsingFrontCamera = state.isFrontCamera
+        currentZoom = state.currentZoom
+        currentExposureBias = state.exposureBias
+        minDisplayZoom = state.minZoom
+        maxDisplayZoom = state.maxZoom
+        minBias = state.minExposureBias
+        maxBias = state.maxExposureBias
     }
 
     // MARK: - Flash Mode (B4)
@@ -454,64 +683,39 @@ class CameraService: NSObject, ObservableObject {
                 timestamp.draw(in: timestampRect, withAttributes: timestampAttrs)
             }
             
-            DispatchQueue.main.async {
-                self.capturedImage = testImage
-            }
+            capturedImage = testImage
             return
         }
         
-        // Real device capture
-        sessionQueue.async { [self] in
-            guard captureSession.isRunning else {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Camera session not running"
+        // Snapshot UI state before crossing to the session queue. The controller
+        // uses the current output/device when this queued operation executes.
+        let requestedFlashMode = CameraFlashMode(flashMode)
+        sessionController.capturePhoto(flashMode: requestedFlashMode) { [weak self] imageData, errorMessage in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if let errorMessage {
+                    self.errorMessage = errorMessage
+                    dlog("CameraService", "Capture failed")
+                    return
                 }
-                return
+                guard let imageData, let image = UIImage(data: imageData) else {
+                    self.errorMessage = "Failed to process photo"
+                    return
+                }
+                self.capturedPhotoData = imageData
+                self.capturedImage = image
+                dlog("CameraService", "Photo captured successfully")
+                dlog("CameraService", "Image size: \(image.size)")
+                self.saveToPhotoLibrary(image: image)
             }
-            
-            let settings = AVCapturePhotoSettings()
-            settings.flashMode = self.flashMode
-            
-            photoOutput.capturePhoto(with: settings, delegate: self)
-            dlog("CameraService", "Capturing photo...")
         }
     }
 }
 
-// MARK: - AVCapturePhotoCaptureDelegate
+// MARK: - Photo Library
 
-extension CameraService: AVCapturePhotoCaptureDelegate {
-    
-    nonisolated func photoOutput(
-        _ output: AVCapturePhotoOutput,
-        didFinishProcessingPhoto photo: AVCapturePhoto,
-        error: Error?
-    ) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            if let error = error {
-                self.errorMessage = error.localizedDescription
-                dlog("CameraService", "Capture error: \(error.localizedDescription)")
-                return
-            }
-            
-            guard let imageData = photo.fileDataRepresentation(),
-                  let image = UIImage(data: imageData) else {
-                self.errorMessage = "Failed to process photo"
-                return
-            }
-            
-            self.capturedPhotoData = imageData  // B1: raw bytes with full EXIF
-            self.capturedImage = image
-            dlog("CameraService", "Photo captured successfully")
-            dlog("CameraService", "Image size: \(image.size)")
-            
-            // Save to photo library
-            self.saveToPhotoLibrary(image: image)
-        }
-    }
-    
+@MainActor
+extension CameraService {
     /// Save image to photo library
     private func saveToPhotoLibrary(image: UIImage) {
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
@@ -525,8 +729,8 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
             }) { success, error in
                 if success {
                     dlog("CameraService", "Photo saved to library")
-                } else if let error = error {
-                    dlog("CameraService", "Error saving to library: \(error.localizedDescription)")
+                } else if error != nil {
+                    dlog("CameraService", "Saving to library failed")
                 }
             }
         }
@@ -535,7 +739,7 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
 
 // MARK: - Camera Errors
 
-enum CameraError: Error, LocalizedError {
+enum CameraError: Error, LocalizedError, Sendable {
     case notAuthorized
     case noCameraAvailable
     case cannotAddInput

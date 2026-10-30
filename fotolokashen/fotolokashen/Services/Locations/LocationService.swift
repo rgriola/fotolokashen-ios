@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import CoreLocation
 import UIKit
 import Combine
@@ -38,8 +39,6 @@ class LocationService: ObservableObject {
     
     // REVIEW: createLocation() is missing caption, tags, personalRating, isFavorite, and color fields
     // that the web app supports at creation time. Users must edit the location post-create to add these.
-    // Also: 40+ bare print statements below should be wrapped in #if DEBUG + enableDebugLogging checks
-    // to match the project's debug logging pattern and avoid production performance impact.
     
     /// Create a new location with photo using geocoded address data
     func createLocation(
@@ -57,7 +56,7 @@ class LocationService: ObservableObject {
         
         do {
             #if DEBUG
-            dlog("LocationService", "Creating '\(name)' at (\(latitude), \(longitude))")
+            Log.debug("Creating location", logger: Log.locations)
             #endif
 
             // Convert production date to ISO string if provided
@@ -96,12 +95,12 @@ class LocationService: ObservableObject {
             location.userSaveId = userSaveId  // Set userSaveId for delete operations
             
             #if DEBUG
-            dlog("LocationService", "Location \(location.id) created (userSave: \(userSaveId))")
+            Log.debug("Location created", logger: Log.locations)
             #endif
             
             // Step 2: Upload photo to the location
             do {
-                let uploadedPhoto = try await photoUploadService.uploadPhoto(
+                _ = try await photoUploadService.uploadPhoto(
                     image: photo,
                     locationId: location.id,
                     location: photoLocation,
@@ -109,7 +108,7 @@ class LocationService: ObservableObject {
                 )
                 
                 #if DEBUG
-                dlog("LocationService", "Photo \(uploadedPhoto.id) uploaded")
+                Log.debug("Photo uploaded", logger: Log.photos)
                 #endif
                 
                 // Step 3: Fetch the updated location using UserSave ID to get the photo data
@@ -118,9 +117,7 @@ class LocationService: ObservableObject {
                 location = updatedLocation
             } catch {
                 // Photo upload failed, but location was created
-                #if DEBUG
-                dlog("LocationService", "Photo upload failed: \(error)")
-                #endif
+                Log.photos.error("Location created but photo upload failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
                 // Continue anyway - location exists
             }
             
@@ -130,9 +127,7 @@ class LocationService: ObservableObject {
         } catch {
             isLoading = false
             
-            if config.enableDebugLogging {
-                dlog("LocationService", "Create location failed: \(error)")
-            }
+            Log.locations.error("Create location failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
             
             throw error
         }
@@ -143,21 +138,19 @@ class LocationService: ObservableObject {
     /// Fetch a single location by UserSave ID
     func fetchLocation(userSaveId: Int) async throws -> Location {
         if config.enableDebugLogging {
-            dlog("LocationService", "Fetching location with UserSave ID: \(userSaveId)")
+            Log.debug("Fetching location", logger: Log.locations)
         }
         
         do {
             let response: UserSaveDetailResponse = try await apiClient.get("/api/locations/\(userSaveId)")
             
             if config.enableDebugLogging {
-                dlog("LocationService", "Fetched location: \(response.userSave.location.name)")
+                Log.debug("Fetched location", logger: Log.locations)
             }
             
             return response.userSave.location
         } catch {
-            if config.enableDebugLogging {
-                dlog("LocationService", "Fetch location failed: \(error)")
-            }
+            Log.locations.error("Fetch location failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
             throw error
         }
     }
@@ -180,9 +173,7 @@ class LocationService: ObservableObject {
             
             return locations
         } catch {
-            if config.enableDebugLogging {
-                dlog("LocationService", "Fetch locations failed: \(error)")
-            }
+            Log.locations.error("Fetch locations failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
             throw error
         }
     }
@@ -192,7 +183,7 @@ class LocationService: ObservableObject {
     /// Delete a location by UserSave ID
     func deleteLocation(userSaveId: Int) async throws {
         if config.enableDebugLogging {
-            dlog("LocationService", "Deleting location with UserSave ID: \(userSaveId)")
+            Log.debug("Deleting location", logger: Log.locations)
         }
         
         do {
@@ -202,9 +193,7 @@ class LocationService: ObservableObject {
                 dlog("LocationService", "Location deleted successfully")
             }
         } catch {
-            if config.enableDebugLogging {
-                dlog("LocationService", "Delete location failed: \(error)")
-            }
+            Log.locations.error("Delete location failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
             throw error
         }
     }
@@ -216,7 +205,7 @@ class LocationService: ObservableObject {
     func updateLocation(locationId: Int, request: UpdateLocationRequest) async throws -> Location {
         #if DEBUG
         if config.enableDebugLogging {
-            dlog("LocationService", "Updating location ID: \(locationId)")
+            Log.debug("Updating location", logger: Log.locations)
         }
         #endif
 
@@ -243,17 +232,13 @@ class LocationService: ObservableObject {
 
             #if DEBUG
             if config.enableDebugLogging {
-                dlog("LocationService", "Location updated successfully: \(location.name)")
+                Log.debug("Location updated successfully", logger: Log.locations)
             }
             #endif
 
             return location
         } catch {
-            #if DEBUG
-            if config.enableDebugLogging {
-                dlog("LocationService", "Update location failed: \(error)")
-            }
-            #endif
+            Log.locations.error("Update location failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
             throw error
         }
     }
@@ -264,7 +249,7 @@ class LocationService: ObservableObject {
     func deletePhoto(photoId: Int) async throws {
         #if DEBUG
         if config.enableDebugLogging {
-            dlog("LocationService", "Deleting photo ID: \(photoId)")
+            Log.debug("Deleting photo", logger: Log.photos)
         }
         #endif
 
@@ -277,11 +262,7 @@ class LocationService: ObservableObject {
             }
             #endif
         } catch {
-            #if DEBUG
-            if config.enableDebugLogging {
-                dlog("LocationService", "Delete photo failed: \(error)")
-            }
-            #endif
+            Log.photos.error("Delete photo failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
             throw error
         }
     }

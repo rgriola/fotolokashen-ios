@@ -1,5 +1,5 @@
 {
-  "originHash" : "087a1217115e2e91b4027d3ec6ab8b8a8e5a965ec168b4450518546ada5dad2b",
+  "originHash" : "95906f0ca2d8f920366c70af4dc34aa315aa2d4263c09735296802a3c694b94b",
   "pins" : [
     {
       "identity" : "google-maps-ios-utils",
@@ -17,15 +17,6 @@
       "state" : {
         "revision" : "f821a2ef5a3ffa7c704e6c98153da2592ba3049c",
         "version" : "10.8.0"
-      }
-    },
-    {
-      "identity" : "keychainaccess",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/kishikawakatsumi/KeychainAccess.git",
-      "state" : {
-        "revision" : "84e546727d66f1adc5439debad16270d0fdd04e7",
-        "version" : "4.2.2"
       }
     },
     {

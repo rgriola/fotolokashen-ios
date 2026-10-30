@@ -4,7 +4,7 @@ iOS companion app for fotolokashen — a camera-first location scouting app for 
 
 **Production URL**: https://fotolokashen.com  
 **Status**: ✅ Active Development | Build: Passing  
-**Last Updated**: September 17, 2026
+**Last Updated**: October 30, 2026, 12:48 EDT
 
 ---
 
@@ -300,27 +300,85 @@ See [docs/API.md](./docs/API.md) for full reference.
 
 ---
 
+## Third-Party Acknowledgements
+
+Updated October 30, 2026, 13:30 EDT. Open **About → Legal → Licenses &
+Acknowledgements** from the app's profile/support navigation. Google Maps'
+open-source notices come directly from `GMSServices.openSourceLicenseInfo()`;
+the package licenses are bundled under
+[`Resources/Licenses`](fotolokashen/fotolokashen/Resources/Licenses).
+Texts are selectable and split into paragraphs for accessible reading.
+
+The bundled files are unmodified copies from the resolved Google Maps package
+10.8.0, Google Maps Utils 7.1.0, and Kingfisher 8.8.1 checkouts. When updating
+these dependencies, refresh the corresponding license files from that version,
+check for additional NOTICE/attribution requirements, and run
+`AcknowledgementTests`. SDK notices and on-map attribution are not replaced by
+the package licenses. No KeychainAccess acknowledgement is included because it
+is no longer distributed with the app.
+
 ## Debug Logging
 
-Enable in `Config.plist`:
+Updated October 30, 2026, 12:48 EDT. Apple unified logging uses subsystem
+`com.fotolokashen.app`, centralized in
+[`DebugLog.swift`](fotolokashen/fotolokashen/Services/Networking/DebugLog.swift).
+Categories: `App`, `Auth`, `Network`, `Photos`, `Persistence`, `Locations`,
+and `DeepLink`.
+
+Enable DEBUG breadcrumbs with the existing **case-sensitive**
+`features.enableDebugLogging` setting in the local `Config.plist`:
 
 ```xml
-<key>EnableDebugLogging</key>
-<true/>
+<key>features</key>
+<dict>
+    <key>enableDebugLogging</key>
+    <true/>
+</dict>
 ```
 
-Logs route through `os.Logger` in debug builds (filterable in Console.app and Instruments).
+Edit the existing `features` dictionary; do not add a duplicate dictionary.
+Release builds do not evaluate DEBUG breadcrumb messages, regardless of that
+setting. Sanitized notice/error/fault events remain available in both builds.
+Expected network cancellation is a DEBUG breadcrumb, not an error.
 
-Log prefixes:
+For new logging, import `OSLog` and use native interpolation for reviewed fields:
 
-- `[APIClient]` — Network requests
-- `[LocationService]` — Location CRUD
-- `[LocationStore]` — State management
-- `[CameraService]` — Camera capture
-- `[PhotoUploadQueue]` — Upload pipeline
-- `📍` — Geocoding
-- `🍎` — Apple Geocoding
-- `💾` — Save operations
+```swift
+import OSLog
+
+Log.debug("Starting secure upload", logger: Log.photos)
+Log.network.error("HTTP request rejected; status=\(statusCode, privacy: .public)")
+Log.photos.error("Upload failed; failure=\(Log.failure(error).rawValue, privacy: .public)")
+```
+
+`Log.failure` returns only allowlisted classifications, never error descriptions
+or associated server text. `notice` records meaningful completion/recovery;
+`error` records failure; `fault` is reserved for unrecoverable internal failures.
+For native DEBUG interpolation, use `#if DEBUG` and `if Log.debugEnabled`.
+`Log.debug` and the transitional `dlog` helper keep entire messages private;
+`dlog` maps existing service tags to the shared categories and now honors the
+same configuration flag.
+
+Never pass credentials, OAuth codes/state, emails, coordinates, user content,
+full URLs, request/response bodies, file paths or raw errors into logs, even
+with private redaction. Public interpolation is only for reviewed, nonsensitive
+metadata such as HTTP status, state counts/presence, and failure classifications.
+Request timing is DEBUG-only; no endpoint or payload is recorded.
+
+**Viewing logs:** connect the iPhone to a Mac, select it in Console.app, start
+streaming, and filter by subsystem `com.fotolokashen.app` and category. Enable
+Info/Debug messages for DEBUG breadcrumbs and reproduce the issue. Native events
+also appear in Xcode's console. Private legacy text may appear as `<private>`.
+Retention is controlled by the OS: this is not a permanent log file or an
+in-app export system. No remote logging service or diagnostic UI is added.
+
+Validation: 42 focused Debug tests and six Release logging-policy tests pass;
+the standard Release simulator build succeeds. Release policy tests use
+`ENABLE_TESTABILITY=YES` and exclude `AuthServiceOAuthCallbackTests.swift`,
+which depends on DEBUG-only test seams, without defining DEBUG in Release.
+A broader Release API test attempt exposed the existing
+`testBuiltAppBackendURLUsesHTTPSOutsideDebug` failure (missing built
+`BackendBaseURL`); it is not fixed or hidden by the logger work.
 
 ---
 

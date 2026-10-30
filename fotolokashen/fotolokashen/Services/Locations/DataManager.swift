@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import SwiftData
 import Combine
 
@@ -39,7 +40,8 @@ class DataManager: ObservableObject {
             )
             storeURL = applicationSupportURL.appendingPathComponent("default.store")
         } catch {
-            fatalError("Could not locate the SwiftData store: \(error)")
+            Log.persistence.fault("Could not locate local store")
+            fatalError("Could not locate the SwiftData store")
         }
 
         let openedStore: StoreOpenResult<ModelContainer>
@@ -63,19 +65,18 @@ class DataManager: ObservableObject {
         } catch {
             // Only ModelContainer creation failures reach recovery. A failed
             // quarantine or a failed second creation is not hidden or retried.
-            fatalError("Could not create ModelContainer after store recovery: \(error)")
+            Log.persistence.fault("Could not create local store after recovery")
+            fatalError("Could not create ModelContainer after store recovery")
         }
 
         modelContainer = openedStore.store
         modelContext = ModelContext(modelContainer)
 
-        if let quarantineURL = openedStore.quarantinedStoreURL {
+        if openedStore.quarantinedStoreURL != nil {
             storeRecoveryMessage = """
             The previous local store could not be opened and was preserved on this device in a recovery folder. A fresh local store is now active. Server-backed data can sync again when online, but local-only changes and queued photo uploads may need to be restored or re-added.
             """
-            if ConfigLoader.shared.enableDebugLogging {
-                dlog("DataManager", "Previous SwiftData store preserved at \(quarantineURL.path)")
-            }
+            Log.persistence.notice("Local store recovered; previous store quarantined")
         }
 
         // Update pending uploads count
@@ -223,7 +224,7 @@ class DataManager: ObservableObject {
             pendingUploads = count
         } catch {
             if ConfigLoader.shared.enableDebugLogging {
-                dlog("DataManager", "Error fetching pending count: \(error)")
+                dlog("DataManager", "Error fetching pending count")
             }
         }
     }

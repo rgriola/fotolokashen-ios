@@ -15,6 +15,7 @@ import CoreLocation
 
 /// Yellow focus square that animates in, like native iOS Camera.
 struct FocusSquareView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var scale: CGFloat = 1.4
     @State private var opacity: Double = 1.0
 
@@ -25,6 +26,11 @@ struct FocusSquareView: View {
             .scaleEffect(scale)
             .opacity(opacity)
             .onAppear {
+                guard !reduceMotion else {
+                    scale = 1.0
+                    opacity = 1.0
+                    return
+                }
                 withAnimation(.easeOut(duration: 0.2)) {
                     scale = 1.0
                 }
@@ -46,7 +52,6 @@ struct ExposureSlider: View {
     let minBias: Float
     let maxBias: Float
 
-    @State private var dragOffset: CGFloat = 0
     private let sliderHeight: CGFloat = 140
 
     var body: some View {
@@ -58,24 +63,41 @@ struct ExposureSlider: View {
             ZStack(alignment: .center) {
                 Capsule()
                     .fill(Color.white.opacity(0.2))
-                    .frame(width: 2, height: sliderHeight)
+                    .frame(width: 4, height: sliderHeight)
 
                 Circle()
                     .fill(Color.yellow)
                     .frame(width: 16, height: 16)
                     .offset(y: thumbOffset)
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                let half = sliderHeight / 2
-                                let clamped = min(max(value.location.y - half, -half), half)
-                                let normalised = Float(-clamped / half)
-                                let ev = normalised * min(maxBias, 4.0)
-                                bias = ev
-                            }
-                    )
             }
-            .frame(height: sliderHeight)
+            .frame(width: 44, height: sliderHeight)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        let half = sliderHeight / 2
+                        let clamped = min(max(value.location.y - half, -half), half)
+                        let normalised = Float(-clamped / half)
+                        bias = min(
+                            max(normalised * practicalMaxBias, exposureRange.lowerBound),
+                            exposureRange.upperBound
+                        )
+                    }
+            )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Exposure")
+            .accessibilityValue("\(bias.formatted(.number.precision(.fractionLength(1)))) EV")
+            .accessibilityHint("Swipe up or down to adjust exposure.")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment:
+                    bias = min(bias + 0.1, exposureRange.upperBound)
+                case .decrement:
+                    bias = max(bias - 0.1, exposureRange.lowerBound)
+                @unknown default:
+                    break
+                }
+            }
 
             Image(systemName: "sun.min.fill")
                 .font(.system(size: 10))
@@ -83,10 +105,19 @@ struct ExposureSlider: View {
         }
     }
 
+    private var practicalMaxBias: Float {
+        max(0, min(maxBias, 4.0))
+    }
+
+    private var exposureRange: ClosedRange<Float> {
+        let lowerBound = max(minBias, -practicalMaxBias)
+        let upperBound = max(lowerBound, practicalMaxBias)
+        return lowerBound...upperBound
+    }
+
     private var thumbOffset: CGFloat {
-        let practicalMax = min(maxBias, 4.0)
-        guard practicalMax > 0 else { return 0 }
-        let normalised = CGFloat(bias / practicalMax)
+        guard practicalMaxBias > 0 else { return 0 }
+        let normalised = CGFloat(bias / practicalMaxBias)
         return -normalised * (sliderHeight / 2)
     }
 }
@@ -119,8 +150,10 @@ struct ZoomDialView: View {
                     Text(presetLabel(preset))
                         .font(.system(size: 13, weight: isActive(preset) ? .bold : .medium, design: .monospaced))
                         .foregroundColor(isActive(preset) ? .yellow : .white)
-                        .frame(width: 44, height: 36)
+                        .frame(width: 44, height: 44)
                 }
+                .accessibilityLabel("\(presetLabel(preset))x zoom")
+                .accessibilityAddTraits(isActive(preset) ? .isSelected : [])
             }
 
             Button {
@@ -129,8 +162,9 @@ struct ZoomDialView: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.white.opacity(0.6))
-                    .frame(width: 28, height: 36)
+                    .frame(width: 44, height: 44)
             }
+            .accessibilityLabel("Close zoom controls")
         }
         .padding(.horizontal, 4)
         .background(Color.black.opacity(0.65))
@@ -176,9 +210,29 @@ struct CameraGPSBadge: View {
             .foregroundColor(.white)
             .padding(.horizontal, showCoordinates ? 8 : 6)
             .padding(.vertical, 5)
+            .frame(minWidth: 44, minHeight: 44)
             .background(location != nil ? Color.green.opacity(0.75) : Color.red.opacity(0.6))
             .cornerRadius(8)
         }
+        .accessibilityLabel(location == nil ? "GPS unavailable" : "GPS available")
+        .accessibilityValue(accessibilityValue)
+        .accessibilityHint(location == nil
+            ? "A location fix is not available."
+            : showCoordinates
+                ? "Double-tap to hide coordinates."
+                : "Double-tap to show coordinates.")
+    }
+
+    private var accessibilityValue: String {
+        guard showCoordinates, let location else {
+            return location == nil ? "Waiting for location" : "Coordinates hidden"
+        }
+        return String(
+            format: "%.4f, %.4f, accuracy plus or minus %d meters",
+            location.coordinate.latitude,
+            location.coordinate.longitude,
+            Int(location.horizontalAccuracy)
+        )
     }
 }
 
@@ -221,13 +275,15 @@ struct CameraThumbnailStrip: View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(captures) { capture in
+                    ForEach(Array(captures.enumerated()), id: \.element.id) { entry in
+                        let (index, capture) = entry
                         ZStack(alignment: .topTrailing) {
                             Image(uiImage: capture.thumbnail)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: 56, height: 56)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .accessibilityLabel("Captured photo \(index + 1)")
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color.white.opacity(0.4), lineWidth: 1)
@@ -238,9 +294,12 @@ struct CameraThumbnailStrip: View {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.system(size: 16))
                                     .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
                                     .background(Color.black.opacity(0.6))
                                     .clipShape(Circle())
                             }
+                            .accessibilityLabel("Remove photo \(index + 1)")
+                            .accessibilityHint("Removes this photo from the capture session.")
                             .offset(x: 4, y: -4)
                         }
                         .id(capture.id)

@@ -4,11 +4,30 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 ## [Unreleased] - iOS 27 readiness
 
-Updated October 29, 2026, 20:18 EDT.
+Updated October 30, 2026, 13:52 EDT.
 
 Phase 1 completed: production OAuth, physical-device upgrade, native Maps key
 restrictions, and deployed auto-login compatibility confirmed by the user.
-Phase 2 is paused pending a fresh start from `main`.
+Phase 2 resumed October 30, 2026.
+
+### Privacy readiness
+
+- Phase 2 tasks 2.1–2.6 complete: regenerated report reviewed; owner confirmed App Store Connect privacy reconciliation, exempt encryption and email/password-only in-app authentication. SDK inventory complete with vendor embedded-component provenance caveat retained.
+- Account deletion copy now explains background media removal; accessibility review and signed Release device build pass. Approved backend durable deletion/cleanup and cache invalidation changes pass 110 selected web tests, including 18 local PostgreSQL integration tests. Backend deployment and disposable staging verification remain the final 2.7 gate.
+
+- Added About → Legal → Licenses & Acknowledgements with native, selectable paragraph-based license text. Includes Google Maps SDK-provided notices and exact Google Maps package/Utils Apache-2.0 and Kingfisher MIT license files. Four resource/notice tests and signed Release device build pass.
+
+- Added the app privacy manifest using owner-confirmed scouting/sharing purposes and reviewed profile/upload data flows, including optional DOB and profile region. Verified exact manifest inclusion in a signed Release archive and regenerated report; owner confirmed App Store Connect answers updated to match.
+
+- Removed the unused KeychainAccess SPM dependency and product linkage. Native Keychain storage/migration code is unchanged; other SDK versions are preserved.
+- Verified 22 signed Keychain/OAuth callback tests and created a signed Release device archive of 1.6.3 (63). GoogleMaps, Kingfisher and the subsequently added app manifest are present in the reviewed archive. Utils omits its empty manifest; it is not itself named on Apple's commonly-used SDK list, so this is not automatically a submission blocker.
+
+### Debugging
+
+- Added centralized Apple unified logging categories, with sparse sanitized notice/error/fault events in Release and consistently configuration-gated DEBUG breadcrumbs.
+- Added HTTP status/timing diagnostics, classified transport failures, OAuth callback validation diagnostics, upload completion/failures, and store recovery/fatal diagnostics. Tokens, state values, payloads, coordinates, names, paths and raw errors are excluded.
+- Removed remaining raw coordinate/content/error arguments from legacy location, map, camera and sync debug messages. Kept `dlog` as a private compatibility bridge; no log storage, export UI or third-party logging service added.
+- Verified 42 focused Debug tests, six Release logging-policy tests, and a standard Release simulator build. The separate Release backend-URL configuration assertion remains an existing failure.
 
 ### ⚙️ Platform
 

@@ -12,7 +12,7 @@ class PlacesService {
     /// Reverse geocode coordinates to get address and place info
     func reverseGeocode(coordinate: CLLocationCoordinate2D) async throws -> PlaceResult {
         if config.enableDebugLogging {
-            dlog("PlacesService", "Reverse geocoding: \(coordinate.latitude), \(coordinate.longitude)")
+            dlog("PlacesService", "Reverse geocoding started")
         }
         
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
@@ -75,16 +75,14 @@ class PlacesService {
             
             if config.enableDebugLogging {
                 dlog("PlacesService", "✅ Geocoded successfully")
-                dlog("PlacesService", "Name: \(result.name)")
-                dlog("PlacesService", "Address: \(result.address)")
-                dlog("PlacesService", "Place ID: \(result.placeId)")
+                dlog("PlacesService", "Reverse geocoding result received")
             }
             
             return result
             
         } catch {
             if config.enableDebugLogging {
-                dlog("PlacesService", "❌ Geocoding failed: \(error.localizedDescription)")
+                dlog("PlacesService", "Geocoding failed")
             }
             throw PlacesError.apiError(error.localizedDescription)
         }

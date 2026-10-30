@@ -35,7 +35,7 @@ struct AccountSecurityView: View {
                 Task { await deleteAccount() }
             }
         } message: {
-            Text("Your account, all locations, photos, and data will be permanently removed. This cannot be undone.")
+            Text("Your account, all locations, photos, and data will be permanently removed. Media removal is queued and may take additional time. This cannot be undone.")
         }
     }
 
@@ -134,7 +134,7 @@ struct AccountSecurityView: View {
         } header: {
             Text("Danger Zone")
         } footer: {
-            Text("Permanently deletes your account and all associated data. This action cannot be undone.")
+            Text("Permanently deletes your account and all associated data. Media removal is queued and may take additional time. This action cannot be undone.")
                 .font(.caption)
         }
     }

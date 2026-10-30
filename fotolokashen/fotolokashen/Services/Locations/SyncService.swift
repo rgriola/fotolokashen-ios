@@ -145,7 +145,7 @@ class SyncService: ObservableObject {
 
         } catch {
             if config.enableDebugLogging {
-                dlog("Sync", "Location sync error: \(error)")
+                dlog("Sync", "Location sync failed")
             }
         }
     }
@@ -175,7 +175,7 @@ class SyncService: ObservableObject {
                 // Skip if exceeded retry limit
                 guard offlinePhoto.shouldRetry else {
                     if config.enableDebugLogging {
-                        dlog("Sync", "Skipping photo \(offlinePhoto.clientId) - exceeded retry limit")
+                        dlog("Sync", "Skipping photo - exceeded retry limit")
                     }
                     failedCount += 1
                     continue
@@ -217,7 +217,7 @@ class SyncService: ObservableObject {
                     failedCount += 1
                     
                     if config.enableDebugLogging {
-                        dlog("Sync", "Failed to upload photo: \(error)")
+                        dlog("Sync", "Failed to upload photo")
                         dlog("Sync", "Retry count: \(offlinePhoto.retryCount)/3")
                     }
                 }
@@ -229,7 +229,7 @@ class SyncService: ObservableObject {
             
         } catch {
             if config.enableDebugLogging {
-                dlog("Sync", "Photo sync error: \(error)")
+                dlog("Sync", "Photo sync failed")
             }
             // Error already logged, don't rethrow
         }

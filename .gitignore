@@ -83,4 +83,7 @@ Temporary Items
 .env.*
 
 # photoshop files
-.psd
+*.psd
+
+# pdf files.
+*.pdf

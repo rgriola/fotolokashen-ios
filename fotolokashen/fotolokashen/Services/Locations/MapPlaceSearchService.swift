@@ -50,7 +50,7 @@ extension MapPlaceSearchService: MKLocalSearchCompleterDelegate {
     }
 
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
-        dlog("MapPlaceSearchService", "completer error: \(error.localizedDescription)")
+        dlog("MapPlaceSearchService", "Search completion failed")
         errorMessage = error.localizedDescription
     }
 }

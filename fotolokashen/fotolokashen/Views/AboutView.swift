@@ -22,6 +22,11 @@ struct AboutView: View {
 
             // ── Links ─────────────────────────────────────────────────────
             Section("Legal") {
+                NavigationLink {
+                    LicensesView()
+                } label: {
+                    Label("Licenses & Acknowledgements", systemImage: "doc.text")
+                }
                 Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/privacy-policy")!) {
                     Label("Privacy Policy", systemImage: "hand.raised.fill")
                         .foregroundStyle(.primary)

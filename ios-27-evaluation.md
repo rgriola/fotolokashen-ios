@@ -1,12 +1,45 @@
 # iOS 27 Readiness Evaluation — fotolokashen iOS
 
-**Last updated:** October 29, 2026 — 20:18 EDT
+**Last updated:** October 30, 2026 — 13:52 EDT
 **Originally assessed:** 1.6.0 (build 57) on September 20, 2026
-**Current version:** 1.6.2 (build 62)
-**Scope:** Research and analysis only. No source files were modified during this evaluation.
+**Current version:** 1.6.3 (build 63)
+**Scope:** Original assessment plus implementation progress and verified readiness results.
 **Paths:** All file paths in this document are relative to the `fotolokashen-ios` repository root.
 
 > **Progress tracking:** see the [Progress Checklist](#progress-checklist) for the current state of every task. Update it as work lands.
+
+### Current Phase 2 status — October 30, 2026, 13:52 EDT
+
+Tasks **2.1–2.6 are complete** based on archive/report/source evidence and owner
+confirmations below. Task **2.7 is implemented and verified locally**, but remains
+open until backend deployment/configuration and a disposable staging-account
+deletion test demonstrate credential revocation and storage/CDN removal.
+Phase 2 is not yet fully closed; do not treat historical open/pause notes below
+as the current status.
+
+The approved web backend change atomically enqueues durable media cleanup with
+hard account deletion. It covers avatar/banner IDs, uploaded photos and photos
+removed through location cascades, plus folder cleanup even without photos.
+An authenticated scheduled worker resumes failures, checkpoints progress and
+confirms asynchronous CDN invalidation completion. A delayed folder sweep
+catches recently authorized uploads. Media references survive account deletion
+until cleanup completes; this is not immediate CDN erasure.
+
+Validation: 110 selected web regression tests pass, including 18 real local
+PostgreSQL integration tests with mocked ImageKit operations. Migration,
+rollback, session/OAuth cascades, lease recovery/ownership, retry persistence
+and cache invalidation state were exercised. Web TypeScript/focused lint pass.
+The existing iOS success-response decoder remains compatible; updated account
+deletion copy passed accessibility review and a signed Release device build.
+
+**Remaining owner gate:** apply the backend migration before deploying, configure
+`CRON_SECRET` and preview/staging scheduling, and run the disposable-account
+checklist in the web authentication guide. The committed production cron is
+daily; eligibility timestamps are not automatic minute/hour scheduling, and
+cleanup can require multiple invocations. Check actual delivered CDN URL
+variants and purge-plan limits before claiming full media erasure. No
+production account deletion, remote migration, submission, commit or push was
+performed.
 
 ### Phase 1 closeout — October 29, 2026, 20:18 EDT
 
@@ -20,6 +53,61 @@ manifest implementation has begun. Merge the completed iOS feature work into
 
 Pre-merge signed simulator validation: 15 OAuth callback tests and seven
 Keychain tests passed (22 total, zero failures) on iPhone 17 / iOS 27.0.
+
+### Phase 2 resumed — October 30, 2026, 12:57 EDT
+
+The user resumed Phase 2 after the logging improvement; earlier pause notes
+are historical. Task 2.4 is complete: removed the unused KeychainAccess product,
+framework and SPM references; Xcode regenerated `Package.resolved` without its
+pin. The native SecItem implementation and migration behavior were unchanged.
+All 22 signed simulator Keychain/OAuth callback tests pass. GoogleMaps 10.8.0,
+GoogleMapsUtils 7.1.0 and Kingfisher 8.8.1 remain unchanged.
+
+A signed Release device archive of 1.6.3 (63) succeeded using existing signing.
+The local session artifact is `files/phase-two-baseline.xcarchive`; its
+`Products/Applications/fotolokashen.app` contains valid GoogleMaps and Kingfisher
+privacy manifests, but no app-level or Utils manifest was found. This confirms
+the packaging gap rather than resolving it. Archive creation is not submission
+or App Store validation.
+
+**Next action (2.1):** Open the baseline archive in Xcode Organizer and choose
+**Generate Privacy Report**. This GUI report has not yet been generated.
+It aggregates manifest-declared API categories/reasons and collected-data
+declarations; it does not discover every API call or establish actual collection
+practices. Reconcile it with source/vendor evidence before authoring the app
+manifest. Preserve the existing SDK signature/Utils packaging findings as open;
+do not patch ephemeral SPM checkouts or locally sign a vendor artifact as a
+substitute for a vendor signature.
+
+For 2.3, the data-type list in the original task table is an investigation
+checklist, not a declaration to copy. Confirm actual collection, purpose,
+identity linkage, tracking and supported required-reason API use before choosing
+manifest entries. Do not assume both precise/coarse location, analytics
+collection or no tracking. App Review review completed for this sequencing.
+
+### Logging follow-up — October 30, 2026, 12:48 EDT
+
+Implemented the separately approved debugging improvement without starting
+Phase 2. `Log` reuses native OSLog categories under `com.fotolokashen.app`;
+DEBUG breadcrumbs honor `features.enableDebugLogging`, while sanitized
+notice/error/fault diagnostics remain in Release. The private legacy `dlog`
+bridge remains. Removed raw location/content/error arguments still present in
+legacy calls, correcting the earlier S-8 cleanup's incomplete coverage.
+
+Networking, OAuth validation/completion, upload, and store recovery/fatal paths
+now emit safe diagnostic events. No state/code/token values, user content,
+coordinates, raw errors or filesystem paths are logged. See the README's
+Debug Logging section for configuration and Console.app workflow.
+
+Validation: 42 focused Debug tests (logging, API client, OAuth callbacks, store
+recovery) and six Release logging-policy tests pass; standard Release simulator
+build passes. Test output contains the expected native Auth/Network categories
+and sanitized state-count/HTTP-status events. Release policy tests enable
+testability and exclude the DEBUG-only OAuth callback test source. An attempted
+broader Release API run still fails its backend-URL configuration assertion
+(`testBuiltAppBackendURLUsesHTTPSOutsideDebug`); no unrelated configuration
+change was made. Privacy/concurrency reviews completed; logging-only MapView
+changes do not alter accessibility. **Phase 2 remains paused.**
 
 ### Update — October 28, 2026
 
@@ -529,13 +617,155 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 
 **Privacy manifest (Phase 2) 🖥️**
 
-- [ ] 2.1 Xcode privacy report generated
-- [ ] 2.2 SDK manifest table (4 packages)
-- [ ] 2.3 `PrivacyInfo.xcprivacy` added to app target (P-1)
-- [ ] 2.4 KeychainAccess replaced with `SecItem*` (D-3, with 1.6)
-- [ ] 2.5 Encryption export answer confirmed
-- [ ] 2.6 No third-party sign-in on web `/login`, `/register`
-- [ ] 2.7 Account deletion fully deletes server-side
+- [x] 2.1 Organizer privacy report generated by user; both provided PDFs reviewed October 30, 2026, 13:15 EDT (see findings below)
+- [x] 2.2 Direct SDK inventory/archive checks completed; three active packages after KeychainAccess removal. Vendor embedded-component evidence remains a submission caveat, not an established violation (October 30, 2026).
+- [x] 2.3 App manifest verified in signed Release archive and regenerated Organizer report October 30, 2026; **owner confirmed App Store Connect answers reviewed and updated to match**
+- [x] 2.4 KeychainAccess removed from project and Xcode-regenerated lockfile; native `SecItem*` implementation unchanged; 22 Keychain/OAuth tests pass and signed Release archive succeeds (October 30, 2026)
+- [x] 2.5 Owner confirmed only exempt encryption in the shipped app, including SDKs (October 30, 2026)
+- [x] 2.6 Production source/HTML checked; owner confirmed in-app login/register are email/password only (October 30, 2026)
+- [ ] 2.7 Durable account/media deletion implemented and locally tested; backend deployment/configuration and disposable staging end-to-end verification pending
+
+#### Phase 2 remaining gates — October 30, 2026, 13:38 EDT
+
+**2.2 disposition:** Apple's current commonly-used SDK list names Kingfisher,
+not GoogleMaps or GoogleMapsUtils. Kingfisher is built from source and its
+manifest is archived. An unsigned Maps static-library XCFramework or an
+unpackaged empty Utils manifest is not by itself an automatic listed-SDK
+submission blocker. The inventory task is complete; this does not prove that
+opaque binary SDKs embed no listed components. Obtain version-specific vendor
+SBOM/notices/component evidence when assessing final submission compliance.
+Do not fork/update dependencies or copy an empty manifest solely on speculation.
+Source: https://developer.apple.com/support/third-party-SDK-requirements/
+
+**2.5 technical evidence:** app cryptographic source uses CryptoKit SHA-256 for
+PKCE and secure random generation; both configurations declare no non-exempt
+encryption. These facts support the existing setting, not a blanket legal
+classification of vendor code. Owner export-classification confirmation for
+the shipped app including SDKs was provided by the owner October 30, 2026:
+only exempt encryption.
+
+**2.6 evidence:** public production `/login` and `/register` HTML was inspected:
+email/password registration and login only; no third-party identity-provider
+buttons. Local LoginForm/RegisterForm source likewise contains no social login
+providers. The public `merkelvision.com` check redirects to Vercel authentication,
+which is deployment protection, not an app identity provider. The owner
+confirmed the in-app flow is email/password only; no Vercel login was performed.
+
+**2.7 original gap and remediation:** the baseline backend hard-deleted the user
+but ignored CDN cleanup failures and omitted explicit avatar/banner cleanup.
+The approved durable queue implementation now retains cleanup references,
+retries storage removal and verifies cache invalidations separately from
+database deletion. See the current status above. Deployment and disposable
+staging-account verification remain required; source inspection, mocked storage
+tests or a login failure alone do not prove deployed CDN erasure.
+
+**2.3:** owner confirmed App Store Connect privacy answers reviewed and updated
+to match the combined report, including vendor analytics (October 30, 2026).
+
+#### Generated privacy report review — October 30, 2026, 13:15 EDT
+
+Reviewed both user-provided PDFs:
+[`fotolokashen-PrivacyReport 2026-10-30 13-06-56.pdf`](./fotolokashen-PrivacyReport%202026-10-30%2013-06-56.pdf)
+and
+[`fotolokashen/fotolokashen-PrivacyReport 2026-10-30 13-05-47.pdf`](./fotolokashen/fotolokashen-PrivacyReport%202026-10-30%2013-05-47.pdf).
+Each contains one page with identical extracted text. Every listed collected-data
+declaration is attributed to the GoogleMaps resource-bundle manifest:
+
+| Data type | Purposes | Linked to user | Tracking |
+| --- | --- | --- | --- |
+| Device ID | Analytics, App Functionality | Yes | No |
+| Product Interaction | Analytics | No | No |
+| Crash Data | Analytics | No | No |
+| Performance Data | Analytics | No | No |
+| Other Data Types | Analytics | Yes | No |
+
+These are vendor declarations, not observed network behavior. The PDF does not
+show first-party app declarations or required-reason API categories/reasons.
+Kingfisher's presence is established by archive inspection, not by this PDF;
+its manifest declares no collected types. Utils packaging and Maps vendor
+signature disposition remain open. Do not equate "analytics" with tracking.
+
+Next (2.3): inventory first-party app/backend data flows and required-reason API
+use, confirm collection purposes/identity linkage and cross-company tracking
+practices with the owner, then author the app manifest and regenerate the report.
+The historical "report pending" note above is superseded by this review.
+
+#### App manifest implementation — October 30, 2026, 13:19 EDT
+
+Owner confirmed email/name, uploaded photos, saved locations and associated
+content are for scouting/sharing only, with no first-party marketing, profiling,
+analytics or cross-company tracking. Added
+[`PrivacyInfo.xcprivacy`](fotolokashen/fotolokashen/PrivacyInfo.xcprivacy)
+with eight account-linked, nontracking App Functionality categories: name,
+email, user ID, photos/videos, precise location, coarse location, other user
+content and other data types.
+
+Source attribution: `PhotoUploadService` sends CLLocation/EXIF GPS;
+`LocationService` sends saved locations; `EditProfileView.saveProfile` sends
+names, bio, optional date of birth and city/state/country. Those profile fields
+justify a distinct coarse-location declaration and Other Data Types for DOB.
+App Review specialist reviewed the mapping. SDK analytics remain in vendor
+manifests, not duplicated as first-party analytics.
+
+Direct source searches found no app calls in the required-reason API categories
+(UserDefaults, file timestamps, disk space, system boot time or active keyboard
+APIs); the app's accessed-API array is empty. This is source evidence, not proof
+of framework-internal behavior. Vendor declarations remain separate; no reason
+codes were copied from SDK manifests.
+
+Xcode's synchronized app folder includes the manifest automatically: no manual
+project resource entry was needed. `plutil -lint` passed, signed Release archive
+succeeded, and the archive's top-level app manifest exactly matches the source.
+New session archive: `files/phase-two-app-manifest.xcarchive`.
+
+**Next:** Generate a new Organizer privacy report from this new archive, confirm
+first-party categories now appear alongside SDK entries, and reconcile with
+App Store Connect privacy answers. Task 2.3 remains open until that review;
+Utils packaging/Maps signature findings and tasks 2.5–2.7 remain open.
+
+#### Regenerated report verified — October 30, 2026, 13:23 EDT
+
+Reviewed
+[`ios-fotolokashen-PrivacyReport 10-30-26.pdf`](./ios-fotolokashen-PrivacyReport%2010-30-26.pdf).
+Its single page now attributes all eight expected first-party categories to
+`fotolokashen.app/PrivacyInfo.xcprivacy`: Name, Email Address, User ID, Photos or
+Videos, Precise Location, Coarse Location, Other User Content, and Other Data
+Types. Every first-party entry is App Functionality, linked to the user, and
+not tracking, matching the implemented manifest and owner-confirmed purposes.
+
+The five GoogleMaps categories remain alongside them, with the same purposes,
+linkage and nontracking flags as the baseline report. Other Data Types correctly
+has two sources: app functionality from the app and analytics from GoogleMaps.
+No missing first-party declaration or unexpected first-party analytics/tracking
+was found in this report. Vendor analytics must still be reflected in the
+combined App Store Connect answers despite no first-party analytics.
+
+Task 2.3's report-generation/review portion is complete; its App Store Connect
+questionnaire reconciliation remains unverified. This report does not establish
+SDK signature compliance or resolve Utils manifest packaging. Tasks 2.2 and
+2.5–2.7 remain open; no submission or App Store validation was performed.
+
+#### Licenses & Acknowledgements — October 30, 2026, 13:30 EDT
+
+Implemented the owner-approved native page at About → Legal → Licenses &
+Acknowledgements. It exposes Google Maps SDK's required
+`GMSServices.openSourceLicenseInfo()` notices and exact unmodified license files
+from the resolved Google Maps package 10.8.0, Utils 7.1.0 and Kingfisher 8.8.1.
+The first two package licenses are Apache-2.0; Kingfisher is MIT. Source files
+are bundled in `Resources/Licenses`; no removed KeychainAccess dependency is
+presented as shipped.
+
+The page uses native Form/navigation, system typography and selectable
+paragraphs in a lazy scrolling view. Load failures are explicit in the UI and
+sanitized logs. Four tests pass for actual packaged resources, SDK notices,
+missing-resource error behavior and unique entries; the signed Release device
+build passes. Accessibility review found no new meaningful blockers; physical
+VoiceOver/large-text interaction remains a manual check. The existing decorative
+About icon was noted as an unrelated pre-existing accessibility issue.
+
+This legal-notice UI does not close privacy tasks 2.2/2.3/2.5–2.7. Next privacy
+gate is App Store Connect reconciliation against the reviewed combined report,
+with SDK manifest/signature and server-side deletion checks still open.
 
 #### Phase 2 SDK inventory — October 29, 2026, 19:55 EDT
 
