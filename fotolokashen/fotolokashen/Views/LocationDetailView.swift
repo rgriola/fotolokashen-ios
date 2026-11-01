@@ -319,7 +319,7 @@ struct LocationDetailView: View {
                 } label: {
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: AppIcons.mapPin)
-                            .foregroundColor(.destructive)
+                            .foregroundStyle(Color.destructive)
                             .padding(.top, 2)
 
                         postalAddressBlock
@@ -333,19 +333,19 @@ struct LocationDetailView: View {
                 HStack(spacing: 4) {
                     Text("Added \(formatDate(currentLocation.createdAt))")
                         .font(.footnote)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
 
                     // Show creator if different from current user
                     if let creator = userSaveDetails?.location.creator?.username {
                         Text("by")
                             .font(.footnote)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(Color.secondary)
                         Button {
                             showCreatorProfile = true
                         } label: {
                             Text("@\(creator)")
                                 .font(.footnote)
-                                .foregroundColor(.brand)
+                                .foregroundStyle(Color.brand)
                         }
                         .buttonStyle(.plain)
                     }
@@ -374,21 +374,21 @@ struct LocationDetailView: View {
                 if let streetLine = formatStreetLine() {
                     Text(streetLine)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
 
                 // Line 2: City, State ZIP
                 if let cityLine = formatCityStateZip() {
                     Text(cityLine)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
             }
         } else if let address = currentLocation.address, !address.isEmpty {
             // Fallback: raw address string when components aren't available
             Text(address)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.leading)
         }
     }
@@ -401,7 +401,7 @@ struct LocationDetailView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Caption")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
             Text(caption)
                 .font(.body)
         }
@@ -423,7 +423,7 @@ struct LocationDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
             }
-            .foregroundColor(visibilityColor(for: locationVisibility))
+            .foregroundStyle(visibilityColor(for: locationVisibility))
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(visibilityColor(for: locationVisibility).opacity(0.12))
@@ -505,19 +505,19 @@ struct LocationDetailView: View {
                         Text(String(username.prefix(1)).uppercased())
                             .font(.caption)
                             .fontWeight(.bold)
-                            .foregroundColor(.brand)
+                            .foregroundStyle(Color.brand)
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Saved by")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text(displayName)
                         .font(.subheadline)
                         .fontWeight(.medium)
                     Text("@\(username)")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
 
                 Spacer()
@@ -534,7 +534,7 @@ struct LocationDetailView: View {
         HStack {
             Text("Location ID: \(currentLocation.id)")
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
                 .background(Color(.systemGray5))

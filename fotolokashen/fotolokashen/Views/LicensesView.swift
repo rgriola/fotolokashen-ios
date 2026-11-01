@@ -66,7 +66,7 @@ struct LicensesView: View {
                             Text(acknowledgement.title)
                             Text(acknowledgement.license)
                                 .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.secondary)
                         }
                     }
                 }

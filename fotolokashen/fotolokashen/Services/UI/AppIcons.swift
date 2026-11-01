@@ -255,10 +255,10 @@ struct AppIconsPreviewView: View {
         VStack(spacing: 8) {
             Image(systemName: systemName)
                 .font(.title)
-                .foregroundColor(.brand)
+                .foregroundStyle(Color.brand)
             Text(name)
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
                 .lineLimit(1)
         }
         .frame(height: 70)

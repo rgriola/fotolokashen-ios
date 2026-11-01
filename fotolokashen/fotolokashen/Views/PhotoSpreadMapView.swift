@@ -94,15 +94,15 @@ struct PhotoSpreadMapView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "map")
                         .font(.caption)
-                        .foregroundColor(.brand)
+                        .foregroundStyle(Color.brand)
                     Text("Photo Locations (\(geotaggedPhotos.count) with GPS)")
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundColor(.primary)
+                        .foregroundStyle(Color.primary)
                     Spacer()
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
             }
             .buttonStyle(.plain)
@@ -114,7 +114,7 @@ struct PhotoSpreadMapView: View {
                     Annotation("Location", coordinate: locationCoordinate) {
                         Image(systemName: "mappin.circle.fill")
                             .font(.title2)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.red)
                             .background(
                                 Circle()
                                     .fill(.white)
@@ -143,10 +143,10 @@ struct PhotoSpreadMapView: View {
                 HStack {
                     Image(systemName: "arrow.left.and.right")
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("Span: \(spanDescription)")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
             }
         }

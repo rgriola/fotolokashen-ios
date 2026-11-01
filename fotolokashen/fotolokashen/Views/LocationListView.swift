@@ -123,7 +123,8 @@ struct LocationListView: View {
             HStack(spacing: 6) {
                 if isLoading {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: isOn ? .white : .primary))
+                        .progressViewStyle(.circular)
+                        .tint(isOn ? .white : .primary)
                         .scaleEffect(0.7)
                 } else {
                     Image(systemName: systemImage)
@@ -135,7 +136,7 @@ struct LocationListView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(isOn ? Color.brand : Color(.systemGray5))
-            .foregroundColor(isOn ? .white : .primary)
+            .foregroundStyle(isOn ? Color.white : Color.primary)
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -418,7 +419,7 @@ struct LocationListView: View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 60))
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
 
             Text("Couldn't Load Locations")
                 .font(.title2)
@@ -426,7 +427,7 @@ struct LocationListView: View {
 
             Text(locationStore.errorMessage)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
@@ -448,7 +449,7 @@ struct LocationListView: View {
         VStack(spacing: 20) {
             Image(systemName: searchText.isEmpty ? "mappin.slash" : "magnifyingglass")
                 .font(.system(size: 60))
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
             
             Text(searchText.isEmpty ? "No Locations Yet" : "No Results")
                 .font(.title2)
@@ -456,7 +457,7 @@ struct LocationListView: View {
             
             Text(searchText.isEmpty ? "Go to the Capture tab to add your first location" : "Try a different search term")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
@@ -466,7 +467,7 @@ struct LocationListView: View {
                     Text("Use the Capture tab below")
                 }
                 .font(.headline)
-                .foregroundColor(.brand)
+                .foregroundStyle(Color.brand)
                 .padding(.top)
             }
         }
@@ -599,7 +600,7 @@ struct FilterChip: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(isSelected ? color.opacity(0.25) : Color(.systemGray6))
-            .foregroundColor(isSelected ? color : .secondary)
+            .foregroundStyle(isSelected ? color : Color.secondary)
             .clipShape(Capsule())
             .overlay(
                 Capsule()

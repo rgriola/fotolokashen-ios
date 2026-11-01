@@ -34,6 +34,7 @@ struct LoginView: View {
     @State private var showAwaitingPasswordReset = false
     @State private var showAccountExistsAlert = false
     @State private var showPasswordResetComplete = false
+    @State private var pendingLoginTask: Task<Void, Never>?
 
     var body: some View {
         ZStack {
@@ -58,12 +59,12 @@ struct LoginView: View {
                 Text("fotolokashen")
                     .font(.largeTitle)
                     .fontWeight(.bold)
-                    .foregroundColor(.white)
+                    .foregroundStyle(Color.white)
             */
                 
                 Text("Production Knowledge")
                     .font(.subheadline)
-                    .foregroundColor(.white)
+                    .foregroundStyle(Color.white)
                 
                 Spacer()
                 
@@ -74,7 +75,8 @@ struct LoginView: View {
                         HStack {
                             if authService.isLoading {
                                 ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .brand))
+                                    .progressViewStyle(.circular)
+                                    .tint(.brand)
                             } else {
                                 Image(systemName: "person.circle.fill")
                                 Text("Sign In")
@@ -84,7 +86,7 @@ struct LoginView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.white)
-                        .foregroundColor(.brand)
+                        .foregroundStyle(Color.brand)
                         .cornerRadius(12)
                     }
                     .disabled(authService.isLoading)
@@ -101,7 +103,7 @@ struct LoginView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.white.opacity(0.2))
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -115,7 +117,7 @@ struct LoginView: View {
                     }) {
                         Text("Forgot Password?")
                             .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundStyle(Color.white.opacity(0.8))
                     }
                     .disabled(authService.isLoading)
 
@@ -123,7 +125,7 @@ struct LoginView: View {
                     // Shows which backend the app is hitting, to confirm dev-server connectivity.
                     Text("Connected to: \(ConfigLoader.shared.backendBaseURL)")
                         .font(.caption2)
-                        .foregroundColor(.white.opacity(0.6))
+                        .foregroundStyle(Color.white.opacity(0.6))
                     #endif
                 }
                 .padding(.horizontal, 40)
@@ -131,7 +133,7 @@ struct LoginView: View {
                 if let error = authService.errorMessage {
                     Text(error)
                         .font(.caption)
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                         .multilineTextAlignment(.center)
                         .padding()
                         .background(Color.red.opacity(0.3))
@@ -145,7 +147,7 @@ struct LoginView: View {
             }
             .padding()
         }
-        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             #if DEBUG
             LaunchTimer.mark("LoginView.onAppear — LOGIN SCREEN VISIBLE")
@@ -164,9 +166,7 @@ struct LoginView: View {
                 }
             } else {
                 // Fallback: no token available, prompt manual login
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    authService.startLogin()
-                }
+                authService.startLogin()
             }
         }
         // Registration success — panel closed, show native "Check Your Email"
@@ -220,9 +220,7 @@ struct LoginView: View {
         }
         .alert("Account Already Exists", isPresented: $showAccountExistsAlert) {
             Button("Log In") {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    authService.startLogin()
-                }
+                startLoginAfterAlertDismisses()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -230,12 +228,26 @@ struct LoginView: View {
         }
         .alert("Password Updated", isPresented: $showPasswordResetComplete) {
             Button("Log In") {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    authService.startLogin()
-                }
+                startLoginAfterAlertDismisses()
             }
         } message: {
             Text("Your password has been updated successfully. Please log in with your new password.")
+        }
+        .onDisappear {
+            pendingLoginTask?.cancel()
+        }
+    }
+
+    private func startLoginAfterAlertDismisses() {
+        pendingLoginTask?.cancel()
+        pendingLoginTask = Task { @MainActor in
+            do {
+                try await Task.sleep(for: .milliseconds(300))
+            } catch {
+                return
+            }
+            authService.startLogin()
+            pendingLoginTask = nil
         }
     }
 }
@@ -256,7 +268,7 @@ private struct CheckEmailSheet: View {
 
             Image(systemName: icon)
                 .font(.system(size: 56))
-                .foregroundColor(.brand)
+                .foregroundStyle(Color.brand)
 
             Text(title)
                 .font(.title2)
@@ -264,24 +276,24 @@ private struct CheckEmailSheet: View {
 
             Text(message)
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
 
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
                     Image(systemName: "tray")
-                        .foregroundColor(.brand)
+                        .foregroundStyle(Color.brand)
                     Text("Check your spam or junk folder")
                         .font(.callout)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
                 HStack(spacing: 8) {
                     Image(systemName: "clock")
-                        .foregroundColor(.brand)
+                        .foregroundStyle(Color.brand)
                     Text("Wait a few minutes if it hasn't arrived")
                         .font(.callout)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
             }
 
@@ -291,7 +303,7 @@ private struct CheckEmailSheet: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.brand)
-                    .foregroundColor(.white)
+                    .foregroundStyle(Color.white)
                     .cornerRadius(12)
             }
             .padding(.horizontal, 40)

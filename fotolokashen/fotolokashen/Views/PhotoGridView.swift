@@ -55,7 +55,7 @@ struct PhotoGridView: View {
             } label: {
                 Image(systemName: AppIcons.close)
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundStyle(Color.white)
                     .padding(4)
                     .background(Color.destructive)
                     .clipShape(Circle())
@@ -99,7 +99,7 @@ struct PhotoGridView: View {
                 Color.black.opacity(0.35)
                 Image(systemName: "clock.fill")
                     .font(.system(size: 18))
-                    .foregroundColor(.white)
+                    .foregroundStyle(Color.white)
             }
             .frame(width: thumbSize, height: thumbSize)
             .cornerRadius(10)
@@ -126,7 +126,7 @@ struct PhotoGridView: View {
                     Spacer()
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 16))
-                        .foregroundColor(.success)
+                        .foregroundStyle(Color.success)
                         .background(Circle().fill(Color.white).frame(width: 14, height: 14))
                         .padding(4)
                 }
@@ -147,12 +147,12 @@ struct PhotoGridView: View {
                             Text("Retry")
                                 .font(.system(size: 10, weight: .semibold))
                         }
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                     }
                 } else {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 18))
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                 }
             }
             .frame(width: thumbSize, height: thumbSize)
@@ -167,7 +167,7 @@ struct PhotoGridView: View {
         let icon = source == .camera ? AppIcons.camera : "photo.on.rectangle"
         Image(systemName: icon)
             .font(.system(size: 9))
-            .foregroundColor(.white)
+            .foregroundStyle(Color.white)
             .padding(3)
             .background(Color.black.opacity(0.55))
             .cornerRadius(4)
@@ -180,10 +180,10 @@ struct PhotoGridView: View {
             VStack(spacing: 4) {
                 Image(systemName: AppIcons.add)
                     .font(.title3)
-                    .foregroundColor(.brand)
+                    .foregroundStyle(Color.brand)
                 Text("\(photos.count)/\(maxPhotos)")
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
             .frame(width: thumbSize, height: thumbSize)
             .background(Color(.systemGray6))
@@ -193,7 +193,7 @@ struct PhotoGridView: View {
                     .strokeBorder(
                         style: StrokeStyle(lineWidth: 1.5, dash: [5])
                     )
-                    .foregroundColor(Color(.separator))
+                    .foregroundStyle(Color(.separator))
             )
         }
     }

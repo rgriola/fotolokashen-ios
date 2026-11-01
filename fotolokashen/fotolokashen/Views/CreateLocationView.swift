@@ -142,7 +142,7 @@ struct CreateLocationView: View {
                     ProgressView().scaleEffect(0.7)
                     Text("Compressing…")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 2, trailing: 16))
             }
@@ -160,14 +160,14 @@ struct CreateLocationView: View {
             if let spread = viewModel.spreadResult, spread.exceedsThreshold {
                 HStack(spacing: 8) {
                     Image(systemName: "mappin.and.ellipse")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.orange)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Photos span \(spread.spreadDescription)")
                             .font(.caption)
                             .fontWeight(.medium)
                         Text("Using first photo's location. You can change this in Edit mode.")
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.secondary)
                     }
                 }
                 .padding(.vertical, 4)
@@ -180,7 +180,7 @@ struct CreateLocationView: View {
             // Name (required, 50 chars)
             VStack(alignment: .leading, spacing: 4) {
                 TextField("Location Name (required)", text: $viewModel.locationName)
-                    .autocapitalization(.words)
+                    .textInputAutocapitalization(.words)
                     .submitLabel(.next)
                     .onChange(of: viewModel.locationName) { _, _ in viewModel.enforceLimits() }
                 HStack {
@@ -188,13 +188,13 @@ struct CreateLocationView: View {
                         && !viewModel.locationName.isEmpty {
                         Text("Name cannot be blank")
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.red)
                     }
                     Spacer()
                     if viewModel.locationName.count > 35 {
                         Text("\(viewModel.locationName.count)/\(CreateLocationViewModel.nameLimit)")
                             .font(.caption)
-                            .foregroundStyle(viewModel.locationName.count >= CreateLocationViewModel.nameLimit ? .red : .secondary)
+                            .foregroundStyle(viewModel.locationName.count >= CreateLocationViewModel.nameLimit ? Color.red : Color.secondary)
                     }
                 }
             }
@@ -203,7 +203,7 @@ struct CreateLocationView: View {
             VStack(alignment: .leading, spacing: 4) {
                 TextField("Location Details (required)", text: $viewModel.locationDetails, axis: .vertical)
                     .lineLimit(3...6)
-                    .autocapitalization(.sentences)
+                    .textInputAutocapitalization(.sentences)
                     .submitLabel(.done)
                     .onChange(of: viewModel.locationDetails) { _, _ in viewModel.enforceLimits() }
                 HStack {
@@ -211,13 +211,13 @@ struct CreateLocationView: View {
                         && !viewModel.locationDetails.isEmpty {
                         Text("Details cannot be blank")
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.red)
                     }
                     Spacer()
                     if viewModel.locationDetails.count > 400 {
                         Text("\(viewModel.locationDetails.count)/\(CreateLocationViewModel.detailsLimit)")
                             .font(.caption)
-                            .foregroundStyle(viewModel.locationDetails.count >= CreateLocationViewModel.detailsLimit ? .red : .secondary)
+                            .foregroundStyle(viewModel.locationDetails.count >= CreateLocationViewModel.detailsLimit ? Color.red : Color.secondary)
                     }
                 }
             }
@@ -259,7 +259,7 @@ struct CreateLocationView: View {
                     HStack(spacing: 8) {
                         ProgressView().scaleEffect(0.9)
                         Text("Locating address…")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.secondary)
                             .font(.subheadline)
                     }
                 } else {
@@ -289,7 +289,7 @@ struct CreateLocationView: View {
                             } else {
                                 Text("Address unavailable")
                                     .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Color.secondary)
                             }
                         }
                     }
@@ -297,7 +297,7 @@ struct CreateLocationView: View {
                 }
             } else {
                 Label("No GPS data available", systemImage: "location.slash")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.orange)
             }
         }
     }
@@ -309,7 +309,8 @@ struct CreateLocationView: View {
                     Spacer()
                     if viewModel.locationService.isLoading || photoViewModel.isUploading {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .progressViewStyle(.circular)
+                            .tint(.white)
                             .padding(.trailing, 6)
                         if photoViewModel.isUploading {
                             let uploaded = Int(photoViewModel.uploadProgress * Double(photoViewModel.photos.count - 1))
@@ -326,7 +327,7 @@ struct CreateLocationView: View {
                     Spacer()
                 }
                 .fontWeight(.semibold)
-                .foregroundColor(.white)
+                .foregroundStyle(Color.white)
                 .padding(.vertical, 4)
             }
             .listRowBackground(canSave ? Color.brand : Color(.systemGray3))

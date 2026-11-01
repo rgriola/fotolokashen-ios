@@ -52,7 +52,7 @@ struct AccountSecurityView: View {
                     }
                     Text("@\(user.username)")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
 
                     Divider()
 
@@ -244,7 +244,7 @@ private struct ChangePasswordView: View {
             if let error = errorMessage {
                 Section {
                     Text(error)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.red)
                         .font(.callout)
                 }
             }
@@ -284,11 +284,11 @@ private struct ChangePasswordView: View {
     private func validationRow(_ text: String, met: Bool) -> some View {
         HStack(spacing: 6) {
             Image(systemName: met ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(met ? .green : .secondary)
+                .foregroundStyle(met ? Color.green : Color.secondary)
                 .font(.caption)
             Text(text)
                 .font(.caption)
-                .foregroundStyle(met ? .primary : .secondary)
+                .foregroundStyle(met ? Color.primary : Color.secondary)
         }
     }
 
@@ -363,7 +363,7 @@ private struct ChangeUsernameView: View {
             Section {
                 TextField("New Username", text: $newUsername)
                     .textContentType(.username)
-                    .autocapitalization(.none)
+                    .textInputAutocapitalization(.none)
                     .disableAutocorrection(true)
             } header: {
                 Text("New Username")
@@ -381,7 +381,7 @@ private struct ChangeUsernameView: View {
                     }
                     Text("You can change your username once per 30 days (max 3 per year).")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .padding(.top, 2)
                 }
             }
@@ -396,7 +396,7 @@ private struct ChangeUsernameView: View {
             if let error = errorMessage {
                 Section {
                     Text(error)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.red)
                         .font(.callout)
                 }
             }
@@ -433,11 +433,11 @@ private struct ChangeUsernameView: View {
     private func validationRow(_ text: String, met: Bool) -> some View {
         HStack(spacing: 6) {
             Image(systemName: met ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(met ? .green : .secondary)
+                .foregroundStyle(met ? Color.green : Color.secondary)
                 .font(.caption)
             Text(text)
                 .font(.caption)
-                .foregroundStyle(met ? .primary : .secondary)
+                .foregroundStyle(met ? Color.primary : Color.secondary)
         }
     }
 
@@ -513,7 +513,7 @@ private struct ChangeEmailView: View {
                 TextField("New Email Address", text: $newEmail)
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
-                    .autocapitalization(.none)
+                    .textInputAutocapitalization(.none)
                     .disableAutocorrection(true)
             } header: {
                 Text("New Email")
@@ -529,7 +529,7 @@ private struct ChangeEmailView: View {
                     }
                     Text("A verification link will be sent to your new email. Your current email will receive a notification with an option to cancel.")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .padding(.top, 2)
                 }
             }
@@ -544,7 +544,7 @@ private struct ChangeEmailView: View {
             if let error = errorMessage {
                 Section {
                     Text(error)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.red)
                         .font(.callout)
                 }
             }
@@ -584,11 +584,11 @@ private struct ChangeEmailView: View {
     private func validationRow(_ text: String, met: Bool) -> some View {
         HStack(spacing: 6) {
             Image(systemName: met ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(met ? .green : .secondary)
+                .foregroundStyle(met ? Color.green : Color.secondary)
                 .font(.caption)
             Text(text)
                 .font(.caption)
-                .foregroundStyle(met ? .primary : .secondary)
+                .foregroundStyle(met ? Color.primary : Color.secondary)
         }
     }
 
@@ -634,7 +634,7 @@ private struct ProfileDetailRow: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.secondary)
             Text(value)
                 .font(.subheadline)
         }

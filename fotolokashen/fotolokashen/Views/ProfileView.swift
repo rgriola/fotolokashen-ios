@@ -167,7 +167,7 @@ struct ProfileView: View {
                     }
                     Text("@\(user.username)")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
                 .padding(.leading, 16)
                 .padding(.top, 12)

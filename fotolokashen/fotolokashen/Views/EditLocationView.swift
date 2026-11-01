@@ -84,7 +84,7 @@ struct EditLocationView: View {
     private var basicInfoSection: some View {
         Section {
             TextField("Location Name", text: $viewModel.locationName)
-                .autocapitalization(.words)
+                .textInputAutocapitalization(.words)
                 .fontWeight(.bold)
                 .onChange(of: viewModel.locationName) { _, _ in viewModel.enforceLimits() }
 
@@ -178,7 +178,7 @@ struct EditLocationView: View {
     private var tagsSection: some View {
         Section {
             TextField("Tags (comma-separated)", text: $viewModel.tagsText)
-                .autocapitalization(.none)
+                .textInputAutocapitalization(.none)
 
             if !viewModel.parsedTags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -189,7 +189,7 @@ struct EditLocationView: View {
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 5)
                                 .background(Color.brand.opacity(0.15))
-                                .foregroundColor(.brand)
+                                .foregroundStyle(Color.brand)
                                 .clipShape(Capsule())
                         }
                     }
@@ -208,7 +208,7 @@ struct EditLocationView: View {
                 HStack(spacing: 4) {
                     ForEach(1...5, id: \.self) { star in
                         Image(systemName: star <= Int(viewModel.personalRating) ? "star.fill" : "star")
-                            .foregroundColor(.yellow)
+                            .foregroundStyle(Color.yellow)
                             .onTapGesture {
                                 viewModel.personalRating = Double(star)
                             }
@@ -220,7 +220,7 @@ struct EditLocationView: View {
                 Button("Clear Rating") {
                     viewModel.personalRating = 0
                 }
-                .foregroundColor(.destructive)
+                .foregroundStyle(Color.destructive)
                 .font(.caption)
             }
         } header: {
@@ -238,7 +238,7 @@ struct EditLocationView: View {
                 }
             } else if viewModel.photos.isEmpty {
                 Text("No photos")
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             } else {
                 ForEach(viewModel.photos) { photo in
                     photoRow(photo)
@@ -247,10 +247,10 @@ struct EditLocationView: View {
                 if !viewModel.photosToDelete.isEmpty {
                     HStack {
                         Image(systemName: "exclamationmark.triangle")
-                            .foregroundColor(.warning)
+                            .foregroundStyle(Color.warning)
                         Text("\(viewModel.photosToDelete.count) photo(s) will be deleted on save")
                             .font(.caption)
-                            .foregroundColor(.warning)
+                            .foregroundStyle(Color.warning)
                     }
 
                     Button("Undo All Photo Deletions") {
@@ -275,12 +275,12 @@ struct EditLocationView: View {
                         .frame(width: 60, height: 60)
                         .overlay {
                             Image(systemName: "photo")
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(Color.secondary)
                         }
                 }
                 .onFailureView {
                     Image(systemName: "photo")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
                 .fade(duration: 0.2)
                 .scaledToFill()
@@ -298,7 +298,7 @@ struct EditLocationView: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.brand.opacity(0.2))
-                        .foregroundColor(.brand)
+                        .foregroundStyle(Color.brand)
                         .clipShape(Capsule())
                 }
             }
@@ -308,14 +308,14 @@ struct EditLocationView: View {
             if viewModel.photosToDelete.contains(photo.id) {
                 Text("Marked for deletion")
                     .font(.caption2)
-                    .foregroundColor(.destructive)
+                    .foregroundStyle(Color.destructive)
             } else {
                 Button {
                     photoToDeleteId = photo.id
                     showingDeletePhotoConfirmation = true
                 } label: {
                     Image(systemName: "trash")
-                        .foregroundColor(.destructive)
+                        .foregroundStyle(Color.destructive)
                 }
                 .buttonStyle(.borderless)
             }

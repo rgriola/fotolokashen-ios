@@ -42,8 +42,9 @@ struct PhotoPickerView: UIViewControllerRepresentable {
         ) {
             // Empty selection — dismiss immediately
             guard !results.isEmpty else {
-                picker.dismiss(animated: true)
-                onPhotosPicked([])
+                picker.dismiss(animated: true) {
+                    self.onPhotosPicked([])
+                }
                 return
             }
 
@@ -69,9 +70,10 @@ struct PhotoPickerView: UIViewControllerRepresentable {
                 // Dismiss loading overlay, then picker, then deliver photos (A3)
                 await MainActor.run {
                     loadingVC.dismiss(animated: false) {
-                        picker.dismiss(animated: true)
+                        picker.dismiss(animated: true) {
+                            self.onPhotosPicked(photos)
+                        }
                     }
-                    onPhotosPicked(photos)
                 }
             }
         }
@@ -193,11 +195,11 @@ private struct PhotoLoadingOverlay: View {
 
                 Text("Loading \(photoCount) photo\(photoCount == 1 ? "" : "s")…")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.white)
 
                 Text("Please wait")
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(Color.white.opacity(0.7))
             }
             .padding(40)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))

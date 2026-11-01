@@ -81,15 +81,15 @@ private struct PermissionRow: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .foregroundStyle(isGranted ? .green : .secondary)
+                    .foregroundStyle(isGranted ? Color.green : Color.secondary)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(Color.primary)
                         .font(.body)
                     Text(description)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .font(.caption)
                 }
 
@@ -102,12 +102,12 @@ private struct PermissionRow: View {
                     Text(isGranted ? "On" : "Off")
                         .font(.subheadline)
                         .fontWeight(.medium)
-                        .foregroundStyle(isGranted ? .green : .red)
+                        .foregroundStyle(isGranted ? Color.green : Color.red)
                 }
 
                 Image(systemName: "arrow.up.right.square")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
         }
     }

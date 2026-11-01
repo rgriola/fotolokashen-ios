@@ -24,6 +24,7 @@ struct CameraView: View {
     // Focus indicator
     @State private var focusPoint: CGPoint? = nil
     @State private var showFocusSquare = false
+    @State private var focusHUDTask: Task<Void, Never>?
 
     // Exposure
     @State private var showExposureSlider = false
@@ -73,7 +74,7 @@ struct CameraView: View {
                             .scaleEffect(1.5)
                         Text("Starting Camera...")
                             .font(.body)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(Color.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color.black)
@@ -113,7 +114,7 @@ struct CameraView: View {
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.title3)
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.white)
                                 .padding(12)
                                 .background(Color.black.opacity(0.5))
                                 .clipShape(Circle())
@@ -126,7 +127,7 @@ struct CameraView: View {
                             } label: {
                                 Image(systemName: cameraService.flashIconName)
                                     .font(.title3)
-                                    .foregroundColor(cameraService.flashIconName.contains("slash") ? .white : .yellow)
+                                    .foregroundStyle(cameraService.flashIconName.contains("slash") ? Color.white : Color.yellow)
                                     .padding(12)
                                     .background(Color.black.opacity(0.5))
                                     .clipShape(Circle())
@@ -161,7 +162,7 @@ struct CameraView: View {
                                         .font(.subheadline)
                                         .fontWeight(.bold)
                                 }
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.white)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
                                 .background(Color.brand)
@@ -192,7 +193,7 @@ struct CameraView: View {
                                 .tint(.white)
                             Text("Preparing photos…")
                                 .font(.headline)
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.white)
                         }
                     }
                     .transition(.opacity)
@@ -238,7 +239,7 @@ struct CameraView: View {
                         } label: {
                             Text(zoomLabel)
                                 .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                                .foregroundColor(cameraService.currentZoom > 1.01 ? .yellow : .white)
+                                .foregroundStyle(cameraService.currentZoom > 1.01 ? Color.yellow : Color.white)
                                 .frame(width: 44, height: 44)
                                 .background(Color.black.opacity(0.5))
                                 .clipShape(Circle())
@@ -255,7 +256,7 @@ struct CameraView: View {
                         } label: {
                             Image(systemName: "photo.on.rectangle")
                                 .font(.title2)
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.white)
                                 .frame(width: 50, height: 50)
                                 .background(Color.black.opacity(0.5))
                                 .clipShape(Circle())
@@ -280,7 +281,7 @@ struct CameraView: View {
                             if !session.sessionCaptures.isEmpty {
                                 Text("\(session.sessionCaptures.count)")
                                     .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(Color.white)
                                     .frame(minWidth: 22, minHeight: 22)
                                     .background(Color.brand)
                                     .clipShape(Circle())
@@ -294,7 +295,7 @@ struct CameraView: View {
                         } label: {
                             Image(systemName: "arrow.triangle.2.circlepath.camera")
                                 .font(.title2)
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.white)
                                 .frame(width: 50, height: 50)
                                 .background(Color.black.opacity(0.5))
                                 .clipShape(Circle())
@@ -313,9 +314,9 @@ struct CameraView: View {
         .sheet(isPresented: $showLibraryPicker) {
             PhotoPickerView(selectionLimit: 20) { [self] photos in
                 guard !photos.isEmpty else { return }
-                // B2: Show transition overlay before dismissing camera
-                isTransitioningToForm = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                withAnimation(.easeIn(duration: 0.4), completionCriteria: .logicallyComplete) {
+                    isTransitioningToForm = true
+                } completion: {
                     onLibraryPhotosPicked?(photos)
                 }
             }
@@ -324,6 +325,7 @@ struct CameraView: View {
             await setupCamera()
         }
         .onDisappear {
+            focusHUDTask?.cancel()
             cameraService.stopSession()
             locationManager.stopTracking()
         }
@@ -376,13 +378,21 @@ struct CameraView: View {
         showFocusSquare = true
         showExposureSlider = true
 
-        // Auto-hide after 2 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+        focusHUDTask?.cancel()
+        focusHUDTask = Task { @MainActor in
+            do {
+                try await Task.sleep(for: .milliseconds(2500))
+            } catch {
+                return
+            }
             withAnimation(.easeOut(duration: 0.3)) {
                 showFocusSquare = false
             }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+            do {
+                try await Task.sleep(for: .milliseconds(1500))
+            } catch {
+                return
+            }
             withAnimation(.easeOut(duration: 0.3)) {
                 showExposureSlider = false
             }

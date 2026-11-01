@@ -37,18 +37,18 @@ struct MemberSupportView: View {
             // ── Subject ────────────────────────────────────────────────
             Section {
                 TextField("Brief description of your issue", text: $subject)
-                    .autocapitalization(.sentences)
+                    .textInputAutocapitalization(.sentences)
             } header: {
                 Text("Subject")
             } footer: {
                 HStack {
                     if !subject.isEmpty && !isSubjectValid {
                         Text("At least 5 characters")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.red)
                     }
                     Spacer()
                     Text("\(subject.count) / 200")
-                        .foregroundStyle(subject.count > 200 ? .red : .secondary)
+                        .foregroundStyle(subject.count > 200 ? Color.red : Color.secondary)
                 }
                 .font(.caption)
             }
@@ -68,11 +68,11 @@ struct MemberSupportView: View {
                 HStack {
                     if !message.isEmpty && !isMessageValid {
                         Text("At least 10 characters")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.red)
                     }
                     Spacer()
                     Text("\(message.count) / 2000")
-                        .foregroundStyle(message.count > 2000 ? .red : .secondary)
+                        .foregroundStyle(message.count > 2000 ? Color.red : Color.secondary)
                 }
                 .font(.caption)
             }
@@ -86,7 +86,7 @@ struct MemberSupportView: View {
             if let error = errorMessage {
                 Section {
                     Text(error)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.red)
                         .font(.callout)
                 }
             }

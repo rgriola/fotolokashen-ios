@@ -119,12 +119,12 @@ struct PublicProfileView: View {
 
             Text("@\(profile.username)")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
 
             if let bio = profile.bio, !bio.isEmpty {
                 Text(bio)
                     .font(.subheadline)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(Color.primary)
                     .lineLimit(3)
                     .padding(.top, 2)
             }
@@ -136,7 +136,7 @@ struct PublicProfileView: View {
                     Text("Joined \(formatJoinDate(joinedAt))")
                         .font(.caption)
                 }
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
                 .padding(.top, 2)
             }
         }
@@ -194,7 +194,8 @@ struct PublicProfileView: View {
             HStack {
                 if isTogglingFollow {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: followStatus?.isFollowing == true ? .primary : .white))
+                        .progressViewStyle(.circular)
+                        .tint(followStatus?.isFollowing == true ? .primary : .white)
                         .scaleEffect(0.8)
                 } else {
                     Image(systemName: followStatus?.isFollowing == true ? "person.badge.minus" : "person.badge.plus")
@@ -206,7 +207,7 @@ struct PublicProfileView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
             .background(followStatus?.isFollowing == true ? Color(.systemGray5) : Color.brand)
-            .foregroundColor(followStatus?.isFollowing == true ? .primary : .white)
+            .foregroundStyle(followStatus?.isFollowing == true ? Color.primary : Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .disabled(isTogglingFollow)
@@ -224,7 +225,7 @@ struct PublicProfileView: View {
                 if !locations.isEmpty {
                     Text("\(locations.count)")
                         .font(.caption)
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.brand)
@@ -242,10 +243,10 @@ struct PublicProfileView: View {
                 VStack(spacing: 6) {
                     Image(systemName: "mappin.slash")
                         .font(.title2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("No public locations")
                         .font(.footnote)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
@@ -281,12 +282,12 @@ struct PublicProfileView: View {
                             .fill(Color(.systemGray5))
                             .overlay(
                                 Image(systemName: "photo")
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(Color.secondary)
                             )
                     }
                     .onFailureView {
                         Image(systemName: "photo")
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(Color.secondary)
                     }
                     .fade(duration: 0.2)
                     .scaledToFill()
@@ -312,7 +313,7 @@ struct PublicProfileView: View {
                         // Subtle map indicator badge
                         Image(systemName: "map.fill")
                             .font(.caption2)
-                            .foregroundColor(.white)
+                            .foregroundStyle(Color.white)
                             .padding(4)
                             .background(Color.black.opacity(0.5))
                             .clipShape(Circle())
@@ -327,7 +328,7 @@ struct PublicProfileView: View {
                     .overlay(
                         Image(systemName: "mappin.circle.fill")
                             .font(.title3)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(Color.secondary)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
@@ -342,7 +343,7 @@ struct PublicProfileView: View {
             if let type = socialLocation.location.type {
                 Text(type)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
                     .lineLimit(1)
             }
         }

@@ -58,7 +58,7 @@ struct ExposureSlider: View {
         VStack(spacing: 6) {
             Image(systemName: "sun.max.fill")
                 .font(.system(size: 10))
-                .foregroundColor(.yellow.opacity(0.8))
+                .foregroundStyle(Color.yellow.opacity(0.8))
 
             ZStack(alignment: .center) {
                 Capsule()
@@ -101,7 +101,7 @@ struct ExposureSlider: View {
 
             Image(systemName: "sun.min.fill")
                 .font(.system(size: 10))
-                .foregroundColor(.yellow.opacity(0.5))
+                .foregroundStyle(Color.yellow.opacity(0.5))
         }
     }
 
@@ -149,7 +149,7 @@ struct ZoomDialView: View {
                 } label: {
                     Text(presetLabel(preset))
                         .font(.system(size: 13, weight: isActive(preset) ? .bold : .medium, design: .monospaced))
-                        .foregroundColor(isActive(preset) ? .yellow : .white)
+                        .foregroundStyle(isActive(preset) ? Color.yellow : Color.white)
                         .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel("\(presetLabel(preset))x zoom")
@@ -161,7 +161,7 @@ struct ZoomDialView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.white.opacity(0.6))
+                    .foregroundStyle(Color.white.opacity(0.6))
                     .frame(width: 44, height: 44)
             }
             .accessibilityLabel("Close zoom controls")
@@ -204,10 +204,10 @@ struct CameraGPSBadge: View {
                         .font(.system(size: 10, design: .monospaced))
                     Text("±\(Int(loc.horizontalAccuracy))m")
                         .font(.system(size: 9))
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundStyle(Color.white.opacity(0.7))
                 }
             }
-            .foregroundColor(.white)
+            .foregroundStyle(Color.white)
             .padding(.horizontal, showCoordinates ? 8 : 6)
             .padding(.vertical, 5)
             .frame(minWidth: 44, minHeight: 44)
@@ -244,13 +244,13 @@ struct CameraPermissionDeniedView: View {
         VStack(spacing: 20) {
             Image(systemName: "camera.fill")
                 .font(.system(size: 60))
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
             Text("Camera Access Required")
                 .font(.title2)
                 .fontWeight(.semibold)
             Text("Please enable camera access in Settings to take photos")
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             Button("Open Settings") {
@@ -293,7 +293,7 @@ struct CameraThumbnailStrip: View {
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(Color.white)
                                     .frame(width: 44, height: 44)
                                     .background(Color.black.opacity(0.6))
                                     .clipShape(Circle())

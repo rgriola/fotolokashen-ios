@@ -31,7 +31,7 @@ struct NotificationPreferencesView: View {
                     Spacer()
                     Text("Coming Soon")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
             } header: {
                 Text("Push")

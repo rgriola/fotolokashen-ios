@@ -73,14 +73,15 @@ struct MapView: View {
                             HStack(spacing: 4) {
                                 if isLoadingFriends {
                                     ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .progressViewStyle(.circular)
+                                        .tint(.white)
                                         .scaleEffect(0.7)
                                 } else {
                                     Image(systemName: showFriendsLocations ? "person.2.fill" : "person.2")
                                 }
                             }
                             .font(.title3)
-                            .foregroundColor(.white)
+                            .foregroundStyle(Color.white)
                             .frame(width: 50, height: 50)
                             .background(showFriendsLocations ? Color.brand : Color(.systemGray2))
                             .clipShape(Circle())
@@ -103,7 +104,7 @@ struct MapView: View {
                         } label: {
                             Image(systemName: "location.fill")
                                 .font(.title2)
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.white)
                                 .frame(width: 50, height: 50)
                                 .background(Color.brand)
                                 .clipShape(Circle())
@@ -328,16 +329,8 @@ struct ClusteredMapView: UIViewRepresentable {
         // Only auto-fit on first load
         if !locations.isEmpty && !context.coordinator.hasPerformedInitialFit {
             let update = GMSCameraUpdate.fit(bounds, withPadding: 50.0)
+            context.coordinator.isWaitingForInitialFitToSettle = true
             mapView.animate(with: update)
-            
-            // Limit maximum zoom to 18
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if mapView.camera.zoom > 18.0 {
-                    let limitUpdate = GMSCameraUpdate.zoom(to: 18.0)
-                    mapView.animate(with: limitUpdate)
-                }
-            }
-            
             context.coordinator.hasPerformedInitialFit = true
         }
 
@@ -441,6 +434,7 @@ struct ClusteredMapView: UIViewRepresentable {
     class Coordinator: NSObject, GMSMapViewDelegate {
         var parent: ClusteredMapView
         var hasPerformedInitialFit = false
+        var isWaitingForInitialFitToSettle = false
         var hasCenteredOnUserGPS = false
         var gmsMapView: GMSMapView?
         var markers: [GMSMarker] = []
@@ -450,6 +444,19 @@ struct ClusteredMapView: UIViewRepresentable {
         
         init(_ parent: ClusteredMapView) {
             self.parent = parent
+        }
+
+        func mapView(_ mapView: GMSMapView, idleAt position: GMSCameraPosition) {
+            guard isWaitingForInitialFitToSettle else { return }
+            isWaitingForInitialFitToSettle = false
+            guard position.zoom > 18.0 else { return }
+            mapView.animate(with: GMSCameraUpdate.zoom(to: 18.0))
+        }
+
+        func mapView(_ mapView: GMSMapView, willMove gesture: Bool) {
+            if gesture {
+                isWaitingForInitialFitToSettle = false
+            }
         }
 
         /// KVO observer on GMSMapView.myLocation — fires once the GPS fix arrives.

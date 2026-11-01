@@ -51,7 +51,7 @@ struct CachedPhaseImage: View {
             }
             .onFailureView {
                 Image(systemName: "photo")
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
             .fade(duration: 0.2)
             .aspectRatio(contentMode: contentMode)

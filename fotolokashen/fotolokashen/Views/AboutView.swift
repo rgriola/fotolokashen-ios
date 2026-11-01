@@ -29,11 +29,11 @@ struct AboutView: View {
                 }
                 Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/privacy-policy")!) {
                     Label("Privacy Policy", systemImage: "hand.raised.fill")
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(Color.primary)
                 }
                 Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/terms")!) {
                     Label("Terms of Service", systemImage: "doc.text.fill")
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(Color.primary)
                 }
             }
 
@@ -47,10 +47,10 @@ struct AboutView: View {
                         .font(.headline)
                     Text("v\(appVersion) (\(buildNumber))")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("© \(currentYear) Sea Lion Media LLC. All rights reserved.")
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)

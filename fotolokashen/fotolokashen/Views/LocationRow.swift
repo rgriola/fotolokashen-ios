@@ -58,7 +58,7 @@ struct LocationRow: View {
                         }
                         .font(.caption2)
                         .fontWeight(.semibold)
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(typeColor(for: type))
@@ -78,7 +78,7 @@ struct LocationRow: View {
                             Image(systemName: AppIcons.share)
                                 .font(.subheadline)
                                 .fontWeight(.bold)
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.white)
                                 .padding(8)
                                 .background(.black.opacity(0.4))
                                 .clipShape(Circle())
@@ -94,27 +94,27 @@ struct LocationRow: View {
                 // Name — full display, wraps to multiple lines
                 Text(location.name)
                     .font(.headline)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(Color.primary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 // Address — full display, wraps to multiple lines
                 Text(location.address ?? "No address")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 // Favorite indicator
                 if location.isFavorite == true {
                     Image(systemName: "heart.fill")
                         .font(.caption2)
-                        .foregroundColor(.destructive)
+                        .foregroundStyle(Color.destructive)
                 }
 
                 // Attribution (friend/public locations)
                 if let attributionText {
                     Text(attributionText)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
             }
             .padding(.horizontal, 12)
@@ -147,7 +147,7 @@ struct LocationRow: View {
                         }
                         .onFailureView {
                             Image(systemName: "photo")
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(Color.secondary)
                         }
                         .fade(duration: 0.2)
                         .aspectRatio(contentMode: .fill)
@@ -169,7 +169,7 @@ struct LocationRow: View {
                 }
                 .onFailureView {
                     Image(systemName: "photo")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
                 .fade(duration: 0.2)
                 .aspectRatio(contentMode: .fill)
@@ -205,7 +205,7 @@ struct LocationRow: View {
             .overlay {
                 Image(systemName: "photo")
                     .font(.title2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
     }
 
@@ -215,7 +215,7 @@ struct LocationRow: View {
             .overlay {
                 Image(systemName: "map")
                     .font(.title2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
     }
 

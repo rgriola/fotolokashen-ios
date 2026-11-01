@@ -135,7 +135,7 @@ extension View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(LocationTypeColors.color(for: type).opacity(0.2))
-            .foregroundColor(LocationTypeColors.color(for: type))
+            .foregroundStyle(LocationTypeColors.color(for: type))
             .clipShape(Capsule())
     }
 }

@@ -1,6 +1,6 @@
 # iOS 27 Readiness Evaluation — fotolokashen iOS
 
-**Last updated:** October 30, 2026 — 13:52 EDT
+**Last updated:** November 1, 2026
 **Originally assessed:** 1.6.0 (build 57) on September 20, 2026
 **Current version:** 1.6.3 (build 63)
 **Scope:** Original assessment plus implementation progress and verified readiness results.
@@ -40,6 +40,43 @@ cleanup can require multiple invocations. Check actual delivered CDN URL
 variants and purge-plan limits before claiming full media erasure. No
 production account deletion, remote migration, submission, commit or push was
 performed.
+
+### Phase 5 implementation — November 1, 2026
+
+Tasks 5.1–5.5 are implemented. The app Swift sources now have no matches for
+`asyncAfter`, `.navigationBarHidden`, `.autocapitalization`,
+`.foregroundColor`, `CircularProgressViewStyle`, `UIImagePickerController`, or
+the removed `ImagePicker` wrapper.
+
+The profile editor now uses `PhotosPicker` and loads the selected original
+image; the owner approved removing the old system crop editor. Existing avatar
+and banner layouts still crop images for display. Picker triggers now have
+purpose-specific accessibility labels and 44-point targets, and image upload
+progress, completion and selection failures are surfaced accessibly.
+
+The eight dispatch delays were not all equivalent. Map zoom capping now waits
+for Google Maps' initial camera-idle callback and cancels that pending cap if a
+user gesture interrupts the fit. Photo selection is delivered from the picker
+dismissal completion, then the transition overlay hands off after its own
+animation. The no-token email-verification fallback starts login directly.
+Intentional flash/HUD durations and the native-alert-to-login handoff use
+cancellable main-actor tasks; SwiftUI's native alert has no dismissal
+completion callback, so the existing 300 ms handoff remains as a cancellable
+duration rather than pretending to be event-driven.
+
+Auth request/error types and the presentation provider moved to focused files.
+Because OAuth hardening has since enlarged `AuthService.swift`, token refresh
+and logout also moved to an `AuthService` extension so the file is now 771
+lines. The presentation provider selects a `.foregroundActive` scene.
+
+Validation: the Release generic iOS Simulator build and Debug `build-for-testing`
+both succeeded. The full simulator test run could not start: installed
+CoreSimulator 1174.9.2 is older than Xcode's required 1174.21.0, so no simulator
+devices are available. SwiftLint is not installed. Runtime/UI tests and manual
+checks remain open, including profile photo cancel/reselect/upload, VoiceOver
+and large text, map fit interrupted by a gesture, alert-to-login handoff,
+camera flash/HUD timing, and multi-scene auth on iPad. The release gate remains
+open.
 
 ### Phase 1 closeout — October 29, 2026, 20:18 EDT
 
@@ -400,11 +437,19 @@ Other build warnings: `SwiftLint not installed` (build script phase; SwiftLint i
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | 5.1 | Fix **A-1**: `.navigationBarHidden(true)` → `.toolbar(.hidden, for: .navigationBar)` at `ContentView.swift:147`.                                                                                                                                                                                                                                 | Login screen still renders with no nav bar. Deprecation warning gone.                                                                       |
 | 5.2 | Fix **A-4**/**A-5**: `.autocapitalization` → `.textInputAutocapitalization`; `.foregroundColor` → `.foregroundStyle`; `CircularProgressViewStyle(tint:)` → `.progressViewStyle(.circular).tint(…)`.                                                                                                                                              | Visual diff shows no rendering change. Deprecation count from 0.6 drops correspondingly.                                                    |
-| 5.3 | Fix **A-2**: replace `UIImagePickerController` at `ProfileHeaderComponents.swift:245` with SwiftUI `PhotosPicker`. Deletes a `UIViewControllerRepresentable` and one `NSObject` delegate (also helps **C-4**).                                                                                                                                   | Avatar and banner upload both still work. `ImagePicker` type fully removed.                                                                 |
-| 5.4 | Fix **A-3** — highest iOS-27-specific value in this phase. Replace all 8 `asyncAfter` timing hacks with deterministic signals. The two in alert buttons (`ContentView.swift:222`, `:232`) should use the alert's dismissal instead of a 0.3 s guess; the camera ones (`CameraView.swift:380`, `:385`) should key off actual session-ready state. | `grep -rn "asyncAfter" fotolokashen/fotolokashen` returns **zero** hits. Manual test of each affected flow on the slowest supported device. |
-| 5.5 | Fix **H-1**: mechanically extract lines ~765–860 of `AuthService.swift` into `AuthModels.swift` and ~868–876 into `AuthPresentationContextProvider.swift`. While there, fix the `.first` scene selection to filter for `.foregroundActive` (`AuthService.swift:869-872`).                                                                        | `AuthService.swift` drops below 800 lines. No behavior change. Login works on a device with multiple scenes (iPad Stage Manager).           |
+| 5.3 | Fix **A-2**: replace `UIImagePickerController` with SwiftUI `PhotosPicker`. Deletes the `UIViewControllerRepresentable` and `NSObject` delegate (also helps **C-4**). The owner approved full-image selection; avatar/banner layouts retain their display crop. | Verify avatar and banner selection, cancellation, re-selection, and uploads; `ImagePicker` type is fully removed. |
+| 5.4 | Fix **A-3**: replace all 8 `DispatchQueue.main.asyncAfter` calls. Use lifecycle/delegate/animation completions where they exist and cancellable main-actor tasks for intentional visual durations. SwiftUI native alerts have no dismissal completion, so retain the cancellable 300 ms handoff. | No `asyncAfter` source hits. Manually verify map-fit interruption, photo-picker dismissal, camera/HUD timing, and alert handoff. |
+| 5.5 | Fix **H-1**: extract request/error models into `AuthModels.swift` and the presentation provider into `AuthPresentationContextProvider.swift`; move token refresh/logout to a focused `AuthService` extension because OAuth hardening enlarged the file after the original line estimates. Select a `.foregroundActive` scene. | `AuthService.swift` is under 800 lines; existing auth tests pass; verify auth presentation in a multi-scene iPad session. |
 
 ---
+
+> **Phase 5 implementation correction — November 1, 2026:** the camera
+> focus/exposure delays are HUD display durations, not session-readiness waits.
+> They now use cancellable tasks. The alert-to-login delay also remains a
+> cancellable task because the native SwiftUI alert API has no dismissal
+> completion callback. The other sequencing waits use picker dismissal,
+> animation completion, or Google Maps camera-idle events. The owner approved
+> selecting full profile images without the old system crop editor.
 
 ### Phase 6 — Accessibility `(parallel; ships in 1.7.x, gated before any Nutrition Label declaration)`
 
@@ -795,11 +840,13 @@ and data practices. No app privacy manifest was found in the source tree.
 
 **Deprecated API & timing sweep (Phase 5) 🖥️**
 
-- [ ] 5.1 `.navigationBarHidden` → `.toolbar(.hidden…)` (A-1)
-- [ ] 5.2 Soft-deprecated modifiers (A-4, A-5)
-- [ ] 5.3 `UIImagePickerController` → `PhotosPicker` (A-2)
-- [ ] 5.4 All 8 `asyncAfter` hacks removed (A-3)
-- [ ] 5.5 Split `AuthService.swift` under 800 lines (H-1)
+- [x] 5.1 `.navigationBarHidden` → `.toolbar(.hidden…)` (A-1) (Nov 1, 2026)
+- [x] 5.2 Soft-deprecated modifiers migrated across app sources (A-4, A-5); source search is clean (Nov 1, 2026)
+- [x] 5.3 `UIImagePickerController` → `PhotosPicker` (A-2); owner approved full-image selection and display crop is unchanged (Nov 1, 2026)
+- [x] 5.4 All 8 `asyncAfter` calls removed (A-3); event-driven sequencing and cancellable visual durations documented above (Nov 1, 2026)
+- [x] 5.5 Auth models/context extracted, token lifecycle separated, active-scene selection fixed; `AuthService.swift` is 771 lines (Nov 1, 2026)
+
+_Phase 5 implementation builds, but simulator runtime tests and manual UX validation remain open because CoreSimulator is incompatible with the installed Xcode. Keep the release gate unchecked until they pass._
 
 **iOS 27 SDK build (Phase 7) 🆕**
 

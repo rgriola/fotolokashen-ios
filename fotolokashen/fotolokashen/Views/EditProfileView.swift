@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import UIKit
 
 /// Edit Profile — all form fields for the user's personal info, avatar, and banner.
 /// Extracted from the old ProfileView so it's reachable via Profile → Edit Profile.
@@ -22,6 +24,9 @@ struct EditProfileView: View {
     @State private var showingBannerPicker = false
     @State private var selectedAvatarImage: UIImage?
     @State private var selectedBannerImage: UIImage?
+    @State private var selectedAvatarItem: PhotosPickerItem?
+    @State private var selectedBannerItem: PhotosPickerItem?
+    @State private var imageUploadStatus: String?
 
     // UI state
     @State private var hasChanges = false
@@ -38,6 +43,7 @@ struct EditProfileView: View {
                 profileHeader
 
                 VStack(spacing: 20) {
+                    imageUploadStatusView
                     profileFieldsSection
                     locationSection
                     birthdaySection
@@ -61,17 +67,38 @@ struct EditProfileView: View {
             }
         }
         .onAppear { loadUserData() }
-        .sheet(isPresented: $showingAvatarPicker) {
-            ImagePicker(image: $selectedAvatarImage)
+        .modifier(
+            ProfileImagePickerPresentation(
+                showingAvatarPicker: $showingAvatarPicker,
+                selectedAvatarItem: $selectedAvatarItem,
+                showingBannerPicker: $showingBannerPicker,
+                selectedBannerItem: $selectedBannerItem
+            )
+        )
+        .onChange(of: selectedAvatarItem) { _, item in
+            guard let item else { return }
+            Task { await loadSelectedImage(from: item, isAvatar: true) }
         }
-        .sheet(isPresented: $showingBannerPicker) {
-            ImagePicker(image: $selectedBannerImage)
+
+        .onChange(of: selectedBannerItem) { _, item in
+            guard let item else { return }
+            Task { await loadSelectedImage(from: item, isAvatar: false) }
         }
         .onChange(of: selectedAvatarImage) { _, newValue in
-            if let image = newValue { Task { await uploadAvatar(image) } }
+            if let image = newValue {
+                let status = "Uploading profile photo…"
+                imageUploadStatus = status
+                announceImageStatus(status)
+                Task { await uploadAvatar(image) }
+            }
         }
         .onChange(of: selectedBannerImage) { _, newValue in
-            if let image = newValue { Task { await uploadBanner(image) } }
+            if let image = newValue {
+                let status = "Uploading profile banner…"
+                imageUploadStatus = status
+                announceImageStatus(status)
+                Task { await uploadBanner(image) }
+            }
         }
         .alert("Profile Updated", isPresented: $showingSaveSuccess) {
             Button("Done") { dismiss() }
@@ -108,7 +135,10 @@ struct EditProfileView: View {
                 ProfileAvatarView(
                     avatarURL: authService.currentUser?.avatarURL,
                     initials: authService.currentUser?.initials ?? "?",
-                    onEdit: { showingAvatarPicker = true },
+                    onEdit: {
+                        imageUploadStatus = nil
+                        showingAvatarPicker = true
+                    },
                     editMenuContent: {
                         Group {
                             if authService.currentUser?.avatar != nil {
@@ -117,8 +147,12 @@ struct EditProfileView: View {
                                 } label: {
                                     Label("Remove Avatar", systemImage: "trash")
                                 }
+
                             }
-                            Button { showingAvatarPicker = true } label: {
+                            Button {
+                                imageUploadStatus = nil
+                                showingAvatarPicker = true
+                            } label: {
                                 Label("Change Avatar", systemImage: "camera")
                             }
                         }
@@ -129,21 +163,45 @@ struct EditProfileView: View {
 
                 Spacer()
 
-                Button { showingBannerPicker = true } label: {
+                Button {
+                    imageUploadStatus = nil
+                    showingBannerPicker = true
+                } label: {
                     Image(systemName: "camera.fill")
                         .font(.caption)
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                         .padding(8)
                         .background(Color.brand)
                         .clipShape(Circle())
                         .shadow(radius: 2)
                 }
+                .frame(minWidth: 44, minHeight: 44)
+                .accessibilityLabel("Change profile banner")
+                .accessibilityHint("Opens the photo picker to choose a new profile banner.")
                 .padding(.trailing, 16)
                 .padding(.bottom, 8)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.bottom, 28)
+    }
+
+    @ViewBuilder
+    private var imageUploadStatusView: some View {
+        if userService.isUploading || imageUploadStatus != nil {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(imageUploadStatus ?? "Uploading profile image…")
+                    .font(.subheadline)
+                if userService.isUploading {
+                    ProgressView(value: userService.uploadProgress)
+                        .accessibilityLabel("Profile image upload progress")
+                        .accessibilityValue(imageUploadProgressValue)
+                        .accessibilityAddTraits(.updatesFrequently)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+        }
     }
 
     // MARK: - Form Sections
@@ -181,10 +239,10 @@ struct EditProfileView: View {
             } label: {
                 HStack {
                     Text(dateOfBirth.map { formatDOBDisplay($0) } ?? "Not set")
-                        .foregroundStyle(dateOfBirth == nil ? .secondary : .primary)
+                        .foregroundStyle(dateOfBirth == nil ? Color.secondary : Color.primary)
                     Spacer()
                     Image(systemName: "chevron.down")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .font(.caption)
                 }
                 .padding(.vertical, 8)
@@ -292,7 +350,11 @@ struct EditProfileView: View {
             _ = try await userService.uploadAvatar(image: image)
             await authService.fetchCurrentUser()
             selectedAvatarImage = nil
+            let status = "Profile photo updated."
+            imageUploadStatus = status
+            announceImageStatus(status)
         } catch {
+            imageUploadStatus = "Profile photo upload failed. Choose a photo to try again."
             errorText = error.localizedDescription
             showingError = true
         }
@@ -303,10 +365,54 @@ struct EditProfileView: View {
             _ = try await userService.uploadBanner(image: image)
             await authService.fetchCurrentUser()
             selectedBannerImage = nil
+            let status = "Profile banner updated."
+            imageUploadStatus = status
+            announceImageStatus(status)
         } catch {
+            imageUploadStatus = "Profile banner upload failed. Choose an image to try again."
             errorText = error.localizedDescription
             showingError = true
         }
+    }
+
+    private func loadSelectedImage(from item: PhotosPickerItem, isAvatar: Bool) async {
+        defer {
+            if isAvatar {
+                selectedAvatarItem = nil
+            } else {
+                selectedBannerItem = nil
+            }
+        }
+
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data) else {
+                showPhotoSelectionError()
+                return
+            }
+
+            if isAvatar {
+                selectedAvatarImage = image
+            } else {
+                selectedBannerImage = image
+            }
+        } catch {
+            showPhotoSelectionError()
+        }
+    }
+
+    private func showPhotoSelectionError() {
+        imageUploadStatus = "Selected photo could not be loaded."
+        errorText = "The selected photo could not be loaded. Please choose another photo."
+        showingError = true
+    }
+
+    private func announceImageStatus(_ message: String) {
+        UIAccessibility.post(notification: .announcement, argument: message)
+    }
+
+    private var imageUploadProgressValue: String {
+        "\(Int(userService.uploadProgress * 100)) percent"
     }
 
     private func deleteAvatar() async {
@@ -326,6 +432,27 @@ struct EditProfileView: View {
         } catch {
             errorText = error.localizedDescription
             showingError = true
+        }
+    }
+
+    private struct ProfileImagePickerPresentation: ViewModifier {
+        @Binding var showingAvatarPicker: Bool
+        @Binding var selectedAvatarItem: PhotosPickerItem?
+        @Binding var showingBannerPicker: Bool
+        @Binding var selectedBannerItem: PhotosPickerItem?
+
+        func body(content: Content) -> some View {
+            content
+                .photosPicker(
+                    isPresented: $showingAvatarPicker,
+                    selection: $selectedAvatarItem,
+                    matching: .images
+                )
+                .photosPicker(
+                    isPresented: $showingBannerPicker,
+                    selection: $selectedBannerItem,
+                    matching: .images
+                )
         }
     }
 }

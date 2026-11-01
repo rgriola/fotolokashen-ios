@@ -22,7 +22,7 @@ struct PreferencesView: View {
                     Spacer()
                     TextField("en", text: $language)
                         .multilineTextAlignment(.trailing)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .frame(maxWidth: 80)
                 }
                 .onChange(of: language) { _, _ in checkForChanges() }
@@ -32,7 +32,7 @@ struct PreferencesView: View {
                     Spacer()
                     TextField("America/New_York", text: $timezone)
                         .multilineTextAlignment(.trailing)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .frame(maxWidth: 180)
                 }
                 .onChange(of: timezone) { _, _ in checkForChanges() }

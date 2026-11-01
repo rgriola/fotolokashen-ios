@@ -19,9 +19,9 @@ class AuthService: ObservableObject, TokenRefreshing {
     
     // MARK: - Properties
     
-    private let apiClient: APIClient
-    private let keychainService = KeychainService.shared
-    private let config = ConfigLoader.shared
+    let apiClient: APIClient
+    let keychainService = KeychainService.shared
+    let config = ConfigLoader.shared
     
     // PKCE state
     private var codeVerifier: String?
@@ -37,7 +37,7 @@ class AuthService: ObservableObject, TokenRefreshing {
     private let presentationContextProvider = AuthPresentationContextProvider()
 
     // In-flight token refresh, shared by concurrent callers
-    private var refreshTask: Task<Void, Error>?
+    var refreshTask: Task<Void, Error>?
 
     #if DEBUG
     /// Test-only hook to seed PKCE state without driving a real
@@ -56,7 +56,7 @@ class AuthService: ObservableObject, TokenRefreshing {
     }
     #endif
 
-    private func clearPKCEState() {
+    func clearPKCEState() {
         codeVerifier = nil
         codeChallenge = nil
         oauthState = nil
@@ -706,22 +706,6 @@ class AuthService: ObservableObject, TokenRefreshing {
             let model = UIDevice.current.model
             let userAgent = "fotolokashen-ios/1.0 (iOS \(systemVersion); \(model))"
             
-            struct AutoLoginRequest: Codable {
-                let token: String
-                let clientId: String
-                let deviceName: String
-                let userAgent: String
-                let country: String?
-                
-                enum CodingKeys: String, CodingKey {
-                    case token
-                    case clientId = "client_id"
-                    case deviceName = "device_name"
-                    case userAgent = "user_agent"
-                    case country
-                }
-            }
-            
             let request = AutoLoginRequest(
                 token: autoLoginToken,
                 clientId: config.oauthClientId,
@@ -769,49 +753,6 @@ class AuthService: ObservableObject, TokenRefreshing {
         isLoading = false
     }
     
-    // MARK: - Token Refresh
-
-    /// Called by `APIClient` when an authenticated request is rejected with 401.
-    /// Shares the same single-flight refresh as every other caller, so a burst of
-    /// concurrent 401s produces exactly one token exchange.
-    func refreshAccessTokenForRetry(staleAccessToken: String?) async throws {
-        // The in-flight dedup in `refreshToken()` only covers overlapping calls. A request
-        // that 401s just after a refresh completed would otherwise start a second exchange,
-        // superseding the session again. If the Keychain already holds a different token,
-        // the 401 was caused by the caller's stale token — nothing to refresh.
-        if let staleAccessToken, try keychainService.getAccessToken() != staleAccessToken {
-            #if DEBUG
-            if config.enableDebugLogging {
-                dlog("AuthService", "Token already rotated; retrying without refresh")
-            }
-            #endif
-            return
-        }
-
-        try await refreshToken()
-    }
-
-    /// Refresh access token using refresh token
-    func refreshTokenIfNeeded() async throws {
-        // Check if refresh is needed
-        guard try keychainService.needsRefresh() else {
-            #if DEBUG
-            if config.enableDebugLogging {
-                dlog("AuthService", "Token is valid; refresh not needed")
-            }
-            #endif
-            return
-        }
-        
-        #if DEBUG
-        if config.enableDebugLogging {
-            dlog("AuthService", "Refreshing access token")
-        }
-        #endif
-        
-        try await refreshToken()
-    }
-    
     /// True only when the server has definitively rejected our credentials.
     /// Network failures and 5xx responses must not count, or going offline logs the user out.
     private func isUnrecoverableAuthError(_ error: Error) -> Bool {
@@ -827,225 +768,4 @@ class AuthService: ObservableObject, TokenRefreshing {
         }
     }
 
-    /// Force refresh the access token.
-    /// Concurrent callers share one request — the server supersedes the previous `ios`
-    /// session on every refresh, so overlapping refreshes would orphan each other's
-    /// access token once the grace window elapses.
-    private func refreshToken() async throws {
-        if let existing = refreshTask {
-            return try await existing.value
-        }
-
-        let task = Task { try await performTokenRefresh() }
-        refreshTask = task
-        defer { refreshTask = nil }
-        return try await task.value
-    }
-
-    private func performTokenRefresh() async throws {
-        guard let refreshToken = try keychainService.getRefreshToken() else {
-            throw AuthError.noRefreshToken
-        }
-        
-        // Get device information
-        let deviceName = UIDevice.current.name
-        let systemVersion = UIDevice.current.systemVersion
-        let model = UIDevice.current.model
-        let userAgent = "fotolokashen-ios/1.0 (iOS \(systemVersion); \(model))"
-        
-        let refreshRequest = RefreshTokenRequest(
-            grantType: "refresh_token",
-            refreshToken: refreshToken,
-            clientId: config.oauthClientId,
-            deviceName: deviceName,
-            userAgent: userAgent,
-            ipAddress: nil,
-            country: Locale.current.region?.identifier
-        )
-        
-        // The refresh grant only returns a new access token (no refresh_token/user) —
-        // decoding as TokenResponse throws keyNotFound and silently orphans the new
-        // token the server already committed, which is what caused the logout bug.
-        let refreshResponse: RefreshTokenResponse = try await apiClient.post(
-            "/api/auth/oauth/token",
-            body: refreshRequest,
-            authenticated: false
-        )
-        
-        #if DEBUG
-        if config.enableDebugLogging {
-            dlog("AuthService", "Access token refreshed")
-        }
-        #endif
-        
-        // Rotate just the access token in place; refresh token + user stay as-is
-        let newExpiresAt = Date().addingTimeInterval(TimeInterval(refreshResponse.expiresIn))
-        try keychainService.updateAccessToken(refreshResponse.accessToken, expiresAt: newExpiresAt)
-    }
-    
-    // MARK: - Logout
-    
-    /// Logout user
-    func logout() async {
-        isLoading = true
-        clearPKCEState()
-        
-        do {
-            // Revoke refresh token on server
-            if let refreshToken = try keychainService.getRefreshToken() {
-                let revokeRequest = RevokeRequest(
-                    token: refreshToken,
-                    clientId: config.oauthClientId
-                )
-                
-                let _: RevokeTokenResponse = try await apiClient.post(
-                    "/api/auth/oauth/revoke",
-                    body: revokeRequest,
-                    authenticated: false
-                )
-                
-                #if DEBUG
-                if config.enableDebugLogging {
-                    dlog("AuthService", "Server token revocation completed")
-                }
-                #endif
-            }
-            
-            // Clear local tokens
-            try keychainService.clearTokens()
-            
-            // Update state
-            isAuthenticated = false
-            currentUser = nil
-            
-        } catch {
-            if error is KeychainAccessFailure {
-                errorMessage = "Unable to access saved credentials. Your session has been preserved."
-                isLoading = false
-                return
-            }
-            #if DEBUG
-            if config.enableDebugLogging {
-                dlog("AuthService", "Logout failed")
-            }
-            #endif
-            // Clear tokens anyway
-            try? keychainService.clearTokens()
-            isAuthenticated = false
-            currentUser = nil
-        }
-        
-        isLoading = false
-    }
-}
-
-// MARK: - Request Models
-
-struct AuthorizationRequest: Codable {
-    let clientId: String
-    let responseType: String
-    let redirectUri: String
-    let codeChallenge: String
-    let codeChallengeMethod: String
-    let scope: String
-    let state: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case clientId = "client_id"
-        case responseType = "response_type"
-        case redirectUri = "redirect_uri"
-        case codeChallenge = "code_challenge"
-        case codeChallengeMethod = "code_challenge_method"
-        case scope
-        case state
-    }
-}
-
-struct TokenRequest: Codable {
-    let grantType: String
-    let code: String
-    let codeVerifier: String
-    let clientId: String
-    let redirectUri: String
-    let deviceName: String?
-    let userAgent: String?
-    let ipAddress: String?
-    let country: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case grantType = "grant_type"
-        case code
-        case codeVerifier = "code_verifier"
-        case clientId = "client_id"
-        case redirectUri = "redirect_uri"
-        case deviceName = "device_name"
-        case userAgent = "user_agent"
-        case ipAddress = "ip_address"
-        case country
-    }
-}
-
-struct RefreshTokenRequest: Codable {
-    let grantType: String
-    let refreshToken: String
-    let clientId: String
-    let deviceName: String?
-    let userAgent: String?
-    let ipAddress: String?
-    let country: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case grantType = "grant_type"
-        case refreshToken = "refresh_token"
-        case clientId = "client_id"
-        case deviceName = "device_name"
-        case userAgent = "user_agent"
-        case ipAddress = "ip_address"
-        case country
-    }
-}
-
-struct RevokeRequest: Codable {
-    let token: String
-    let clientId: String
-    
-    enum CodingKeys: String, CodingKey {
-        case token
-        case clientId = "client_id"
-    }
-}
-
-// MARK: - Auth Errors
-
-enum AuthError: Error, LocalizedError {
-    case missingCodeVerifier
-    case invalidOAuthState
-    case noRefreshToken
-    case authorizationFailed
-    
-    var errorDescription: String? {
-        switch self {
-        case .missingCodeVerifier:
-            return "Missing PKCE code verifier"
-        case .invalidOAuthState:
-            return "Unable to verify this sign-in attempt. Please try logging in again."
-        case .noRefreshToken:
-            return "No refresh token available"
-        case .authorizationFailed:
-            return "Authorization failed"
-        }
-    }
-}
-
-// MARK: - ASWebAuthenticationSession Presentation Context
-
-/// Provides the window anchor for ASWebAuthenticationSession
-class AuthPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
-    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = scene.windows.first(where: { $0.isKeyWindow }) else {
-            return ASPresentationAnchor()
-        }
-        return window
-    }
 }

@@ -19,7 +19,7 @@ struct ErrorBanner: View {
                 }
                 Text(error.message)
                     .font(.subheadline)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color.primary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -37,7 +37,7 @@ struct ErrorBanner: View {
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
         }
         .padding(12)

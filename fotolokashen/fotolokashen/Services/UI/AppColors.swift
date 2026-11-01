@@ -6,8 +6,8 @@
 //  See: fotolokashen/.github/copilot-instructions.md → Style Guide
 //
 //  USAGE:
-//  .foregroundColor(.destructive)   // error/delete actions
-//  .foregroundColor(.success)       // confirmations
+//  .foregroundStyle(Color.destructive)   // error/delete actions
+//  .foregroundStyle(Color.success)       // confirmations
 //  .background(Color.brand)         // primary brand actions
 //
 //  DO NOT hardcode .red, .blue, .green for semantic intent.

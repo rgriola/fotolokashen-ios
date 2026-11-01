@@ -59,11 +59,11 @@ private struct DiscoverTab: View {
             // Search bar
             HStack {
                 Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
 
                 TextField("Search by username, name, or city...", text: $searchText)
                     .textFieldStyle(.plain)
-                    .autocapitalization(.none)
+                    .textInputAutocapitalization(.none)
                     .disableAutocorrection(true)
                     .onChange(of: searchText) { _, newValue in
                         // Debounced search
@@ -87,7 +87,7 @@ private struct DiscoverTab: View {
                         hasSearched = false
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(Color.secondary)
                     }
                 }
             }
@@ -105,26 +105,26 @@ private struct DiscoverTab: View {
                 VStack(spacing: 12) {
                     Image(systemName: "person.slash")
                         .font(.system(size: 40))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("No users found")
                         .font(.headline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("Try a different search term")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if searchResults.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "person.2.circle")
                         .font(.system(size: 40))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("Find People")
                         .font(.headline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("Search by username, name, or city")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -196,12 +196,12 @@ private struct SearchUserRow: View {
 
                 Text("@\(user.username)")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
 
                 if let bio = user.bio, !bio.isEmpty {
                     Text(bio)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .lineLimit(1)
                 }
 
@@ -212,7 +212,7 @@ private struct SearchUserRow: View {
                         Text(location)
                             .font(.caption2)
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
                 }
             }
 
@@ -220,7 +220,7 @@ private struct SearchUserRow: View {
 
             Image(systemName: "chevron.right")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
         }
         .padding(.vertical, 4)
     }
@@ -233,7 +233,7 @@ private struct SearchUserRow: View {
                 Text(user.initials)
                     .font(.subheadline)
                     .fontWeight(.bold)
-                    .foregroundColor(.brand)
+                    .foregroundStyle(Color.brand)
             )
     }
 }
@@ -257,13 +257,13 @@ private struct MyFollowingTab: View {
                 VStack(spacing: 12) {
                     Image(systemName: "person.2")
                         .font(.system(size: 40))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("Not following anyone yet")
                         .font(.headline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("Discover people to follow in the Discover tab")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                 }
@@ -356,13 +356,13 @@ private struct MyFollowersTab: View {
                 VStack(spacing: 12) {
                     Image(systemName: "person.2.slash")
                         .font(.system(size: 40))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("No followers yet")
                         .font(.headline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                     Text("Share your profile to get followers")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {

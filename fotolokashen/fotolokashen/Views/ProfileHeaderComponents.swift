@@ -41,10 +41,12 @@ struct ProfileBannerView: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title3)
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                         .shadow(radius: 2)
                         .padding(8)
                 }
+                .accessibilityLabel("Remove profile banner")
+                .accessibilityHint("Deletes your current profile banner.")
             }
         }
         .frame(maxWidth: .infinity)
@@ -109,13 +111,16 @@ struct ProfileAvatarView<MenuContent: View>: View {
                 } label: {
                     Image(systemName: "camera.fill")
                         .font(.system(size: 10))
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.white)
                         .padding(5)
                         .background(Color.brand)
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
+                        .frame(minWidth: 44, minHeight: 44)
                 }
                 .offset(x: 2, y: 2)
+                .accessibilityLabel("Change profile photo")
+                .accessibilityHint("Opens the photo picker to choose a new profile photo.")
             }
         }
 
@@ -135,7 +140,7 @@ struct ProfileAvatarView<MenuContent: View>: View {
                 Text(initials)
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(.white)
+                    .foregroundStyle(Color.white)
             )
     }
 }
@@ -162,10 +167,10 @@ struct ProfileStatItem: View {
             Text("\(count)")
                 .font(.subheadline)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundStyle(Color.primary)
             Text(label)
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
         }
     }
 }
@@ -184,7 +189,7 @@ struct FormField: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
 
             if isMultiline {
                 TextEditor(text: $text)
@@ -214,55 +219,9 @@ struct FormField: View {
             if maxLength > 0 {
                 Text("\(text.count)/\(maxLength)")
                     .font(.caption2)
-                    .foregroundColor(text.count >= maxLength ? .destructive : .secondary)
+                    .foregroundStyle(text.count >= maxLength ? Color.destructive : Color.secondary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
-        }
-    }
-}
-
-// MARK: - Image Picker
-
-/// UIImagePickerController wrapper for selecting photos from the library.
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.delegate = context.coordinator
-        picker.allowsEditing = true
-        picker.sourceType = .photoLibrary
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
-
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-
-        func imagePickerController(
-            _ picker: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-        ) {
-            if let edited = info[.editedImage] as? UIImage {
-                parent.image = edited
-            } else if let original = info[.originalImage] as? UIImage {
-                parent.image = original
-            }
-            parent.dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
         }
     }
 }

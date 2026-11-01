@@ -28,6 +28,7 @@ final class CameraSessionViewModel: ObservableObject {
     @Published var sessionCaptures: [SessionCapture] = []
     @Published var isWritingToDisk = false
     @Published var captureFlash = false
+    private var captureFlashTask: Task<Void, Never>?
 
     // MARK: - Constants
 
@@ -46,9 +47,16 @@ final class CameraSessionViewModel: ObservableObject {
         isWritingToDisk = true
 
         // Flash animation
+        captureFlashTask?.cancel()
         withAnimation(.easeIn(duration: 0.05)) { captureFlash = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            withAnimation(.easeOut(duration: 0.15)) { self?.captureFlash = false }
+        captureFlashTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: .milliseconds(100))
+            } catch {
+                return
+            }
+            guard let self else { return }
+            withAnimation(.easeOut(duration: 0.15)) { self.captureFlash = false }
         }
 
         Task.detached(priority: .userInitiated) { [weak self] in

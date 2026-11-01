@@ -12,7 +12,7 @@ struct MapPlaceSearchOverlay: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.secondary)
                 TextField("Search Apple Maps", text: $searchService.queryFragment)
                     .focused($isSearchFieldFocused)
                     .accessibilityLabel("Search Apple Maps for a place or address")
@@ -21,7 +21,7 @@ struct MapPlaceSearchOverlay: View {
                         searchService.clear()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.secondary)
                     }
                     .accessibilityLabel("Clear search")
                 }
@@ -39,11 +39,11 @@ struct MapPlaceSearchOverlay: View {
                         VStack(alignment: .leading) {
                             Text(suggestion.title)
                                 .font(.body)
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(Color.primary)
                             if !suggestion.subtitle.isEmpty {
                                 Text(suggestion.subtitle)
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Color.secondary)
                             }
                         }
                     }

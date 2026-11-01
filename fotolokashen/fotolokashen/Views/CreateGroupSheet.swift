@@ -73,7 +73,7 @@ struct CreateGroupSheet: View {
                         showAddCustomType = true
                     } label: {
                         Label("Add Custom Type…", systemImage: "plus.circle")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.blue)
                     }
                 } header: {
                     Text("Type")
@@ -91,7 +91,7 @@ struct CreateGroupSheet: View {
                 if let error = errorMessage {
                     Section {
                         Label(error, systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.red)
                             .font(.caption)
                     }
                 }
@@ -137,13 +137,13 @@ struct CreateGroupSheet: View {
             HStack {
                 Image(systemName: icon)
                     .frame(width: 24)
-                    .foregroundStyle(isSelected ? .blue : .secondary)
+                    .foregroundStyle(isSelected ? Color.blue : Color.secondary)
                 Text(name)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color.primary)
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.blue)
                         .fontWeight(.semibold)
                 }
             }

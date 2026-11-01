@@ -22,13 +22,13 @@ struct GroupAccordionHeader: View {
                     Text(group.name)
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(Color.primary)
                         .lineLimit(1)
 
                     if let type = group.type {
                         Text(type.capitalized)
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.secondary)
                     }
                 }
 
@@ -38,7 +38,7 @@ struct GroupAccordionHeader: View {
                 Text("\(locationCount)")
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(colorForType(group.type).opacity(0.8))
@@ -47,7 +47,7 @@ struct GroupAccordionHeader: View {
                 // Chevron
                 Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.secondary)
                     .rotationEffect(.degrees(isExpanded ? 90 : 0))
             }
             .padding(.vertical, 6)

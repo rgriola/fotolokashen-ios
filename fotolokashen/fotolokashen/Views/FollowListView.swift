@@ -42,17 +42,17 @@ struct FollowListView: View {
         VStack(spacing: 12) {
             Image(systemName: mode == .followers ? "person.2.slash" : "person.2")
                 .font(.system(size: 40))
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
 
             Text(mode == .followers ? "No followers yet" : "Not following anyone")
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
 
             Text(mode == .followers
                  ? "@\(username) doesn't have any followers yet."
                  : "@\(username) isn't following anyone yet.")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
         }
@@ -81,7 +81,7 @@ struct FollowListView: View {
                                 await loadMore()
                             }
                         }
-                        .foregroundColor(.brand)
+                        .foregroundStyle(Color.brand)
                     }
                     Spacer()
                 }
@@ -187,12 +187,12 @@ struct UserRowView: View {
 
                 Text("@\(user.username)")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
 
                 if let bio = user.bio, !bio.isEmpty {
                     Text(bio)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.secondary)
                         .lineLimit(1)
                 }
             }
@@ -210,7 +210,7 @@ struct UserRowView: View {
                 Text(user.initials)
                     .font(.subheadline)
                     .fontWeight(.bold)
-                    .foregroundColor(.brand)
+                    .foregroundStyle(Color.brand)
             )
     }
 }

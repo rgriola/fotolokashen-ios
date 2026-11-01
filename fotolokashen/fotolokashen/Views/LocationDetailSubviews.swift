@@ -54,7 +54,7 @@ struct PhotoGallerySection: View {
                             }
                             .onFailureView {
                                 Image(systemName: "photo")
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(Color.secondary)
                             }
                             .fade(duration: 0.2)
                             .scaledToFill()
@@ -100,7 +100,7 @@ struct PhotoGallerySection: View {
                 .font(.caption)
                 .fontWeight(.semibold)
         }
-        .foregroundColor(.white)
+        .foregroundStyle(Color.white)
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
         .background(LocationTypeColors.color(for: type))
@@ -156,15 +156,15 @@ struct PhotoGallerySection: View {
             VStack(spacing: 12) {
                 Image(systemName: "wifi.slash")
                     .font(.system(size: 40))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
 
                 Text("No connection")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
 
                 Text("Photos will load when online")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
         }
     }
@@ -192,7 +192,7 @@ struct PhotoGalleryFullScreen: View {
                         }
                         .onFailureView {
                             Image(systemName: "photo")
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(Color.secondary)
                         }
                         .fade(duration: 0.2)
                         .scaledToFit()
@@ -210,7 +210,7 @@ struct PhotoGalleryFullScreen: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.title)
-                            .foregroundColor(.white)
+                            .foregroundStyle(Color.white)
                             .padding()
                     }
                 }
@@ -222,12 +222,12 @@ struct PhotoGalleryFullScreen: View {
                     VStack(spacing: 4) {
                         Text("\(selectedIndex + 1) of \(photos.count)")
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundStyle(Color.white)
 
                         if let caption = photo.caption, !caption.isEmpty {
                             Text(caption)
                                 .font(.subheadline)
-                                .foregroundColor(.white.opacity(0.8))
+                                .foregroundStyle(Color.white.opacity(0.8))
                         }
                     }
                     .padding()
@@ -306,7 +306,7 @@ struct SectionHeader: View {
         HStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundColor(.brand)
+                .foregroundStyle(Color.brand)
             Text(title)
                 .font(.subheadline)
                 .fontWeight(.semibold)
@@ -324,7 +324,7 @@ struct DetailRow: View {
         HStack(alignment: .top) {
             Text(label)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(Color.secondary)
                 .frame(width: 120, alignment: .leading)
             Text(value)
                 .font(.subheadline)
