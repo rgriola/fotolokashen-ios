@@ -331,39 +331,24 @@ class AuthService: ObservableObject, TokenRefreshing {
     
     /// Present ASWebAuthenticationSession for OAuth flow (login, registration, or forgot password)
     ///
-    /// iOS 17.4+: Uses `.https()` callback for OAuth login (Universal Link — domain-verified, cannot be hijacked).
-    /// iOS 17.0-17.3: Falls back to `.customScheme()` callback.
-    /// Non-OAuth flows (registration, forgot-password) always use the custom scheme since they
-    /// redirect to `fotolokashen://await-verification` etc., not a Universal Link.
+    /// Uses the app's custom-scheme callback for OAuth and non-OAuth flows.
     private func startWebAuthSession(url: URL) {
         isLoading = true
         errorMessage = nil
 
-        // Shared completion handler for both API versions
         let completionHandler: (URL?, Error?) -> Void = { [weak self] callbackURL, error in
             Task { @MainActor [weak self] in
                 await self?.handleWebAuthSessionCompletion(callbackURL: callbackURL, error: error)
             }
         }
 
-        let session: ASWebAuthenticationSession
-        if #available(iOS 17.4, *) {
-            // iOS 17.4+: Use the modern callback API with custom scheme.
-            // Note: .https() callback is intentionally NOT used because it requires the AASA
-            // file to be cached on-device, which fails on fresh installs and device restarts.
-            session = ASWebAuthenticationSession(
-                url: url,
-                callback: .customScheme("fotolokashen"),
-                completionHandler: completionHandler
-            )
-        } else {
-            // iOS 17.0-17.3: Use the legacy API with custom URL scheme
-            session = ASWebAuthenticationSession(
-                url: url,
-                callbackURLScheme: "fotolokashen",
-                completionHandler: completionHandler
-            )
-        }
+        // `.https()` is intentionally not used because its Universal Link callback
+        // requires a cached AASA file, which can fail on fresh installs and restarts.
+        let session = ASWebAuthenticationSession(
+            url: url,
+            callback: .customScheme("fotolokashen"),
+            completionHandler: completionHandler
+        )
 
         session.presentationContextProvider = presentationContextProvider
         session.prefersEphemeralWebBrowserSession = true
