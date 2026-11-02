@@ -2,7 +2,7 @@ import Foundation
 import CoreLocation
 
 /// Location model matching backend API response
-struct Location: Codable, Identifiable {
+nonisolated struct Location: Codable, Identifiable {
         // MARK: - Extra Location Metadata (for detail panel)
         let bestTimeOfDay: String?
         let contactPerson: String?
@@ -65,7 +65,7 @@ struct Location: Codable, Identifiable {
     var groupId: Int?
 
     // MARK: - Creator (Owner)
-    struct Creator: Codable {
+    nonisolated struct Creator: Codable {
         let id: Int?
         let username: String?
         let email: String?
@@ -216,7 +216,7 @@ struct Location: Codable, Identifiable {
 // MARK: - Location Photo
 
 /// Simplified photo model for location list
-struct LocationPhoto: Codable, Equatable, Hashable {
+nonisolated struct LocationPhoto: Codable, Equatable, Hashable {
     let id: Int
     let imagekitFilePath: String
     let isPrimary: Bool?
@@ -252,12 +252,12 @@ struct LocationPhoto: Codable, Equatable, Hashable {
 // MARK: - API Response Models
 
 /// Response for fetching a single location (by UserSave ID)
-struct UserSaveDetailResponse: Codable {
+nonisolated struct UserSaveDetailResponse: Codable {
     let userSave: UserSaveWithLocation
 }
 
 /// UserSave with full location details including photos
-struct UserSaveWithLocation: Codable {
+nonisolated struct UserSaveWithLocation: Codable {
     let id: Int
     let userId: Int
     let locationId: Int
@@ -272,7 +272,7 @@ struct UserSaveWithLocation: Codable {
 }
 
 /// Response for fetching multiple locations
-struct LocationsResponse: Codable {
+nonisolated struct LocationsResponse: Codable {
     let locations: [UserSaveWrapper]
 
     /// Unwrap the locations from UserSave objects, preserving userSaveId and UserSave fields
@@ -292,7 +292,7 @@ struct LocationsResponse: Codable {
 }
 
 /// Wrapper for UserSave objects returned by GET /api/locations
-struct UserSaveWrapper: Codable {
+nonisolated struct UserSaveWrapper: Codable {
     let id: Int
     let userId: Int
     let locationId: Int
@@ -307,14 +307,14 @@ struct UserSaveWrapper: Codable {
 }
 
 /// Empty response for delete operations
-struct EmptyResponse: Codable {
+nonisolated struct EmptyResponse: Codable {
     // Empty struct for endpoints that return no data
 }
 
 // MARK: - Location Type
 
 /// Location types matching the web app's 15 types (LocationTypeColors is source of truth for colors/icons)
-enum LocationType: String, Codable, CaseIterable {
+nonisolated enum LocationType: String, Codable, CaseIterable {
     case broll = "BROLL"
     case story = "STORY"
     case interview = "INTERVIEW"
@@ -336,6 +336,7 @@ enum LocationType: String, Codable, CaseIterable {
         rawValue
     }
 
+    @MainActor
     var icon: String {
         LocationTypeColors.icon(for: rawValue)
     }
@@ -370,7 +371,7 @@ extension Location: Hashable {
 
 // MARK: - Create Location Request
 
-struct CreateLocationRequest: Codable {
+nonisolated struct CreateLocationRequest: Codable {
     let placeId: String
     let name: String
     let address: String
@@ -390,11 +391,11 @@ struct CreateLocationRequest: Codable {
 
 // MARK: - Create Location Response
 
-struct CreateLocationResponse: Codable {
+nonisolated struct CreateLocationResponse: Codable {
     let userSave: UserSaveResponse
 }
 
-struct UserSaveResponse: Codable {
+nonisolated struct UserSaveResponse: Codable {
     let id: Int
     let userId: Int
     let locationId: Int
@@ -405,7 +406,7 @@ struct UserSaveResponse: Codable {
 
 /// Request body for PATCH /api/locations/{id}
 /// Combines Location fields AND UserSave fields in a single request
-struct UpdateLocationRequest: Codable {
+nonisolated struct UpdateLocationRequest: Codable {
     // Location fields (shared)
     var name: String? = nil
     var notes: String? = nil
@@ -437,13 +438,13 @@ struct UpdateLocationRequest: Codable {
 
 /// Response from PATCH /api/locations/{id}
 /// The backend returns { data: { location: {..., photos}, userSave: {...} } }
-struct UpdateLocationResponse: Codable {
+nonisolated struct UpdateLocationResponse: Codable {
     let location: Location
     let userSave: UpdatedUserSave?
 }
 
 /// UserSave portion of the PATCH response
-struct UpdatedUserSave: Codable {
+nonisolated struct UpdatedUserSave: Codable {
     let id: Int
     let userId: Int
     let locationId: Int

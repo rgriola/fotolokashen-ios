@@ -2,7 +2,7 @@ import Foundation
 
 /// Centralized ImageKit URL builder with predefined size variants.
 /// Matches the web's `getPhotoUrl()` helper for consistency.
-enum ImageVariant: String {
+nonisolated enum ImageVariant: String {
     case thumbnail   // List rows, small cells (120×120)
     case card        // Card previews (400×300)
     case gallery     // Detail view hero (800×600)
@@ -12,7 +12,7 @@ enum ImageVariant: String {
     case banner      // Profile banners (800×300)
 }
 
-enum ImageKitURL {
+nonisolated enum ImageKitURL {
     static let baseURL = "https://ik.imagekit.io/rgriola"
 
     private static let transforms: [ImageVariant: String] = [

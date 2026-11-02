@@ -64,6 +64,10 @@ final class CreateLocationViewModel: ObservableObject {
     static let nameLimit = 50
     static let detailsLimit = 500
 
+    /// True from the first Save tap until the save finishes. Owned here (not read from
+    /// the nested `locationService`) so the view re-renders and repeat taps are ignored.
+    @Published private(set) var isSaving = false
+
     // MARK: - Dependencies
 
     let photoLocation: CLLocation?
@@ -197,6 +201,10 @@ final class CreateLocationViewModel: ObservableObject {
     /// Drives `photoViewModel.isUploading` / `uploadProgress` for additional photos.
     /// Sets `createdLocation` and `showingSuccess` on success.
     func save(using photoViewModel: PhotoPickerViewModel) async {
+        guard !isSaving else { return }
+        isSaving = true
+        defer { isSaving = false }
+
         let name = sanitizedName()
         let details = sanitizedDetails()
         guard !name.isEmpty, !details.isEmpty else { return }

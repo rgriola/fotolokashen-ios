@@ -9,6 +9,9 @@ Updated November 2, 2026.
 ### Strict concurrency cleanup — Phase 3 (in progress)
 
 - Removed the `useNewPhotoPipeline` flag, the flag-off compression/upload branches in `PhotoPickerViewModel`, and the unused `PhotoPipelineCoordinator`, `PhotoPipelineProviding`, and `PhotoSelectionService`. The create-location save flow is unchanged.
+- `APIClient` is now `nonisolated` and `Sendable`, and its request path is `@concurrent`, so network I/O and JSON decoding no longer run on the main actor. API request/response models are `nonisolated` so their `Codable` conformances work off the main actor.
+- Create Location's Save button now disables and shows "Creating…" for the whole save. It previously read `isLoading` from a nested `LocationService` the view didn't observe, so it stayed enabled while the first photo uploaded; a repeated Save during create is the suspected cause of the duplicate Spots 152/153 (only the last create is added to the local list, so the other copy appears only after a server refresh). A re-entry guard in `CreateLocationViewModel.save` also ignores repeat calls.
+- `GMSServices.provideAPIKey` now runs on the main thread at launch, as Google requires (`GMSServices` is not thread-safe). This did not remove the Maps SDK's "Multiple instances of CCTClearcutUploader were instantiated" console message, which still appears on device.
 
 ### Accessibility and Dynamic Type — Phase 6 (in progress)
 

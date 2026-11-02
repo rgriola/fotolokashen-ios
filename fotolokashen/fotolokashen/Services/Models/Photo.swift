@@ -4,7 +4,7 @@ import Foundation
 /// list/detail responses). All fields are optional — older API responses may omit the
 /// entire `sizes` object, in which case callers should fall back to building URLs
 /// client-side via `ImageKitURL`.
-struct PhotoSizes: Codable, Equatable, Hashable {
+nonisolated struct PhotoSizes: Codable, Equatable, Hashable {
     let thumbnail: String?
     let card: String?
     let gallery: String?
@@ -12,7 +12,7 @@ struct PhotoSizes: Codable, Equatable, Hashable {
 }
 
 /// Photo model matching backend API response
-struct Photo: Codable, Identifiable {
+nonisolated struct Photo: Codable, Identifiable {
     let id: Int
     let imagekitFilePath: String
     let url: String
@@ -119,7 +119,7 @@ struct Photo: Codable, Identifiable {
 
 // MARK: - Request Upload Response
 
-struct RequestUploadResponse: Codable {
+nonisolated struct RequestUploadResponse: Codable {
     let photoId: Int
     let uploadUrl: String
     let uploadToken: String
@@ -142,7 +142,7 @@ struct RequestUploadResponse: Codable {
 
 // MARK: - Request Upload Request
 
-struct RequestUploadRequest: Codable {
+nonisolated struct RequestUploadRequest: Codable {
     let filename: String
     let mimeType: String
     let size: Int
@@ -163,19 +163,19 @@ struct RequestUploadRequest: Codable {
 
 // MARK: - Confirm Upload Request
 
-struct ConfirmUploadRequest: Codable {
+nonisolated struct ConfirmUploadRequest: Codable {
     let imagekitFileId: String
     let imagekitUrl: String
 }
 
 // MARK: - Confirm Upload Response
 
-struct ConfirmUploadResponse: Codable {
+nonisolated struct ConfirmUploadResponse: Codable {
     let success: Bool
     let photo: PhotoConfirmation
 }
 
-struct PhotoConfirmation: Codable {
+nonisolated struct PhotoConfirmation: Codable {
     let id: Int
     let imagekitFilePath: String
     let url: String
@@ -184,7 +184,7 @@ struct PhotoConfirmation: Codable {
 
 // MARK: - ImageKit Upload Response (Legacy - Direct CDN Upload)
 
-struct ImageKitUploadResponse: Codable {
+nonisolated struct ImageKitUploadResponse: Codable {
     let fileId: String
     let name: String
     let url: String
@@ -198,13 +198,13 @@ struct ImageKitUploadResponse: Codable {
 
 /// Response from /api/photos/upload
 /// Server performs virus scanning, format validation, and compression
-struct SecureUploadResponse: Codable {
+nonisolated struct SecureUploadResponse: Codable {
     let upload: SecureUploadDetails
     let file: SecureFileDetails
     let metadata: SecurePhotoMetadata?
 }
 
-struct SecureUploadDetails: Codable {
+nonisolated struct SecureUploadDetails: Codable {
     let fileId: String
     let filePath: String
     let url: String
@@ -213,13 +213,13 @@ struct SecureUploadDetails: Codable {
     let height: Int?
 }
 
-struct SecureFileDetails: Codable {
+nonisolated struct SecureFileDetails: Codable {
     let originalFilename: String
     let size: Int
     let mimeType: String
 }
 
-struct SecurePhotoMetadata: Codable {
+nonisolated struct SecurePhotoMetadata: Codable {
     let hasGPS: Bool?
     let gpsLatitude: Double?
     let gpsLongitude: Double?

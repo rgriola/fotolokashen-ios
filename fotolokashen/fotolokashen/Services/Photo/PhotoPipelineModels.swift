@@ -4,7 +4,7 @@ import UIKit
 // MARK: - Photo Source
 
 /// Where a photo originated — used for tracking and GPS source selection
-enum PhotoSource: String, Codable {
+nonisolated enum PhotoSource: String, Codable {
     case camera = "CAMERA"
     case library = "LIBRARY"
 }

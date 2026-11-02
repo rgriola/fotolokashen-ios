@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Public Profile
 
 /// Public user profile from GET /api/v1/users/{username}
-struct PublicUser: Codable, Identifiable, Equatable, Hashable {
+nonisolated struct PublicUser: Codable, Identifiable, Equatable, Hashable {
     let id: Int
     let username: String
     let displayName: String?
@@ -57,7 +57,7 @@ struct PublicUser: Codable, Identifiable, Equatable, Hashable {
 // MARK: - Follow Status
 
 /// Response from GET /api/v1/users/me/follow-status/{username}
-struct FollowStatus: Codable {
+nonisolated struct FollowStatus: Codable {
     let isFollowing: Bool
     let isFollowedBy: Bool
     let followedAt: String?
@@ -66,7 +66,7 @@ struct FollowStatus: Codable {
 // MARK: - Follow Response
 
 /// Response from POST /api/v1/users/{username}/follow
-struct FollowResponse: Codable {
+nonisolated struct FollowResponse: Codable {
     let success: Bool
     let follower: FollowUser?
     let following: FollowUser?
@@ -74,7 +74,7 @@ struct FollowResponse: Codable {
 }
 
 /// Minimal user info in follow response
-struct FollowUser: Codable {
+nonisolated struct FollowUser: Codable {
     let id: Int
     let username: String
 }
@@ -82,7 +82,7 @@ struct FollowUser: Codable {
 // MARK: - Unfollow Response
 
 /// Response from POST /api/v1/users/{username}/unfollow
-struct UnfollowResponse: Codable {
+nonisolated struct UnfollowResponse: Codable {
     let success: Bool
     let message: String?
 }
@@ -90,7 +90,7 @@ struct UnfollowResponse: Codable {
 // MARK: - Followers / Following List
 
 /// A user in a followers/following list
-struct FollowListUser: Codable, Identifiable, Equatable, Hashable {
+nonisolated struct FollowListUser: Codable, Identifiable, Equatable, Hashable {
     let id: Int
     let username: String
     let displayName: String?
@@ -124,7 +124,7 @@ struct FollowListUser: Codable, Identifiable, Equatable, Hashable {
 }
 
 /// Pagination metadata
-struct PaginationInfo: Codable {
+nonisolated struct PaginationInfo: Codable {
     let total: Int
     let page: Int
     let limit: Int
@@ -133,13 +133,13 @@ struct PaginationInfo: Codable {
 }
 
 /// Response from GET /api/v1/users/{username}/followers
-struct FollowersResponse: Codable {
+nonisolated struct FollowersResponse: Codable {
     let followers: [FollowListUser]
     let pagination: PaginationInfo
 }
 
 /// Response from GET /api/v1/users/{username}/following
-struct FollowingResponse: Codable {
+nonisolated struct FollowingResponse: Codable {
     let following: [FollowListUser]
     let pagination: PaginationInfo
 }
@@ -147,7 +147,7 @@ struct FollowingResponse: Codable {
 // MARK: - People Search
 
 /// Search paginates by offset, unlike the page-based follower/following lists.
-struct SearchPagination: Codable {
+nonisolated struct SearchPagination: Codable {
     let limit: Int
     let offset: Int
     let hasMore: Bool
@@ -155,13 +155,13 @@ struct SearchPagination: Codable {
 }
 
 /// Response from GET /api/v1/search/users
-struct UserSearchResponse: Codable {
+nonisolated struct UserSearchResponse: Codable {
     let results: [SearchUser]
     let pagination: SearchPagination
 }
 
 /// A user in search results
-struct SearchUser: Codable, Identifiable, Equatable, Hashable {
+nonisolated struct SearchUser: Codable, Identifiable, Equatable, Hashable {
     let id: Int
     let username: String
     let displayName: String?
@@ -212,7 +212,7 @@ struct SearchUser: Codable, Identifiable, Equatable, Hashable {
 }
 
 /// Response from GET /api/v1/search/suggestions
-struct SearchSuggestionsResponse: Codable {
+nonisolated struct SearchSuggestionsResponse: Codable {
     let suggestions: [String]
     let query: String?
 }
@@ -220,7 +220,7 @@ struct SearchSuggestionsResponse: Codable {
 // MARK: - Social Locations
 
 /// A location saved by another user (from public/friends endpoints)
-struct SocialLocation: Codable, Identifiable, Equatable, Hashable {
+nonisolated struct SocialLocation: Codable, Identifiable, Equatable, Hashable {
     let id: Int
     let caption: String?
     let savedAt: String?
@@ -332,7 +332,7 @@ extension SocialLocationDetail: Codable {
 }
 
 /// A public/friends location with user info (from /api/v1/locations/public or /friends)
-struct MapSocialLocation: Codable, Identifiable, Equatable, Hashable {
+nonisolated struct MapSocialLocation: Codable, Identifiable, Equatable, Hashable {
     let id: Int
     let placeId: String?
     let name: String
@@ -367,7 +367,7 @@ struct MapSocialLocation: Codable, Identifiable, Equatable, Hashable {
 }
 
 /// User info attached to a social location on the map
-struct SocialLocationUser: Codable, Equatable, Hashable {
+nonisolated struct SocialLocationUser: Codable, Equatable, Hashable {
     let id: Int
     let username: String
     let firstName: String?
@@ -390,12 +390,12 @@ struct SocialLocationUser: Codable, Equatable, Hashable {
 }
 
 /// Response from GET /api/v1/users/{username}/locations
-struct UserLocationsResponse: Codable {
+nonisolated struct UserLocationsResponse: Codable {
     let locations: [SocialLocation]
     let pagination: PaginationInfo?
 }
 
 /// Response from GET /api/v1/locations/public or /friends
-struct MapSocialLocationsResponse: Codable {
+nonisolated struct MapSocialLocationsResponse: Codable {
     let locations: [MapSocialLocation]
 }

@@ -1127,7 +1127,7 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
 **Strict concurrency, Swift 5 mode (Phase 3) 🖥️**
 
 - [x] 3.1 Legacy photo pipeline + flag deleted (H-2) — `useNewPhotoPipeline`, flag-off branches, and the unused `PhotoPipelineCoordinator`/`PhotoPipelineProviding`/`PhotoSelectionService` removed; full simulator suite passes (131 unit, 7 UI) with zero compiler warnings; owner confirmed location create with photos works (Nov 2, 2026). Finding: save uploads photos 2..N sequentially via `CreateLocationViewModel`, not `PhotoUploadQueue`
-- [ ] 3.2 `APIClient` nonisolated + Sendable (C-5)
+- [x] 3.2 `APIClient` nonisolated + Sendable (C-5) — `nonisolated final class APIClient: Sendable`; core `request` is `@concurrent`, so network I/O and JSON decoding run off the main actor. ~100 `Codable` DTOs marked `nonisolated` (required under MainActor default isolation); Keychain token read hops to the main actor. Full simulator suite passes (131 unit, 7 UI), Release compiles, zero compiler warnings, concurrency-specialist approved. owner device smoke test passed (sign-in, map, Spots, detail, profile, edit, single create on repeated Save); Time Profiler not run (Nov 2, 2026)
 - [ ] 3.3 Delegate methods `nonisolated` (C-4)
 - [ ] 3.4 `CameraService` split — device-tested (C-1)
 - [ ] 3.5 `@preconcurrency` removed where possible (C-6, D-2)

@@ -317,7 +317,7 @@ private struct ChangePasswordView: View {
     }
 }
 
-private struct ChangePasswordRequest: Codable {
+private nonisolated struct ChangePasswordRequest: Codable {
     let currentPassword: String
     let newPassword: String
     let confirmPassword: String
@@ -471,12 +471,12 @@ private struct ChangeUsernameView: View {
     }
 }
 
-private struct ChangeUsernameRequest: Codable {
+private nonisolated struct ChangeUsernameRequest: Codable {
     let newUsername: String
     let currentPassword: String
 }
 
-private struct ChangeUsernameResponse: Codable {
+private nonisolated struct ChangeUsernameResponse: Codable {
     let success: Bool?
     let message: String?
     let username: String?
@@ -616,7 +616,7 @@ private struct ChangeEmailView: View {
     }
 }
 
-private struct ChangeEmailRequest: Codable {
+private nonisolated struct ChangeEmailRequest: Codable {
     let newEmail: String
     let currentPassword: String
 }

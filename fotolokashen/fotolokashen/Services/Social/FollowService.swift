@@ -368,7 +368,7 @@ class FollowService: ObservableObject {
 // MARK: - Helper Types
 
 /// Empty body for POST requests that don't need a body
-private struct EmptyBody: Codable {}
+private nonisolated struct EmptyBody: Codable {}
 
 /// Map viewport bounds for filtering locations
 struct MapBounds {

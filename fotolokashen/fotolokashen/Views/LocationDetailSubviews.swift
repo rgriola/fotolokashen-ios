@@ -360,12 +360,12 @@ struct PhotoGalleryFullScreen: View {
 // MARK: - Photo Types
 
 /// Response from /api/locations/{id}/photos
-struct PhotosResponse: Codable {
+nonisolated struct PhotosResponse: Codable {
     let photos: [DetailPhoto]
     let pagination: PhotoPagination?
 }
 
-struct PhotoPagination: Codable {
+nonisolated struct PhotoPagination: Codable {
     let page: Int
     let limit: Int
     let total: Int
@@ -373,7 +373,7 @@ struct PhotoPagination: Codable {
 }
 
 /// Detailed photo information from API
-struct DetailPhoto: Codable, Identifiable {
+nonisolated struct DetailPhoto: Codable, Identifiable {
     let id: Int
     let imagekitFilePath: String
     let url: String

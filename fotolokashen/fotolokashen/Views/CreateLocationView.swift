@@ -307,7 +307,7 @@ struct CreateLocationView: View {
             Button(action: { Task { await viewModel.save(using: photoViewModel) } }) {
                 HStack {
                     Spacer()
-                    if viewModel.locationService.isLoading || photoViewModel.isUploading {
+                    if viewModel.isSaving || photoViewModel.isUploading {
                         ProgressView()
                             .progressViewStyle(.circular)
                             .tint(.white)
@@ -331,7 +331,7 @@ struct CreateLocationView: View {
                 .padding(.vertical, 4)
             }
             .listRowBackground(canSave ? Color.brand : Color(.systemGray3))
-            .disabled(!canSave || viewModel.locationService.isLoading || photoViewModel.isUploading)
+            .disabled(!canSave || viewModel.isSaving || photoViewModel.isUploading)
         }
     }
 

@@ -50,8 +50,9 @@ protocol TokenRefreshing: AnyObject {
     func refreshAccessTokenForRetry(staleAccessToken: String?) async throws
 }
 
-/// Network client for making API requests to fotolokashen backend
-class APIClient {
+/// Network client for making API requests to fotolokashen backend.
+/// Nonisolated and immutable so requests and JSON decoding run off the main actor.
+nonisolated final class APIClient: Sendable {
     
     // MARK: - Singleton
     
@@ -131,7 +132,7 @@ class APIClient {
     // MARK: - Request Methods
     
     /// Make a POST request
-    func post<T: Decodable, B: Encodable>(
+    func post<T: Decodable & Sendable, B: Encodable & Sendable>(
         _ path: String,
         body: B,
         authenticated: Bool = true
@@ -140,7 +141,7 @@ class APIClient {
     }
     
     /// Make a GET request
-    func get<T: Decodable>(
+    func get<T: Decodable & Sendable>(
         _ path: String,
         authenticated: Bool = true
     ) async throws -> T {
@@ -148,7 +149,7 @@ class APIClient {
     }
     
     /// Make a PATCH request
-    func patch<T: Decodable, B: Encodable>(
+    func patch<T: Decodable & Sendable, B: Encodable & Sendable>(
         _ path: String,
         body: B,
         authenticated: Bool = true
@@ -157,7 +158,7 @@ class APIClient {
     }
 
     /// Make a PUT request
-    func put<T: Decodable, B: Encodable>(
+    func put<T: Decodable & Sendable, B: Encodable & Sendable>(
         _ path: String,
         body: B,
         authenticated: Bool = true
@@ -166,7 +167,7 @@ class APIClient {
     }
 
     /// Make a DELETE request
-    func delete<T: Decodable>(
+    func delete<T: Decodable & Sendable>(
         _ path: String,
         authenticated: Bool = true
     ) async throws -> T {
@@ -174,7 +175,7 @@ class APIClient {
     }
 
     /// DELETE with request body
-    func delete<T: Decodable, B: Encodable>(
+    func delete<T: Decodable & Sendable, B: Encodable & Sendable>(
         _ path: String,
         body: B,
         authenticated: Bool = true
@@ -192,7 +193,8 @@ class APIClient {
     
     // MARK: - Core Request Method
     
-    private func request<T: Decodable, B: Encodable>(
+    @concurrent
+    private func request<T: Decodable & Sendable, B: Encodable & Sendable>(
         path: String,
         method: String,
         body: B? = nil as String?,
@@ -213,11 +215,12 @@ class APIClient {
         let bodyData: Data? = try body.map { try encoder.encode($0) }
         
         // Prepare request with headers and authentication
-        let request = try prepareRequest(
+        let accessToken = authenticated ? try await Self.readAccessToken() : nil
+        let request = prepareRequest(
             url: url,
             method: method,
             body: bodyData,
-            authenticated: authenticated
+            accessToken: accessToken
         )
         
         // Make request
@@ -284,25 +287,27 @@ class APIClient {
         url: URL,
         method: String,
         body: Data?,
-        authenticated: Bool
-    ) throws -> URLRequest {
+        accessToken: String?
+    ) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        if authenticated {
-            try addAuthenticationHeader(to: &request)
+
+        if let accessToken {
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         }
-        
+
         if let body = body {
             request.httpBody = body
         }
-        
+
         return request
     }
-    
-    /// Add Bearer token authentication header
-    private func addAuthenticationHeader(to request: inout URLRequest) throws {
+
+    /// Read the access token for an authenticated request.
+    /// `KeychainService` is main-actor isolated, so the read hops to the main actor.
+    @MainActor
+    private static func readAccessToken() throws -> String {
         guard let accessToken = try KeychainService.shared.getAccessToken() else {
             #if DEBUG
             if ConfigLoader.shared.enableDebugLogging {
@@ -311,14 +316,14 @@ class APIClient {
             #endif
             throw APIError.unauthorized
         }
-        
+
         #if DEBUG
         if ConfigLoader.shared.enableDebugLogging {
             dlog("APIClient", "Authenticated request prepared")
         }
         #endif
-        
-        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        return accessToken
     }
     
     /// Validate and extract HTTPURLResponse
@@ -378,21 +383,21 @@ class APIClient {
 
 // MARK: - Error Response
 
-struct ErrorResponse: Codable {
+nonisolated struct ErrorResponse: Codable {
     let error: String
     let code: String?
 }
 
 // MARK: - Me Response (legacy /api/auth/me)
 
-struct MeResponse: Codable {
+nonisolated struct MeResponse: Codable {
     let user: User
 }
 
 // MARK: - Success Response
 
 /// Generic success response for delete/update operations
-struct SuccessResponse: Codable {
+nonisolated struct SuccessResponse: Codable {
     let success: Bool?
     let message: String?
 }

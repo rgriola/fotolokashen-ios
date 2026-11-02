@@ -1,6 +1,6 @@
 import Foundation
 
-struct AutoLoginRequest: Codable {
+nonisolated struct AutoLoginRequest: Codable {
     let token: String
     let clientId: String
     let deviceName: String
@@ -16,7 +16,7 @@ struct AutoLoginRequest: Codable {
     }
 }
 
-struct AuthorizationRequest: Codable {
+nonisolated struct AuthorizationRequest: Codable {
     let clientId: String
     let responseType: String
     let redirectUri: String
@@ -36,7 +36,7 @@ struct AuthorizationRequest: Codable {
     }
 }
 
-struct TokenRequest: Codable {
+nonisolated struct TokenRequest: Codable {
     let grantType: String
     let code: String
     let codeVerifier: String
@@ -60,7 +60,7 @@ struct TokenRequest: Codable {
     }
 }
 
-struct RefreshTokenRequest: Codable {
+nonisolated struct RefreshTokenRequest: Codable {
     let grantType: String
     let refreshToken: String
     let clientId: String
@@ -80,7 +80,7 @@ struct RefreshTokenRequest: Codable {
     }
 }
 
-struct RevokeRequest: Codable {
+nonisolated struct RevokeRequest: Codable {
     let token: String
     let clientId: String
 

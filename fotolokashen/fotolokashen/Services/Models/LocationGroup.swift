@@ -4,7 +4,7 @@ import Foundation
 /// spanning multiple GPS coordinates (e.g., parade route, road trip, story coverage).
 ///
 /// Maps to the `location_groups` table in the backend.
-struct LocationGroup: Codable, Identifiable {
+nonisolated struct LocationGroup: Codable, Identifiable {
     let id: Int
     let name: String
     let description: String?
@@ -62,29 +62,29 @@ enum GroupTypePreset: String, CaseIterable {
 // MARK: - API Response Models
 
 /// Response from GET /api/location-groups
-struct LocationGroupsResponse: Codable {
+nonisolated struct LocationGroupsResponse: Codable {
     let groups: [LocationGroup]
 }
 
 /// Response from POST /api/location-groups
-struct CreateLocationGroupResponse: Codable {
+nonisolated struct CreateLocationGroupResponse: Codable {
     let group: LocationGroup
 }
 
 /// Response from GET /api/user-group-types
-struct GroupTypesResponse: Codable {
+nonisolated struct GroupTypesResponse: Codable {
     let presets: [String]
     let customTypes: [CustomGroupType]
 }
 
 /// A user's custom group type
-struct CustomGroupType: Codable, Identifiable {
+nonisolated struct CustomGroupType: Codable, Identifiable {
     let id: Int
     let typeName: String
     let createdAt: String
 }
 
 /// Response from POST /api/user-group-types
-struct CreateCustomTypeResponse: Codable {
+nonisolated struct CreateCustomTypeResponse: Codable {
     let customType: CustomGroupType
 }

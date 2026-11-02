@@ -214,12 +214,12 @@ class GeocodingService {
 
 // MARK: - Geocoding Models
 
-struct GeocodeResponse: Codable {
+nonisolated struct GeocodeResponse: Codable {
     let results: [GeocodeResult]
     let status: String
 }
 
-struct GeocodeResult: Codable {
+nonisolated struct GeocodeResult: Codable {
     let placeId: String
     let formattedAddress: String
     let addressComponents: [AddressComponent]
@@ -231,7 +231,7 @@ struct GeocodeResult: Codable {
     }
 }
 
-struct AddressComponent: Codable {
+nonisolated struct AddressComponent: Codable {
     let longName: String
     let shortName: String
     let types: [String]

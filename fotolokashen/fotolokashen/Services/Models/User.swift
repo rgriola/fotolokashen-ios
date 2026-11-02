@@ -1,7 +1,7 @@
 import Foundation
 
 /// User model matching backend API response from /api/v1/users/me
-struct User: Codable, Identifiable {
+nonisolated struct User: Codable, Identifiable {
     let id: Int
     let email: String
     let username: String
@@ -109,7 +109,7 @@ extension User: Hashable {
 // MARK: - Profile Update Request
 
 /// Request body for PATCH /api/v1/users/me
-struct ProfileUpdateRequest: Codable {
+nonisolated struct ProfileUpdateRequest: Codable {
     var firstName: String?
     var lastName: String?
     var dateOfBirth: String?  // ISO date string YYYY-MM-DD
@@ -132,7 +132,7 @@ struct ProfileUpdateRequest: Codable {
 // MARK: - Privacy Update Request
 
 /// Request body for PATCH /api/v1/users/me (privacy fields)
-struct PrivacyUpdateRequest: Codable {
+nonisolated struct PrivacyUpdateRequest: Codable {
     var profileVisibility: String?
     var showInSearch: Bool?
     var showLocation: Bool?
@@ -143,7 +143,7 @@ struct PrivacyUpdateRequest: Codable {
 // MARK: - Avatar/Banner Response
 
 /// Response from POST /api/auth/avatar or /api/auth/banner
-struct ImageUploadResponse: Codable {
+nonisolated struct ImageUploadResponse: Codable {
     let success: Bool
     let message: String?
     let avatarUrl: String?
@@ -153,6 +153,6 @@ struct ImageUploadResponse: Codable {
 // MARK: - V1 Me Response
 
 /// Response from GET /api/v1/users/me
-struct V1MeResponse: Codable {
+nonisolated struct V1MeResponse: Codable {
     let user: User
 }

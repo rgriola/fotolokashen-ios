@@ -160,14 +160,14 @@ struct MemberSupportView: View {
 
 // MARK: - Request / Response
 
-private struct SupportRequest: Codable {
+private nonisolated struct SupportRequest: Codable {
     let name: String
     let email: String
     let subject: String
     let message: String
 }
 
-private struct SupportResponse: Codable {
+private nonisolated struct SupportResponse: Codable {
     let success: Bool?
     let message: String?
 }

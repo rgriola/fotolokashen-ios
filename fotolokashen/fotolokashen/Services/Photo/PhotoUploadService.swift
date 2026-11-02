@@ -340,7 +340,7 @@ class PhotoUploadService: ObservableObject, PhotoUploadServicing {
 // MARK: - Request/Response Models
 
 /// Request to associate uploaded photo with a location
-struct AssociatePhotoRequest: Codable {
+nonisolated struct AssociatePhotoRequest: Codable {
     let fileId: String
     let filePath: String
     let url: String
@@ -354,12 +354,12 @@ struct AssociatePhotoRequest: Codable {
 }
 
 /// Wrapped response from /api/photos/upload
-struct WrappedSecureUploadResponse: Codable {
+nonisolated struct WrappedSecureUploadResponse: Codable {
     let data: SecureUploadResponse
 }
 
 /// Error response from upload endpoint
-struct UploadErrorResponse: Codable {
+nonisolated struct UploadErrorResponse: Codable {
     let error: String
     let code: String?
 }

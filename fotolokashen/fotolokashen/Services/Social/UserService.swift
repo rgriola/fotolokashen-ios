@@ -303,7 +303,7 @@ class UserService: ObservableObject {
 
 // MARK: - Wrapped Response
 
-private struct WrappedImageUploadResponse: Codable {
+private nonisolated struct WrappedImageUploadResponse: Codable {
     let data: ImageUploadResponse
 }
 

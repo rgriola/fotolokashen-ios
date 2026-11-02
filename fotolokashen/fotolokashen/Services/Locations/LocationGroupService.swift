@@ -49,7 +49,7 @@ class LocationGroupService: ObservableObject {
         }
         #endif
 
-        struct SingleGroupResponse: Codable {
+        nonisolated struct SingleGroupResponse: Codable {
             let group: LocationGroup
         }
 
@@ -74,7 +74,7 @@ class LocationGroupService: ObservableObject {
         }
         #endif
 
-        struct CreateGroupRequest: Codable {
+        nonisolated struct CreateGroupRequest: Codable {
             let name: String
             let type: String?
             let description: String?
@@ -119,14 +119,14 @@ class LocationGroupService: ObservableObject {
         }
         #endif
 
-        struct UpdateGroupRequest: Codable {
+        nonisolated struct UpdateGroupRequest: Codable {
             let name: String?
             let type: String?
             let description: String?
             let coverPhotoId: Int?
         }
 
-        struct UpdateGroupResponse: Codable {
+        nonisolated struct UpdateGroupResponse: Codable {
             let group: LocationGroup
         }
 
@@ -172,7 +172,7 @@ class LocationGroupService: ObservableObject {
         }
         #endif
 
-        struct GroupIdUpdate: Codable {
+        nonisolated struct GroupIdUpdate: Codable {
             let groupId: Int?
         }
 
@@ -190,7 +190,7 @@ class LocationGroupService: ObservableObject {
         }
         #endif
 
-        struct GroupIdClear: Codable {
+        nonisolated struct GroupIdClear: Codable {
             let groupId: Int?
         }
 
@@ -222,7 +222,7 @@ class LocationGroupService: ObservableObject {
         }
         #endif
 
-        struct CreateTypeRequest: Codable {
+        nonisolated struct CreateTypeRequest: Codable {
             let typeName: String
         }
 
@@ -242,7 +242,7 @@ class LocationGroupService: ObservableObject {
         }
         #endif
 
-        struct DeleteTypeRequest: Codable {
+        nonisolated struct DeleteTypeRequest: Codable {
             let typeName: String
         }
 

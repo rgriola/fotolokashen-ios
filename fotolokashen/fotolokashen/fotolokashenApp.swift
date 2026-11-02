@@ -31,16 +31,12 @@ struct FotolokashenApp: App {
         LaunchTimer.mark("FotolokashenApp.init() START")
         #endif
 
-        // Defer Google Maps SDK init off the main thread
-        let apiKey = ConfigLoader.shared.googleMapsAPIKey
-        DispatchQueue.global(qos: .userInitiated).async {
-            GMSServices.provideAPIKey(apiKey)
-            #if DEBUG
-            DispatchQueue.main.async {
-                LaunchTimer.mark("GMSServices.provideAPIKey() completed (background)")
-            }
-            #endif
-        }
+        // GMSServices is not thread-safe; Google requires provideAPIKey on the
+        // main thread, exactly once, before any Maps SDK object is created.
+        GMSServices.provideAPIKey(ConfigLoader.shared.googleMapsAPIKey)
+        #if DEBUG
+        LaunchTimer.mark("GMSServices.provideAPIKey() completed")
+        #endif
 
         // Configure Kingfisher image cache (Phase 1a)
         // - 100MB memory cap, 500MB disk cap, 14-day disk expiration

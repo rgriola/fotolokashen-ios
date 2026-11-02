@@ -1,7 +1,7 @@
 import Foundation
 
 /// OAuth token model for storing authentication tokens
-struct OAuthToken: Codable {
+nonisolated struct OAuthToken: Codable {
     let accessToken: String
     let refreshToken: String
     let tokenType: String
@@ -60,7 +60,7 @@ struct OAuthToken: Codable {
 
 // MARK: - Token Response (from API)
 
-struct TokenResponse: Codable {
+nonisolated struct TokenResponse: Codable {
     let accessToken: String
     let refreshToken: String
     let tokenType: String
@@ -80,7 +80,7 @@ struct TokenResponse: Codable {
 
 // MARK: - Authorization Code Response
 
-struct AuthorizationCodeResponse: Codable {
+nonisolated struct AuthorizationCodeResponse: Codable {
     let authorizationCode: String
     let state: String?
     
@@ -92,7 +92,7 @@ struct AuthorizationCodeResponse: Codable {
 
 // MARK: - Refresh Token Response
 
-struct RefreshTokenResponse: Codable {
+nonisolated struct RefreshTokenResponse: Codable {
     let accessToken: String
     let tokenType: String
     let expiresIn: Int
@@ -108,7 +108,7 @@ struct RefreshTokenResponse: Codable {
 
 // MARK: - Revoke Token Response
 
-struct RevokeTokenResponse: Codable {
+nonisolated struct RevokeTokenResponse: Codable {
     let success: Bool
 }
 
