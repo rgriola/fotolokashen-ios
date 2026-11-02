@@ -76,7 +76,9 @@ Since the original pipeline.md (v1.4.1), the following Phase 2a work has landed:
 
 | File                                           | Role                                                                |
 | ---------------------------------------------- | ------------------------------------------------------------------- |
-| `Services/Camera/CameraService.swift`          | `AVCaptureSession` management, zoom, focus, exposure, photo capture |
+| `Services/Camera/CameraService.swift`          | Main-actor camera UI state; forwards controls to the capture engine |
+| `Services/Camera/CameraCaptureEngine.swift`    | `AVCaptureSession` on its own queue: zoom, focus, exposure, capture |
+| `Services/Camera/CameraModels.swift`           | Camera device-state snapshot, flash mode, and `CameraError`         |
 | `Services/Camera/CameraSessionViewModel.swift` | Multi-photo session state: disk write, thumbnail gen, capture list  |
 
 #### Services — Create Location

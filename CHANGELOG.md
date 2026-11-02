@@ -13,6 +13,7 @@ Updated November 2, 2026.
 - Create Location's Save button now disables and shows "Creating…" for the whole save. It previously read `isLoading` from a nested `LocationService` the view didn't observe, so it stayed enabled while the first photo uploaded; a repeated Save during create is the suspected cause of the duplicate Spots 152/153 (only the last create is added to the local list, so the other copy appears only after a server refresh). A re-entry guard in `CreateLocationViewModel.save` also ignores repeat calls.
 - `GMSServices.provideAPIKey` now runs on the main thread at launch, as Google requires (`GMSServices` is not thread-safe). This did not remove the Maps SDK's "Multiple instances of CCTClearcutUploader were instantiated" console message, which still appears on device.
 - Delegate conformances for Google Maps, PHPicker, MapKit search completion, web-auth presentation and the cluster algorithm are now explicitly `@MainActor` isolated conformances. Behavior is unchanged; the explicit annotation documents that these frameworks call them on the main thread.
+- Split the 760-line `CameraService.swift`: the queue-confined AVFoundation engine is now `CameraCaptureEngine` in its own file, and the camera value types and `CameraError` moved to `CameraModels.swift`. `CameraService` keeps only the main-actor published UI state. Camera behavior is unchanged.
 
 ### Accessibility and Dynamic Type — Phase 6 (in progress)
 

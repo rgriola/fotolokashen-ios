@@ -10,7 +10,7 @@ Layered service architecture for the fotolokashen iOS app. Reorganized in Phase 
 Services/
 ├── Networking/      APIClient, AuthService, KeychainService, PKCEGenerator,
 │                    ConfigLoader, NetworkMonitor
-├── Camera/          CameraService, CameraSessionViewModel
+├── Camera/          CameraService, CameraCaptureEngine, CameraModels, CameraSessionViewModel
 ├── Photo/           PhotoUploadService, PhotoPipelineModels, ImageCompressor,
 │                    EXIFExtractor, ImageKitURL, SessionCapture, GPSSpreadAnalyzer,
 │                    PhotoPipeline/  (PhotoCompressionService, PhotoUploadQueue)
