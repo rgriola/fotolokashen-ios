@@ -30,6 +30,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		1D352402F4F545A68DC13FB1 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		676F6B882F196B7600CEBBE4 /* fotolokashen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = fotolokashen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		676F6B952F196B7700CEBBE4 /* fotolokashenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = fotolokashenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		676F6B9F2F196B7700CEBBE4 /* fotolokashenUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = fotolokashenUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -105,6 +106,7 @@
 				676F6BA22F196B7700CEBBE4 /* fotolokashenUITests */,
 				676F6B892F196B7600CEBBE4 /* Products */,
 				78EFEEE42F44DC0200C8B53E /* Debug.xcconfig */,
+				1D352402F4F545A68DC13FB1 /* Release.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -284,7 +286,8 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif which swiftlint >/dev/null; then\n  swiftlint lint --quiet || true\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
+			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif which swiftlint >/dev/null; then\n  if [ \"${ENABLE_USER_SCRIPT_SANDBOXING:-}\" = \"YES\" ]; then\n    echo \"warning: SwiftLint skipped: Xcode user-script sandbox blocks app-source access. Run 'swiftlint lint --no-cache' from the repository root.\"\n  else\n    cd \"${SRCROOT}/..\" || exit 1\n    lint_status=0\n    swiftlint lint --quiet --no-cache || lint_status=$?\n    if [ \"$lint_status\" -ne 0 ] && [ \"$lint_status\" -ne 2 ]; then\n      echo \"warning: SwiftLint did not complete successfully (exit $lint_status).\"\n    fi\n  fi\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -504,6 +507,7 @@
 		};
 		676F6BAB2F196B7700CEBBE4 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1D352402F4F545A68DC13FB1 /* Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

@@ -47,7 +47,7 @@ struct LocationDetailView: View {
 
     /// Photo gallery selection (UI-only, not persisted).
     @State private var selectedPhotoIndex: Int = 0
-    @State private var showingFullScreenGallery = false
+    @State private var gallerySession: PhotoGalleryPresentationSession?
 
     /// Edit/profile sheet presentation flags (UI-only).
     @State private var showingEditView = false
@@ -131,14 +131,15 @@ struct LocationDetailView: View {
 
                 // Photo Gallery with type badge overlay
                 PhotoGallerySection(
-                    photos: photos,
-                    isLoading: isLoadingPhotos,
+                    photos: $viewModel.photos,
+                    isLoading: $viewModel.isLoadingPhotos,
                     locationType: currentLocation.type,
                     latitude: currentLocation.latitude,
                     longitude: currentLocation.longitude,
                     isConnected: networkMonitor.isConnected,
                     selectedPhotoIndex: $selectedPhotoIndex,
-                    showingFullScreenGallery: $showingFullScreenGallery
+                    showingFullScreenGallery: PhotoGalleryPresentationSession.presentedBinding($gallerySession),
+                    currentPhotoRevision: { viewModel.photoRevision }
                 )
 
                 // =============================================================
@@ -281,11 +282,14 @@ struct LocationDetailView: View {
         // ---------------------------------------------------------------------
         // Full Screen Gallery
         // ---------------------------------------------------------------------
-        .fullScreenCover(isPresented: $showingFullScreenGallery) {
+        .fullScreenCover(item: $gallerySession) { session in
             PhotoGalleryFullScreen(
-                photos: photos,
-                selectedIndex: $selectedPhotoIndex
+                photos: $viewModel.photos,
+                selectedIndex: $selectedPhotoIndex,
+                isPresented: session.binding($gallerySession),
+                currentPhotoRevision: { viewModel.photoRevision }
             )
+            .id(session.id)
         }
         // ---------------------------------------------------------------------
         // Data Loading on Appear
@@ -311,6 +315,7 @@ struct LocationDetailView: View {
             Text(currentLocation.name)
                 .font(.title2)
                 .fontWeight(.bold)
+                .accessibilityAddTraits(.isHeader)
 
             // Postal-style address — tap to show on map
             if hasAddressContent {

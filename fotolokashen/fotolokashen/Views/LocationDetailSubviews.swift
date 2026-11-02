@@ -1,19 +1,38 @@
 import SwiftUI
 import Kingfisher
+import UIKit
 
 // MARK: - Photo Gallery Section
 
 /// Swipeable photo gallery with loading, fallback, and full-screen support.
 /// Extracted from LocationDetailView for file-length compliance.
 struct PhotoGallerySection: View {
-    let photos: [DetailPhoto]
-    let isLoading: Bool
+    @Binding var photos: [DetailPhoto]
+    @Binding var isLoading: Bool
     let locationType: String?
     let latitude: Double
     let longitude: Double
     let isConnected: Bool
     @Binding var selectedPhotoIndex: Int
     @Binding var showingFullScreenGallery: Bool
+    let currentPhotoRevision: () -> UInt64
+    var imageSource: (DetailPhoto) -> Source? = { photo in
+        URL(string: photo.url).map { .network($0) }
+    }
+    @State private var photoGeneration = 0
+
+    private var photoSnapshot: PhotoGallerySnapshot {
+        let currentPhotos = $photos
+        let currentLoading = $isLoading
+        let currentPresentation = $showingFullScreenGallery
+        return PhotoGallerySnapshot(
+            photoIDs: photos.map(\.id),
+            generation: $photoGeneration,
+            currentPhotoIDs: { currentPhotos.wrappedValue.map(\.id) },
+            currentPhotoRevision: currentPhotoRevision,
+            isAvailable: { !currentLoading.wrappedValue && !currentPresentation.wrappedValue }
+        )
+    }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -25,6 +44,14 @@ struct PhotoGallerySection: View {
                     .padding(12)
             }
         }
+        .onChange(of: PhotoGallerySourceVersion(
+            photoIDs: photos.map(\.id), revision: currentPhotoRevision()
+        ), initial: true) { _, _ in
+            photoGeneration += 1
+            PhotoGallerySelection.reconcile($selectedPhotoIndex, count: $photos.wrappedValue.count)
+        }
+        .onChange(of: isLoading) { _, _ in photoGeneration += 1 }
+        .onDisappear { photoGeneration += 1 }
     }
 
     // MARK: - Gallery Content
@@ -40,10 +67,12 @@ struct PhotoGallerySection: View {
                     .scaleEffect(1.5)
             }
         } else if !photos.isEmpty {
+            let snapshot = photoSnapshot
+            let selection = PhotoGallerySelection.clampedBinding($selectedPhotoIndex, snapshot: snapshot)
             VStack(spacing: 0) {
-                TabView(selection: $selectedPhotoIndex) {
+                TabView(selection: selection) {
                     ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
-                        KFImage(URL(string: photo.url))
+                        KFImage(source: imageSource(photo))
                             .resizable()
                             .placeholder {
                                 ZStack {
@@ -59,20 +88,28 @@ struct PhotoGallerySection: View {
                             .fade(duration: 0.2)
                             .scaledToFill()
                             .onTapGesture {
-                                selectedPhotoIndex = index
-                                showingFullScreenGallery = true
+                                PhotoGallerySelection.openPhoto(
+                                    at: index,
+                                    snapshot: snapshot,
+                                    selection: $selectedPhotoIndex,
+                                    isPresented: $showingFullScreenGallery
+                                )
                             }
+                            .accessibilityLabel("Photo \(index + 1) of \(photos.count)")
+                            .accessibilityHint("Opens the full-screen photo gallery")
+                            .accessibilityAddTraits(.isButton)
                             .tag(index)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .automatic))
+                .onAppear { reconcileLiveSelection() }
                 .frame(height: 300)
                 .clipped()
 
                 // Photo counter badge
                 HStack {
                     Spacer()
-                    Text("\(selectedPhotoIndex + 1) / \(photos.count)")
+                    Text("\(selection.wrappedValue + 1) / \(photos.count)")
                         .font(.caption)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
@@ -83,11 +120,21 @@ struct PhotoGallerySection: View {
                 .padding(.top, -35)
                 .padding(.bottom, 10)
             }
-        } else if isConnected {
-            googleMapsStaticImageSection
         } else {
-            offlinePlaceholder
+            Group {
+                if isConnected {
+                    googleMapsStaticImageSection
+                } else {
+                    offlinePlaceholder
+                }
+            }
+            .onAppear { reconcileLiveSelection() }
         }
+    }
+
+    private func reconcileLiveSelection() {
+        guard !$isLoading.wrappedValue, !$showingFullScreenGallery.wrappedValue else { return }
+        PhotoGallerySelection.reconcile($selectedPhotoIndex, count: $photos.wrappedValue.count)
     }
 
     // MARK: - Type Badge
@@ -173,54 +220,89 @@ struct PhotoGallerySection: View {
 // MARK: - Full Screen Photo Gallery
 
 struct PhotoGalleryFullScreen: View {
-    let photos: [DetailPhoto]
+    @Binding var photos: [DetailPhoto]
     @Binding var selectedIndex: Int
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
+    let currentPhotoRevision: () -> UInt64
+    var imageSource: (DetailPhoto) -> Source? = { photo in
+        ImageKitURL.url(for: photo.imagekitFilePath, variant: .full).map { .network($0) }
+    }
+    @State private var accessibilityState = PhotoGalleryAccessibilityState()
+    @State private var photoGeneration = 0
+
+    private var photoSnapshot: PhotoGallerySnapshot {
+        let currentPhotos = $photos
+        let currentPresentation = $isPresented
+        return PhotoGallerySnapshot(
+            photoIDs: photos.map(\.id),
+            generation: $photoGeneration,
+            currentPhotoIDs: { currentPhotos.wrappedValue.map(\.id) },
+            currentPhotoRevision: currentPhotoRevision,
+            isAvailable: { currentPresentation.wrappedValue }
+        )
+    }
 
     var body: some View {
+        let snapshot = photoSnapshot
+        let selection = PhotoGallerySelection.clampedBinding($selectedIndex, snapshot: snapshot)
         ZStack {
             Color.black.ignoresSafeArea()
 
-            TabView(selection: $selectedIndex) {
-                ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
-                    // Full-screen uses the full variant URL for highest quality
-                    KFImage(ImageKitURL.url(for: photo.imagekitFilePath, variant: .full))
-                        .resizable()
-                        .placeholder {
-                            ProgressView()
-                                .tint(.white)
-                        }
-                        .onFailureView {
-                            Image(systemName: "photo")
-                                .foregroundStyle(Color.secondary)
-                        }
-                        .fade(duration: 0.2)
-                        .scaledToFit()
-                        .tag(index)
+            if photos.isEmpty {
+                ContentUnavailableView("No Photos", systemImage: "photo")
+                    .foregroundStyle(.white)
+                    .accessibilityElement(children: .combine)
+                    .onAppear {
+                        reconcileLiveState()
+                    }
+            } else {
+                TabView(selection: selection) {
+                    ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
+                        // Full-screen uses the full variant URL for highest quality
+                        KFImage(source: imageSource(photo))
+                            .resizable()
+                            .placeholder {
+                                ProgressView()
+                                    .tint(.white)
+                            }
+                            .onFailureView {
+                                Image(systemName: "photo")
+                                    .foregroundStyle(Color.secondary)
+                            }
+                            .fade(duration: 0.2)
+                            .scaledToFit()
+                            .accessibilityLabel("Photo \(index + 1) of \(photos.count)")
+                            .tag(index)
+                    }
                 }
+                .tabViewStyle(.page(indexDisplayMode: .automatic))
+                .onAppear { reconcileLiveState() }
             }
-            .tabViewStyle(.page(indexDisplayMode: .automatic))
 
             // Close button
             VStack {
                 HStack {
                     Spacer()
                     Button {
-                        dismiss()
+                        PhotoGallerySelection.closeGallery(
+                            generation: $photoGeneration,
+                            isPresented: $isPresented
+                        )
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.title)
                             .foregroundStyle(Color.white)
                             .padding()
                     }
+                    .accessibilityLabel("Close photo gallery")
                 }
                 Spacer()
 
                 // Photo info
-                if !photos.isEmpty && selectedIndex < photos.count {
-                    let photo = photos[selectedIndex]
+                if !photos.isEmpty {
+                    let photo = photos[selection.wrappedValue]
                     VStack(spacing: 4) {
-                        Text("\(selectedIndex + 1) of \(photos.count)")
+                        Text("\(selection.wrappedValue + 1) of \(photos.count)")
                             .font(.headline)
                             .foregroundStyle(Color.white)
 
@@ -237,6 +319,41 @@ struct PhotoGalleryFullScreen: View {
                 }
             }
         }
+        .onChange(of: PhotoGallerySourceVersion(
+            photoIDs: photos.map(\.id), revision: currentPhotoRevision()
+        ), initial: true) { _, _ in
+            guard $isPresented.wrappedValue else { return }
+            photoGeneration += 1
+            reconcileLiveState()
+        }
+        .onDisappear {
+            guard $isPresented.wrappedValue else { return }
+            photoGeneration += 1
+        }
+    }
+
+    private func reconcileLiveState() {
+        guard $isPresented.wrappedValue else { return }
+        let photoIDs = $photos.wrappedValue.map(\.id)
+        let revision = currentPhotoRevision()
+        PhotoGallerySelection.reconcile($selectedIndex, count: photoIDs.count)
+        guard $isPresented.wrappedValue, currentPhotoRevision() == revision,
+              $photos.wrappedValue.map(\.id) == photoIDs else { return }
+        if let announcement = accessibilityState.observe(
+            isEmpty: photoIDs.isEmpty,
+            photoIDs: photoIDs,
+            isPresented: true
+        ) {
+            announce(announcement)
+        }
+    }
+
+    private func announce(_ announcement: PhotoGalleryAvailabilityAnnouncement) {
+        let message = switch announcement {
+        case .photosAvailable: String(localized: "Photos available.")
+        case .noPhotos: String(localized: "No photos available.")
+        }
+        UIAccessibility.post(notification: .announcement, argument: message)
     }
 }
 

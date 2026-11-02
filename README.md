@@ -4,7 +4,7 @@ iOS companion app for fotolokashen — a camera-first location scouting app for 
 
 **Production URL**: https://fotolokashen.com  
 **Status**: ✅ Active Development | Build: Passing  
-**Last Updated**: October 30, 2026, 12:48 EDT
+**Last Updated**: November 1, 2026
 
 ---
 
@@ -20,6 +20,8 @@ The fotolokashen iOS app allows users to quickly capture photos with GPS coordin
 
 - 🐛 **Auth Fix** — A single 401 no longer logs the user out; `APIClient` refreshes the access token and retries once before invalidating the session
 - 🐛 **People Search Fix** — Discover search was silently failing on every query (unauthenticated request + a response model mismatch); both are corrected and search now returns results
+- 🐛 **Photo Gallery Fix** — Inline and full-screen selection stays valid as photos are removed or reloaded
+- ⚙️ **Release Configuration** — The app target now reads its local Release xcconfig, with built-app configuration checks
 
 ### v1.6 — Camera & Upload Pipeline Hardening (May 2026)
 
@@ -184,11 +186,16 @@ fotolokashen-ios/
 
 ### Prerequisites
 
-- macOS 14.0+ (Sonoma)
-- Xcode 15.4+
-- iOS 16.0+ deployment target
+- macOS 26.6+ for Xcode 27.2
+- Xcode 27.2 (validated; earlier versions have not been evaluated for this build)
+- iOS 18.6+ deployment target
 - fotolokashen account
 - Google Maps API key (Maps SDK for iOS enabled)
+- SwiftLint (optional): `brew install swiftlint`. Run
+  `swiftlint lint --no-cache` from the repository root to apply `.swiftlint.yml`.
+  With Xcode's user-script sandbox enabled, the build phase warns and skips
+  linting because it cannot reliably read app sources; use the terminal
+  command for lint results.
 
 ### Setup
 
@@ -204,18 +211,38 @@ fotolokashen-ios/
    cp Config.example.plist fotolokashen/fotolokashen/Config.plist
    ```
 
-   Edit `Config.plist`:
-   - `BackendURL` — `https://fotolokashen.com`
-   - `GoogleMapsAPIKey` — Your Google Maps API key
-   - `OAuth2ClientID` — `fotolokashen-ios`
-   - `OAuth2RedirectURI` — `fotolokashen://oauth-callback`
-   - `EnableDebugLogging` — `true` for development, `false` for release
-   - `useNewPhotoPipeline` — `true` (new pipeline active as of v1.6)
+   Edit `fotolokashen/fotolokashen/Config.plist`:
+   - `backendBaseURL` — HTTPS fallback when the build setting below is empty
+   - `googleMapsAPIKey` — your restricted Google Maps API key
+   - `oauth.clientId` and `oauth.redirectUri` — OAuth client configuration
+   - `features.enableDebugLogging` — `true` for development, `false` for release
+   - `features.useNewPhotoPipeline` — add and set to `true` to enable the new pipeline
+
+   Create `fotolokashen/Debug.xcconfig` and `fotolokashen/Release.xcconfig`
+   locally, with the appropriate values for each environment:
+
+   ```xcconfig
+   BACKEND_BASE_URL = https:/$()/api.example.com
+   GOOGLE_MAPS_API_KEY = YOUR_RESTRICTED_IOS_MAPS_KEY
+   ```
+
+   The `$()` keeps `//` from being interpreted as an xcconfig comment.
+   The build setting supplies `BackendBaseURL` in the app's Info.plist and
+   takes precedence over the plist fallback. `backendStagingURL` in the example
+   plist is not automatically selected: set the desired backend in each
+   xcconfig and verify the intended HTTPS host before signing a Release build.
+   The Maps key in the xcconfig must match `googleMapsAPIKey` in `Config.plist`,
+   which the app loads for the SDK.
+
+   Both xcconfigs and `Config.plist` are gitignored; provision them securely
+   for each developer or CI runner and never commit credentials. Client Maps
+   keys are extractable from the app: restrict them to authorized APIs and app
+   identifiers where supported, and protect build logs and artifacts.
 
 3. **Open in Xcode**
 
    ```bash
-   open fotolokashen/fotolokashen.xcodeproj
+   open fotolokashen/Fotolokashen.xcodeproj
    ```
 
 4. **Build and Run** — ⌘+R
@@ -372,13 +399,13 @@ also appear in Xcode's console. Private legacy text may appear as `<private>`.
 Retention is controlled by the OS: this is not a permanent log file or an
 in-app export system. No remote logging service or diagnostic UI is added.
 
-Validation: 42 focused Debug tests and six Release logging-policy tests pass;
-the standard Release simulator build succeeds. Release policy tests use
-`ENABLE_TESTABILITY=YES` and exclude `AuthServiceOAuthCallbackTests.swift`,
-which depends on DEBUG-only test seams, without defining DEBUG in Release.
-A broader Release API test attempt exposed the existing
-`testBuiltAppBackendURLUsesHTTPSOutsideDebug` failure (missing built
-`BackendBaseURL`); it is not fixed or hidden by the logger work.
+Earlier logging validation passed 42 focused Debug tests and six Release
+logging-policy tests. A subsequent Release API test exposed a missing built
+`BackendBaseURL`; Phase 7 wires the app target to `Release.xcconfig` and adds
+Release configuration checks. Release simulator tests use
+`ENABLE_TESTABILITY=YES` without defining DEBUG. OAuth callback test methods
+that require DEBUG-only hooks compile only in Debug; hook-free cases remain
+available in Release.
 
 ---
 

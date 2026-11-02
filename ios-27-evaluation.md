@@ -41,6 +41,136 @@ variants and purge-plan limits before claiming full media erasure. No
 production account deletion, remote migration, submission, commit or push was
 performed.
 
+### Phase 7 SDK build — November 1, 2026
+
+**Status:** 7.1, 7.2 and 7.4 are complete locally. The current candidate's Maps
+runtime checks (7.3) and physical-device regression (7.5) remain open. This is
+not a release approval; Phase 2.7 and the accessibility gates also remain open.
+
+**Environment and tests:** Xcode 27.2 (27B52), iOS 27.2 SDK, iOS 18.6
+deployment target, and Swift 5 language mode. Fresh DerivedData builds succeeded
+for Debug simulator testing and a signed Release iOS device artifact. The
+shared test plan passed **131 tests**, with zero failures, skips or reported
+runtime warnings, on a disposable iPhone 17e simulator running iOS 27.0.
+Testing was serial because Keychain tests share state.
+
+The 12 gallery regression methods passed three iterations (36 executions); four
+hosted gallery transitions and dismissal/reopen tests passed ten iterations
+each (40 executions). The Release simulator host, built with testability enabled
+and without DEBUG, passed **19 API/OAuth tests**, including the Release-only
+Maps-key consistency test. The 13 OAuth tests using DEBUG-only hooks remain
+Debug-only; the two hook-free OAuth tests also ran in Release. A separate
+negative test confirmed the Release Maps-key check rejects an example
+placeholder.
+
+Test hosts were signed and their backend was verified as an unreachable HTTPS
+loopback endpoint before execution. No production account or physical device
+was used. The signed Release device artifact was inspected privately: its
+configured backend is HTTPS, its bundled Maps keys match, Release ATS disables
+local networking, the scene manifest and launch storyboard are present, the
+signature is valid and non-ad-hoc, and no xcconfig files are bundled. This
+build was not installed or submitted. GoogleMaps 10.8.0, GoogleMapsUtils 7.1.0,
+and Kingfisher 8.8.1 linked without changing `Package.resolved`.
+
+**Diagnostics:** A clean Debug build has **101 compiler warnings** (app 19,
+unit tests 71, UI tests 11), plus a SwiftLint-not-installed script warning at
+the time of that build. A clean Release device build has 19 compiler warnings
+plus that script warning. Both have zero compiler errors and zero compiler
+deprecation warnings. No warnings came from the changed gallery sources or
+gallery tests.
+
+For a same-SDK comparison, commit `814c75b` was rebuilt with Xcode 27.2: 140
+compiler warnings (app 70, unit tests 59, UI tests 11), plus SwiftLint. Matching
+diagnostics by source path and message, with multiplicity but ignoring line
+shifts, gives **15 added and 54 removed occurrences**. The removed occurrences
+are 53 from the former `CameraService.swift` and one from `MapView.swift`.
+Source changes between that commit and this candidate mean this is not an
+isolated measurement of the SDK's effect. The added occurrences are:
+
+| Source | Count | Diagnostic |
+| --- | ---: | --- |
+| [`KeychainService.swift`](fotolokashen/fotolokashen/Services/Networking/KeychainService.swift) | 2 | `KeychainServiceError` and `SecItemKeychainError` `LocalizedError` conformances cross main-actor isolation. |
+| [`ConfigLoader.swift`](fotolokashen/fotolokashen/Services/Networking/ConfigLoader.swift) | 1 | A synchronous nonisolated context calls the main-actor `validate` method. |
+| [`AcknowledgementTests.swift`](fotolokashen/fotolokashenTests/AcknowledgementTests.swift) | 3 | XCTest's `init(invocation:)`, `init(selector:)`, and `init()` overrides have different actor isolation. |
+| [`DeepLinkManagerTests.swift`](fotolokashen/fotolokashenTests/DeepLinkManagerTests.swift) | 4 | `setUp()` and the same three XCTest initializers have different actor isolation. |
+| [`PersistentStoreRecoveryTests.swift`](fotolokashen/fotolokashenTests/PersistentStoreRecoveryTests.swift) | 3 | The same three XCTest initializer overrides have different actor isolation. |
+| [`AuthServiceOAuthCallbackTests.swift`](fotolokashen/fotolokashenTests/AuthServiceOAuthCallbackTests.swift) | 2 | Sending `self` risks a data race. |
+
+These are Swift 6 isolation warnings in the current Swift 5 build, not new
+compiler deprecations; Phase 3 remains open. SwiftLint had not yet been
+installed or run for those builds.
+
+**SwiftLint follow-up:** Version 0.65.1 is now installed. The Xcode phase runs
+under a user-script sandbox that prevents it from reliably reading app sources.
+It now explicitly warns and skips the check rather than reporting a successful
+build as if linting ran. Run `swiftlint lint --no-cache` from the repository
+root for the configured app-source check. The sandbox remains enabled; a
+subsequent Debug simulator build succeeded with the expected skip warning and
+no source-read errors.
+
+A no-cache run with that configuration reports **315 warnings and 5 errors**
+both for the candidate and for an isolated tracked `HEAD` snapshot. Matching by
+relative source path, rule, severity, and reason with multiplicity, but ignoring
+line shifts, gives one added and one removed warning: the same existing
+`type_body_length` warning in `LocationDetailView.swift`, whose measured length
+changed from 448 to 453 lines. There are no new lint errors and no findings in
+the new `PhotoGallerySelection.swift`. The snapshot excludes the untracked new
+file, and the configuration excludes test targets. The CLI exits with status 2
+because of the five existing errors; the Xcode phase remains non-blocking.
+SwiftLint also warns that the existing `line_length` configuration is disabled.
+A cached run omitted nine warnings in two files that an earlier sandboxed
+attempt could not read, so the documented command bypasses the cache.
+
+**Apple SDK cross-check:** Reviewed the
+[iOS 27](https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes),
+[iOS 27.2](https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27_2-release-notes),
+and [Xcode 27.2](https://developer.apple.com/documentation/xcode-release-notes/xcode-27_2-release-notes)
+release notes and their deprecation sections against the 0.6 baseline.
+
+- A `TabView` built with the iOS 27 SDK requires its selection to name a visible
+  tab. The two detail pagers now clamp selection to the live photo count,
+  reject stale photo/session callbacks, and reconcile on appearance. The row
+  pager uses native selection; the main tab bar has fixed valid tags.
+- Xcode's new `@State` implementation back-deploys to iOS 17-aligned releases
+  and changes initializer evaluation/compatibility. The candidate builds and
+  passes on iOS 27.0; a minimum-supported-OS runtime check remains advisable.
+- Selectable SwiftUI text has new selection gestures. The license text uses
+  `.textSelection(.enabled)` without a custom gesture on that text; its
+  selection interaction still needs a manual check.
+- UIKit's default `UIView` margins change on iOS 27.1 and later. No direct
+  app-source use of the affected margin properties was found; visual checks,
+  including third-party Maps UI, remain open. The SDK's scene-lifecycle
+  requirement is supported by the app's `WindowGroup` and the verified built
+  scene manifest.
+- The Phase 5 A-1, A-2, A-4 and A-5 soft-deprecated call sites are gone; A-3
+  was a timing issue, not an API deprecation. One pre-existing
+  [`.roundedBorder`](fotolokashen/fotolokashen/Views/ProfileHeaderComponents.swift)
+  remains soft-deprecated in the SDK interface. Apple's suggested `.bordered`
+  replacement is iOS 27-only, so replacing it requires an availability
+  fallback and visual verification on iOS 18.6.
+
+**Remaining checks and known limits:**
+
+- Exercise Maps rendering, clustering and marker taps in this SDK-built
+  candidate on simulator and device using an authorized disposable test setup.
+  The earlier 1.6.2 device confirmation is not evidence for this build.
+- Complete the device regression, including auth presentation, Keychain,
+  photo picking, deep/universal links and a safe data-preserving upgrade. The
+  SwiftData quarantine/recreate recovery path is not a migration.
+- VoiceOver must verify dismissal focus on the visible photo or another useful
+  element when the opener disappears or photos are loading; also check paging,
+  empty/populated transitions, selected-photo removal and rapid reopen.
+  The gallery uses native focus restoration and does not announce a removal
+  that leaves other photos. Check Switch Control, Voice Control, Full Keyboard
+  Access and accessibility text sizes. If these fail, release remains blocked
+  until a reliable focus/feedback solution is implemented.
+- Two pre-existing issues were observed but not changed here: the
+  [`navigateToMapTab` handler](fotolokashen/fotolokashen/ContentView.swift)
+  selects the Spots tag rather than the Map tag, and overlapping
+  [`loadPhotos()`](fotolokashen/fotolokashen/Services/LocationDetail/LocationDetailViewModel.swift)
+  requests can commit out of order. Gallery revision tracking prevents stale
+  pager callbacks; it does not order network responses.
+
 ### Phase 5 implementation — November 1, 2026
 
 Tasks 5.1–5.5 are implemented. The app Swift sources now have no matches for
@@ -69,14 +199,14 @@ Because OAuth hardening has since enlarged `AuthService.swift`, token refresh
 and logout also moved to an `AuthService` extension so the file is now 771
 lines. The presentation provider selects a `.foregroundActive` scene.
 
-Validation: the Release generic iOS Simulator build and Debug `build-for-testing`
-both succeeded. The full simulator test run could not start: installed
-CoreSimulator 1174.9.2 is older than Xcode's required 1174.21.0, so no simulator
-devices are available. SwiftLint is not installed. Runtime/UI tests and manual
-checks remain open, including profile photo cancel/reselect/upload, VoiceOver
-and large text, map fit interrupted by a gesture, alert-to-login handoff,
-camera flash/HUD timing, and multi-scene auth on iPad. The release gate remains
-open.
+At the time, the Release generic iOS Simulator build and Debug
+`build-for-testing` succeeded, but the full simulator run was blocked by the
+then-installed CoreSimulator/Xcode mismatch. Phase 7 later restored simulator
+testing; see its current results below. SwiftLint was not installed at the
+time. Manual checks remain open, including profile photo
+cancel/reselect/upload, VoiceOver and large text, map fit interrupted by a
+gesture, alert-to-login handoff, camera flash/HUD timing, and multi-scene auth
+on iPad. The release gate remains open.
 
 ### Phase 1 closeout — October 29, 2026, 20:18 EDT
 
@@ -87,6 +217,11 @@ new iOS builds. **Phase 2 is paused by request.** Its preliminary SDK inventory
 below is retained as research only; no dependency removal or app privacy
 manifest implementation has begun. Merge the completed iOS feature work into
 `main` before resuming Phase 2.
+
+For task 1.8, the implemented recovery quarantines an unopened local store and
+tries to create a fresh one; it does not migrate or preserve local-only changes.
+If quarantine or fresh-store creation fails, launch can still terminate. An
+upgrade test with safely backed-up fixtures remains necessary.
 
 Pre-merge signed simulator validation: 15 OAuth callback tests and seven
 Keychain tests passed (22 total, zero failures) on iPhone 17 / iOS 27.0.
@@ -189,6 +324,10 @@ Check Font existence at runtime; use `UIFont(name:size:)` and verify it returns 
 
 ## Executive Summary
 
+> Historical assessment snapshot. Current implementation and SDK validation
+> are recorded above and in the progress checklist; the claims below are not
+> the current project status.
+
 **Overall verdict (updated October 28, 2026): RUNS ON iOS 27 TODAY — the remaining work is hardening and modernisation, not rescue.**
 
 1.6.2 has been tested on an iOS 27 device and GoogleMaps works on iOS 27, so current users are not at risk. The app has not yet been **built** against the iOS 27 SDK, because Xcode 27 is not installed on this Mac (Phase 7 runs on another computer). The codebase still has **four issues that exist today**, independent of any future OS:
@@ -210,7 +349,8 @@ Also good: exactly **one** file exceeds the project's 800-line guideline (`AuthS
 
 ## Verified Baseline
 
-_Re-checked October 28, 2026 against 1.6.2 (62); only version numbers changed since September._
+_Historical 1.6.2 (62) assessment. Current versions, settings and diagnostics
+are recorded in the Phase 7 results and progress checklist._
 
 | Item                             | Value                                                         |
 | -------------------------------- | ------------------------------------------------------------- |
@@ -360,7 +500,8 @@ Cross-check: A-1..A-5 are all **soft-deprecated** — Apple marks them deprecate
 | A-4 | `.autocapitalization(` | 8 | `MemberSupportView`, `CreateLocationView`, `EditLocationView`, `PeopleSearchView`, … |
 | A-5 | `.foregroundColor(` / `CircularProgressViewStyle` | 151 / 5 | most views |
 
-Other build warnings: `SwiftLint not installed` (build script phase; SwiftLint is not installed on this Mac).
+Other build warnings: `SwiftLint not installed` (build script phase; SwiftLint
+was not installed when this baseline was recorded).
 
 ---
 
@@ -378,7 +519,7 @@ Other build warnings: `SwiftLint not installed` (build script phase; SwiftLint i
 | 1.5  | Fix **S-2**: clear `codeVerifier`/`codeChallenge`/`state` in **every** `ASWebAuthenticationSession` completion path — cancel, error, and success. In `fotolokashenApp.swift:105-113`, stop routing externally-delivered `oauth-callback` URLs to `handleCallback`.                                                                               | New test: start login → simulate cancel → deliver crafted `oauth-callback?code=X` via `onOpenURL` → assert zero network calls.                                              |
 | 1.6  | Fix **S-3**: change `KeychainService.swift:26-28` to `.afterFirstUnlockThisDeviceOnly`. **Add a one-time migration**: attempt a read with the old attribute; if found, delete and re-write with the new one; if re-write fails, clear tokens and force re-login.                                                                                 | Extend `KeychainServiceTests` to assert the stored item's `kSecAttrAccessible` value. Manually: install old build → sign in → upgrade → confirm still signed in.            |
 | 1.7  | Fix **S-4**: introduce `ATS_ALLOW_LOCAL_NETWORKING` xcconfig var referenced from `Info.plist:17-21`; `YES` in Debug, `NO` in Release. Add a Release-only HTTPS scheme assertion in `ConfigLoader.backendURL`.                                                                                                                                    | `plutil -p` on the Release `.app`'s Info.plist shows `NSAllowsLocalNetworking = false` or key absent. A Release build pointed at `http://` fails fast with a clear message. |
-| 1.8  | Fix **S-5**: wrap `ModelContainer` creation at `DataManager.swift:37-57` in do/catch that deletes the store file and retries once before giving up.                                                                                                                                                                                              | Test: corrupt the store file on disk, launch, assert the app reaches the authenticated root instead of crashing.                                                            |
+| 1.8 | Fix **S-5**: quarantine an unopened SwiftData store and retry creation once; explain that local-only data may need restoration. | Test quarantine, retry and failure paths. A retry or quarantine failure can still terminate launch; separately verify upgrade and offline-data preservation. |
 | 1.9  | Fix **S-8**: change `DebugLog.swift:26` to `privacy: .private` by default. Redact email at `AuthService.swift:553`, PKCE challenge at `:217`, and truncate/redact response bodies at `APIClient.swift:302-308`.                                                                                                                                  | DEBUG build on device; `log stream --predicate 'subsystem == "com.fotolokashen.app"'` shows `<private>` for sensitive fields.                                               |
 | 1.10 | Resolve **S-11**: run `git ls-files -- '*.xcconfig' '**/Config.plist'` and `git log --all --oneline -- fotolokashen/Debug.xcconfig`. If the key was ever committed, **rotate it**. Independently confirm the key is restricted to the iOS bundle ID + Maps SDK for iOS.                                                                          | Written confirmation of both tracked-status and API-key restriction state.                                                                                                  |
 
@@ -463,9 +604,14 @@ Other build warnings: `SwiftLint not installed` (build script phase; SwiftLint i
 
 ---
 
-### Phase 7 — Build against the iOS 27 SDK `(this Mac, Xcode 27.1; 7.0 in Step 0, 7.1–7.5 in Step 3)`
+### Phase 7 — Build against the iOS 27 SDK `(this Mac, Xcode 27.2; 7.0 in Step 0, 7.1–7.5 in Step 3)`
 
-**Runtime compatibility is already confirmed** (1.6.2 tested on an iOS 27 device; GoogleMaps works). This phase is about **building** with the iOS 27 SDK, which needs Xcode 27 — now installed on this Mac (27.1). Since GoogleMaps is no longer a blocker, 1.7.0 is built with the iOS 27 SDK; it does not wait for Swift 6 mode.
+Earlier runtime compatibility was confirmed for 1.6.2 on an iOS 27 device,
+including Google Maps. That does not verify the current candidate built with
+the iOS 27 SDK; its Maps runtime and device regression remain separate gates.
+The SDK build does not require the separate Swift 6 language-mode work.
+The original 7.6 table row records the earlier iOS 18.0 decision; the owner
+subsequently chose iOS 18.6 and that target is already set, as noted in Phase 8.
 
 | #   | Task                                                                                                                                                                                                                                                                     | Verify                                                                                                             |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
@@ -473,8 +619,8 @@ Other build warnings: `SwiftLint not installed` (build script phase; SwiftLint i
 | 7.1 | Build the current codebase against the iOS 27 SDK. Record every new error and warning.                                                                                                                                                                                  | A concrete, evidence-based delta list — replacing all current speculation.                                         |
 | 7.2 | Read Apple's iOS 27 release notes and Deprecations documentation end-to-end. Cross-reference against the 0.6 deprecation baseline.                                                                                                                                       | A written list of confirmed removals/behavior changes affecting this app.                                          |
 | 7.3 | ~~Verify **D-1**~~ — **runtime confirmed Oct 28.** Remaining check: GoogleMaps still links and renders when the app is _built_ with the iOS 27 SDK.                                                                                                                      | Map renders, clustering works, marker taps fire in an Xcode 27 build on simulator + device.                       |
-| 7.4 | Verify the other three SPM packages build under the new SDK. Update `Package.resolved` only with deliberate, tested version bumps.                                                                                                                                       | Clean build; full test suite green.                                                                                |
-| 7.5 | Run the full regression suite + manual checklist on an iOS 27 device. Pay specific attention to: `ASWebAuthenticationSession` presentation, Keychain accessibility behavior, `PHPickerViewController`, SwiftData store migration, and deep-link/Universal-Link delivery. | Checklist complete. Any SwiftData migration issue is caught by the 1.8 recovery path rather than a crash.          |
+| 7.4 | Verify the other resolved SPM packages build under the new SDK. Update `Package.resolved` only with deliberate, tested version bumps. | Clean build; full test suite green. |
+| 7.5 | Run the full regression suite + manual checklist on an iOS 27 device. Pay specific attention to: `ASWebAuthenticationSession` presentation, Keychain accessibility behavior, `PHPickerViewController`, SwiftData store migration, and deep-link/Universal-Link delivery. | Checklist complete; a safe upgrade test verifies data preservation separately from the 1.8 quarantine-and-recreate recovery path. Recovery can itself fail. |
 | 7.6 | ~~Decide on raising `IPHONEOS_DEPLOYMENT_TARGET`~~ — **Decided Oct 28: iOS 18.0.** Executed in Step 6.                                                                                                                                                                 | Decision recorded.                                                                                                 |
 
 ---
@@ -496,9 +642,11 @@ Other build warnings: `SwiftLint not installed` (build script phase; SwiftLint i
 
 ## Open Questions / MUST VERIFY against iOS 27 SDK
 
-> **Honesty note:** This evaluation has **no verified knowledge of iOS 27's APIs, deprecations, or behavior changes** beyond Rod's Oct 28 device test (1.6.2 works on iOS 27). No iOS 27 API, deprecation, or release-note item is named anywhere in this document. Every deprecation listed (A-1..A-5) is verifiable _today_ against the iOS 26 SDK. The following require verification and **cannot be answered from this codebase**:
+> **Historical questions:** These were written before the Phase 7 SDK and
+> release-note review. See the current Phase 7 results above and the checklist
+> below; physical-device and Maps runtime questions are still open.
 
-1. **Which currently-used APIs are deprecated or removed in iOS 27?** The iOS 27 delta is unknown. → Task 7.2
+1. **Which currently-used APIs are deprecated or removed in iOS 27?** Reviewed in Phase 7; the remaining soft-deprecated text-field style is noted above. → Task 7.2
 2. **Does iOS 27 change `ASWebAuthenticationSession` behavior?** The auth flow is the app's most fragile integration and has already required version-conditional handling for iOS 17.4 (`AuthService.swift:327-344`). → Task 7.5
 3. **Does iOS 27 change Keychain accessibility semantics or backup behavior?** Directly affects the S-3 fix. → Task 7.5
 4. **Does iOS 27 ship a SwiftData schema migration requirement?** Three `@Model` types exist (`CachedLocation`, `CachedPhoto`, `OfflinePhoto`) with no `VersionedSchema` and no `SchemaMigrationPlan`. The S-5 recovery path is the mitigation, but actual risk is unknown. → Task 7.5
@@ -620,7 +768,7 @@ graph TD
 
 _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 2:20 PM. Tick items as they land; add the date in parentheses. Each task's pass criteria are in the [Phased Plan](#phased-plan)._
 
-**Machine key:** 🖥️ / 🆕 this Mac (Xcode 27.1 — both icons now mean the same machine) · 🌐 web repo
+**Machine key:** 🖥️ / 🆕 this Mac (currently Xcode 27.2; both icons mean the same machine) · 🌐 web repo
 
 ### Step 0 — Check now
 
@@ -652,7 +800,7 @@ _Created October 28, 2026 — 2:15 PM. Reorganised by Step October 28, 2026 — 
 - [x] 1.5 🖥️ Clear PKCE/state on every session end; block external `oauth-callback` (S-2) — external callbacks are gated on an in-progress login rather than blocked outright, because the `.onOpenURL` duplicate delivery is a known legitimate path. 5 new tests incl. cancel → crafted callback → zero network calls (Oct 29, 2026)
 - [x] 1.6 🖥️ Keychain → `.afterFirstUnlockThisDeviceOnly` with migration (S-3) — implementation and unit tests pass; **user confirmed physical-device upgrade preserves sign-in and protected data access October 29, 2026.**
 - [x] 1.7 🖥️ ATS local networking off in Release + HTTPS assertion (S-4) — separate `Info-Debug.plist` (Debug) and `Info.plist` (Release); built plists verified true/false; HTTPS/HTTP policy tests pass. Info.plist preprocessing was dropped because Xcode's target editor rewrote the file as empty (Oct 29, 2026)
-- [x] 1.8 🖥️ SwiftData store recovery instead of `fatalError` (S-5) — quarantine/recovery tests and full Debug test plan pass (Oct 29, 2026)
+- [x] 1.8 🖥️ SwiftData quarantine and fresh-store retry (S-5) — recovery tests and full Debug test plan pass (Oct 29, 2026); recovery failure can still terminate launch
 - [x] 1.9 🖥️ Private-by-default logging (S-8) — sensitive values removed from diagnostics; no direct `print()`, `debugPrint()`, or `NSLog()` in production Swift sources; full Debug test plan passes (Oct 29, 2026)
 - [x] 1.10 🖥️ **Tracking cleanup complete locally October 29, 2026:** xcconfigs already untracked/ignored; removed the remaining app `Config.plist` from the Git index while preserving the local file. Existing `Config.example.plist` setup instructions remain applicable. **User confirmed the native key is restricted to the iOS bundle ID and Maps SDK for iOS**, separately from web preview/production/dev restrictions. Untracking does not remove prior history; assess/rotate previously committed credentials as appropriate without publishing their values.
 - [x] 🌐 Auto-login token single-use + short TTL (S-7) — generation uses 32 random bytes, hashed storage and five-minute expiry. Exchange rejects missing/expired expiry and atomically consumes a matching unexpired token before issuing credentials. Five focused regression tests and 41 related auth/API-contract tests passed locally, plus TypeScript and focused lint. **User confirmed deployment and testing on old and new iOS builds October 29, 2026, 20:18 EDT.**
@@ -846,14 +994,14 @@ and data practices. No app privacy manifest was found in the source tree.
 - [x] 5.4 All 8 `asyncAfter` calls removed (A-3); event-driven sequencing and cancellable visual durations documented above (Nov 1, 2026)
 - [x] 5.5 Auth models/context extracted, token lifecycle separated, active-scene selection fixed; `AuthService.swift` is 771 lines (Nov 1, 2026)
 
-_Phase 5 implementation builds, but simulator runtime tests and manual UX validation remain open because CoreSimulator is incompatible with the installed Xcode. Keep the release gate unchecked until they pass._
+_Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX validation and the release gate remain open._
 
 **iOS 27 SDK build (Phase 7) 🆕**
 
-- [ ] 7.1 Build with iOS 27 SDK; delta list recorded
-- [ ] 7.2 iOS 27 release notes / deprecations cross-checked
+- [x] 7.1 Clean Debug and signed Release builds with the iOS 27.2 SDK; warning delta recorded above (Nov 1, 2026)
+- [x] 7.2 iOS 27 / 27.2 and Xcode 27.2 release notes and deprecations cross-checked above (Nov 1, 2026)
 - [ ] 7.3 GoogleMaps renders + clusters in Xcode 27 build
-- [ ] 7.4 Other SPM packages build; deliberate version bumps only
+- [x] 7.4 Pinned SPM packages build; full 131-test simulator plan passes; lockfile unchanged (Nov 1, 2026)
 - [ ] 7.5 Full regression on iOS 27 device
 
 **Release gate 🚀**

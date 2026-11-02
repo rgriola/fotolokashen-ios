@@ -53,8 +53,21 @@ final class LocationDetailViewModel: ObservableObject {
     // MARK: - Published State
 
     @Published var currentLocation: Location
-    @Published var photos: [DetailPhoto] = []
-    @Published var isLoadingPhotos = true
+    @Published var photos: [DetailPhoto] = [] {
+        willSet {
+            if photos.map(\.id) != newValue.map(\.id) {
+                photoRevision += 1
+            }
+        }
+    }
+    private(set) var photoRevision: UInt64 = 0
+    @Published var isLoadingPhotos = true {
+        willSet {
+            if isLoadingPhotos != newValue {
+                photoRevision += 1
+            }
+        }
+    }
 
     @Published var userSaveDetails: UserSaveWithLocation?
     @Published var isLoadingDetails = true

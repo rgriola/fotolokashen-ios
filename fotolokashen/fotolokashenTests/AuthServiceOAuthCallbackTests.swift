@@ -39,6 +39,7 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
         return APIClient(session: session, baseURL: baseURL)
     }
 
+    #if DEBUG
     func testDuplicateCallbackForSameCodeSendsOnlyOneTokenRequest() async throws {
         let sut = AuthService(apiClient: makeStubbedAPIClient())
         sut.debugSeedCodeVerifierForTesting("test-code-verifier")
@@ -198,6 +199,7 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
         XCTAssertFalse(sut.isAuthenticated)
         XCTAssertNotNil(sut.errorMessage)
     }
+    #endif
 
     func testMissingCodeVerifierSurfacesAnErrorWithoutCrashing() async throws {
         // No debugSeedCodeVerifierForTesting call — simulates a callback
@@ -213,6 +215,7 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
 
     // MARK: - S-2: externally delivered OAuth callbacks
 
+    #if DEBUG
     func testExternalCallbackAfterCancelledLoginMakesNoNetworkCall() async throws {
         let sut = AuthService(apiClient: makeStubbedAPIClient())
         sut.debugSeedCodeVerifierForTesting("test-code-verifier")
@@ -242,6 +245,7 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
         XCTAssertEqual(CountingTokenExchangeStub.requestCount, 0)
         XCTAssertFalse(sut.isAuthenticated)
     }
+    #endif
 
     func testExternalCallbackWithNoLoginInProgressIsIgnored() async throws {
         let sut = AuthService(apiClient: makeStubbedAPIClient())
@@ -255,6 +259,7 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
         XCTAssertNil(sut.errorMessage)
     }
 
+    #if DEBUG
     func testExternalCallbackAfterCompletedLoginIsIgnored() async throws {
         let sut = AuthService(apiClient: makeStubbedAPIClient())
         sut.debugSeedCodeVerifierForTesting("test-code-verifier")
@@ -282,6 +287,7 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
         XCTAssertTrue(sut.isAuthenticated)
         XCTAssertNil(sut.errorMessage)
     }
+    #endif
 }
 
 // MARK: - CountingTokenExchangeStub

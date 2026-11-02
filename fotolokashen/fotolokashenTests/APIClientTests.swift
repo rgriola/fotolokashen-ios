@@ -128,6 +128,30 @@ final class APIClientTests: XCTestCase {
         #endif
     }
 
+    #if !DEBUG
+    func testReleaseMapsKeyMatchesBundledConfiguration() {
+        let bundle = Bundle(for: ConfigLoader.self)
+        guard bundle.url(forResource: "Config", withExtension: "plist") != nil else {
+            XCTFail("Release app must contain Config.plist")
+            return
+        }
+        guard let infoKey = bundle.infoDictionary?["GMSApiKey"] as? String, !infoKey.isEmpty else {
+            XCTFail("Release app must contain a configured Maps key")
+            return
+        }
+        let trimmedKey = infoKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedKey == infoKey, !trimmedKey.isEmpty,
+              trimmedKey != "YOUR_GOOGLE_MAPS_API_KEY_HERE",
+              trimmedKey != "YOUR_RESTRICTED_IOS_MAPS_KEY" else {
+            XCTFail("Release Maps key must be configured without whitespace or example placeholders")
+            return
+        }
+        let configuredKey = ConfigLoader.shared.googleMapsAPIKey
+        XCTAssertFalse(configuredKey.isEmpty, "Bundled Maps key must not be empty")
+        XCTAssertTrue(infoKey == configuredKey, "Release Maps key configuration must be consistent")
+    }
+    #endif
+
     // MARK: - Error Mapping
 
     func testDecodeFailureMapsToDecodingFailed() async {

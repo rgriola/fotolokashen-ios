@@ -8,8 +8,6 @@ struct LocationRow: View {
     /// When true, shows a "Saved by @username" line for locations sourced from a friend/public feed.
     var showAttribution: Bool = false
 
-    @State private var currentPhotoIndex = 0
-
     /// "Saved by @username" attribution text, only shown when `showAttribution` is true and a creator is known.
     private var attributionText: String? {
         guard showAttribution, let username = location.creator?.username, !username.isEmpty else { return nil }
@@ -136,8 +134,8 @@ struct LocationRow: View {
     private var photoCarousel: some View {
         if photoURLs.count > 1 {
             // Multiple photos — swipeable carousel with tap-through for navigation
-            TabView(selection: $currentPhotoIndex) {
-                ForEach(Array(photoURLs.enumerated()), id: \.offset) { index, url in
+            TabView {
+                ForEach(Array(photoURLs.enumerated()), id: \.offset) { _, url in
                     KFImage(url)
                         .resizable()
                         .placeholder {
@@ -154,7 +152,6 @@ struct LocationRow: View {
                         .frame(maxWidth: .infinity, maxHeight: 180)
                         .clipped()
                         .allowsHitTesting(false)
-                        .tag(index)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
