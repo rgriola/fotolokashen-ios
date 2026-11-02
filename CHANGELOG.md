@@ -6,6 +6,10 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 Updated November 2, 2026.
 
+### Strict concurrency cleanup — Phase 3 (in progress)
+
+- Removed the `useNewPhotoPipeline` flag, the flag-off compression/upload branches in `PhotoPickerViewModel`, and the unused `PhotoPipelineCoordinator`, `PhotoPipelineProviding`, and `PhotoSelectionService`. The create-location save flow is unchanged.
+
 ### Accessibility and Dynamic Type — Phase 6 (in progress)
 
 - Added accessible labels for icon-only camera, photo, location, search, rating, sorting, and error controls. The map now has a region label and hint; the Spots tab is the list alternative.

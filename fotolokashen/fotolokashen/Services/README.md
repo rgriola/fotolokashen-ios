@@ -13,7 +13,7 @@ Services/
 ├── Camera/          CameraService, CameraSessionViewModel
 ├── Photo/           PhotoUploadService, PhotoPipelineModels, ImageCompressor,
 │                    EXIFExtractor, ImageKitURL, SessionCapture, GPSSpreadAnalyzer,
-│                    PhotoPipeline/  (PhotoPipelineCoordinator + stages)
+│                    PhotoPipeline/  (PhotoCompressionService, PhotoUploadQueue)
 ├── Locations/       LocationService, LocationGroupService, LocationManager,
 │                    LocationRepository, MapNavigationCoordinator, LocationStore (facade),
 │                    GeocodingService, PlacesService, GeographicClusterAlgorithm,

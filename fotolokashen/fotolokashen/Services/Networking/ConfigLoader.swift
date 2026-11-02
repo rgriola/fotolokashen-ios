@@ -141,13 +141,6 @@ nonisolated final class ConfigLoader: @unchecked Sendable {
     var enableDebugLogging: Bool {
         getFeatureFlag(forKey: "enableDebugLogging") ?? false
     }
-
-    /// Phase 1b: Route photo picking/compression/upload through the new
-    /// `PhotoPipelineCoordinator` (selection / compression / upload-queue split)
-    /// instead of the legacy `PhotoPickerViewModel`. Defaults to false.
-    var useNewPhotoPipeline: Bool {
-        getFeatureFlag(forKey: "useNewPhotoPipeline") ?? false
-    }
     
     // MARK: - Helper Methods
     

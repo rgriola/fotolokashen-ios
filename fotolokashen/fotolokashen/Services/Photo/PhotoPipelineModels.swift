@@ -81,8 +81,7 @@ nonisolated struct EXIFMetadata: Codable, Sendable {
 
 // MARK: - Pipeline Stage
 
-/// Per-photo state machine for the new `PhotoPipelineCoordinator` (Phase 1b).
-/// The legacy `PhotoPickerViewModel` ignores `stage` and continues to work as before.
+/// Per-photo state machine driven by `PhotoPickerViewModel`.
 enum PipelineStage: Equatable {
     /// Just picked / captured. Awaiting compression.
     case picked
@@ -126,7 +125,7 @@ struct PipelinePhoto: Identifiable {
     var exifMetadata: EXIFMetadata?
     var caption: String?
 
-    /// Phase 1b state machine. Legacy `PhotoPickerViewModel` leaves this at `.picked`.
+    /// Current pipeline state for this photo.
     var stage: PipelineStage = .picked
 
     /// Whether compression has completed

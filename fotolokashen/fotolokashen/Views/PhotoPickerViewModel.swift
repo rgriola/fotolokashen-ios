@@ -20,24 +20,19 @@ class PhotoPickerViewModel: ObservableObject {
     // MARK: - Configuration
 
     let maxPhotos: Int
-    private let useNewPipeline: Bool
 
-    // MARK: - New-pipeline dependencies (lazy; only used when flag is on)
+    // MARK: - Dependencies
 
-    private lazy var compressionService = PhotoCompressionService()
-    private lazy var uploadQueue: PhotoUploadQueue = PhotoUploadQueue(uploader: PhotoUploadService())
+    private let compressionService = PhotoCompressionService()
+    private let uploadQueue = PhotoUploadQueue(uploader: PhotoUploadService())
     private var queueEventTask: Task<Void, Never>?
     private var lastUploadLocationId: Int?
-    private var lastUploadLocation: CLLocation?
 
     // MARK: - Init
 
     init(maxPhotos: Int? = nil) {
         self.maxPhotos = maxPhotos ?? ConfigLoader.shared.maxPhotosPerLocation
-        self.useNewPipeline = ConfigLoader.shared.useNewPhotoPipeline
-        if useNewPipeline {
-            subscribeToQueueEvents()
-        }
+        subscribeToQueueEvents()
     }
 
     deinit {
@@ -118,14 +113,7 @@ class PhotoPickerViewModel: ObservableObject {
             let id = photos[index].id
             updateStage(id: id, to: .compressing)
             let image = photos[index].originalImage
-            let compressed: Data?
-            if useNewPipeline {
-                compressed = await compressionService.compress(image)
-            } else {
-                compressed = await Task.detached(priority: .userInitiated) {
-                    ImageCompressor.compress(image)
-                }.value
-            }
+            let compressed = await compressionService.compress(image)
             if let currentIndex = photos.firstIndex(where: { $0.id == id }) {
                 photos[currentIndex].compressedData = compressed
                 updateStage(id: id, to: compressed != nil
@@ -137,17 +125,11 @@ class PhotoPickerViewModel: ObservableObject {
 
     // MARK: - Upload
 
-    /// Upload all pipeline photos to a location.
-    /// Returns the array of Photo models returned by the server.
-    ///
-    /// When `useNewPhotoPipeline` is enabled, uploads route through
-    /// `PhotoUploadQueue` which provides bounded concurrency + automatic
-    /// retries for transient network errors. The legacy path is preserved
-    /// for backward compatibility.
-    func uploadAllPhotos(
-        locationId: Int,
-        location: CLLocation?
-    ) async throws -> [Photo] {
+    /// Upload all pipeline photos to a location through `PhotoUploadQueue`,
+    /// which provides bounded concurrency and retries transient network errors.
+    /// Waits for every enqueued photo to finish and returns the server photos.
+    /// Per-photo `stage` updates flow in via `subscribeToQueueEvents()`.
+    func uploadAllPhotos(locationId: Int) async -> [Photo] {
         guard !photos.isEmpty else { return [] }
 
         isUploading = true
@@ -157,76 +139,10 @@ class PhotoPickerViewModel: ObservableObject {
             isUploading = false
         }
 
-        if useNewPipeline {
-            return await uploadAllViaQueue(locationId: locationId, location: location)
-        }
-
-        let uploader = PhotoUploadService()
-        var uploaded: [Photo] = []
-        let total = Double(photos.count)
-
-        for (index, pipelinePhoto) in photos.enumerated() {
-            let id = pipelinePhoto.id
-            do {
-                // Use EXIF GPS as fallback when CLLocation is nil
-                let uploadLocation: CLLocation?
-                if let loc = location {
-                    uploadLocation = loc
-                } else if let gps = pipelinePhoto.gpsCoordinate {
-                    uploadLocation = CLLocation(latitude: gps.lat, longitude: gps.lng)
-                } else {
-                    uploadLocation = nil
-                }
-
-                updateStage(id: id, to: .uploading(progress: 0.1))
-                let photo = try await uploader.uploadPhoto(
-                    image: pipelinePhoto.originalImage,
-                    locationId: locationId,
-                    location: uploadLocation,
-                    caption: pipelinePhoto.caption,
-                    exifMetadata: pipelinePhoto.exifMetadata
-                )
-                uploaded.append(photo)
-                updateStage(id: id, to: .uploaded(remoteId: photo.id))
-
-                uploadProgress = Double(index + 1) / total
-
-                #if DEBUG
-                if ConfigLoader.shared.enableDebugLogging {
-                    dlog("PhotoPipeline", "Photo upload completed")
-                }
-                #endif
-
-            } catch {
-                #if DEBUG
-                if ConfigLoader.shared.enableDebugLogging {
-                    dlog("PhotoPipeline", "Photo upload failed")
-                }
-                #endif
-                updateStage(id: id, to: .failed(reason: error.localizedDescription, retryable: true))
-                // Continue uploading remaining photos
-                ErrorPresenter.shared.present(message: "Failed to upload \(photos.count - uploaded.count) photo(s)")
-            }
-        }
-
-        return uploaded
-    }
-
-    // MARK: - New-pipeline upload via queue
-
-    /// Phase 1c: enqueue all compressed photos and await completion of every job.
-    /// Per-photo `stage` updates flow in via `subscribeToQueueEvents()`. We block
-    /// here so `CreateLocationView`'s existing flow (await → success alert) stays
-    /// unchanged; save-with-pending-uploads becomes a follow-on UX change.
-    private func uploadAllViaQueue(
-        locationId: Int,
-        location: CLLocation?
-    ) async -> [Photo] {
         // Make sure compression has finished for everything
         await compressUncompressedPhotos()
 
         lastUploadLocationId = locationId
-        lastUploadLocation = location
 
         // Enqueue every photo that has compressed data
         let toEnqueue = photos.filter { $0.compressedData != nil && !$0.stage.isUploaded }
@@ -268,8 +184,7 @@ class PhotoPickerViewModel: ObservableObject {
 
     /// Manually retry a failed upload (called from `PhotoGridView` retry tap).
     func retryPhoto(id: UUID) {
-        guard useNewPipeline,
-              let photo = photos.first(where: { $0.id == id }),
+        guard let photo = photos.first(where: { $0.id == id }),
               let data = photo.compressedData,
               let locationId = lastUploadLocationId else { return }
         updateStage(id: id, to: .queuedForUpload)

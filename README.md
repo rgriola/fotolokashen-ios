@@ -33,7 +33,7 @@ The fotolokashen iOS app allows users to quickly capture photos with GPS coordin
 - 🚀 **Concurrent Photo Loading** — `TaskGroup`-based parallel photo loading in `PhotoPickerView` (replaces sequential I/O)
 - 🛑 **Race Condition Fix** — Deferred picker dismissal + full-screen blur overlay prevents premature UI teardown
 - 🐛 **Edit Details Fix** — `details` field (from Create form) now correctly round-trips to Edit view via `UpdateLocationRequest`
-- 🔧 **New Pipeline Active** — `useNewPhotoPipeline = true` in `Config.plist` enables `PhotoPipelineCoordinator` + `PhotoUploadQueue` for concurrent, retry-capable uploads
+- 🔧 **Photo Pipeline** — `PhotoPickerViewModel` compresses selected photos through `PhotoCompressionService`
 
 ### v1.5.1 (April 2026)
 
@@ -138,10 +138,8 @@ fotolokashen-ios/
 │       │   │   ├── CameraService.swift     # AVFoundation: capture, flip, flash, raw Data output
 │       │   │   └── CameraSessionViewModel.swift  # Multi-capture session, disk writes
 │       │   ├── Photo/
-│       │   │   ├── PhotoPipelineCoordinator.swift  # Orchestrates selection → compress → upload
 │       │   │   ├── PhotoUploadQueue.swift          # Concurrent retry-capable upload queue
 │       │   │   ├── PhotoCompressionService.swift   # Batch compression
-│       │   │   ├── PhotoSelectionService.swift     # Library/camera source normalization
 │       │   │   ├── SessionCapture.swift            # Disk-backed photo + raw EXIF extraction
 │       │   │   ├── EXIFExtractor.swift             # EXIF parsing from raw Data
 │       │   │   └── GPSSpreadAnalyzer.swift         # GPS spread analysis for multi-photo
@@ -217,7 +215,6 @@ fotolokashen-ios/
    - `googleMapsAPIKey` — your restricted Google Maps API key
    - `oauth.clientId` and `oauth.redirectUri` — OAuth client configuration
    - `features.enableDebugLogging` — `true` for development, `false` for release
-   - `features.useNewPhotoPipeline` — add and set to `true` to enable the new pipeline
 
    Create `fotolokashen/Debug.xcconfig` and `fotolokashen/Release.xcconfig`
    locally, with the appropriate values for each environment:
@@ -255,20 +252,24 @@ fotolokashen-ios/
 ```
 Camera Path:
   AVFoundation raw Data → CameraSessionViewModel → disk temp file
-  → SessionCapture (EXIF from raw Data) → PhotoPipelineCoordinator
-  → PhotoCompressionService → PhotoUploadQueue → /api/photos/upload
+  → SessionCapture (EXIF from raw Data) → PhotoPickerViewModel
+  → PhotoCompressionService
 
 Library Path:
   PHPickerViewController → TaskGroup parallel load → PipelinePhoto[]
-  → PhotoPickerViewModel → PhotoPipelineCoordinator
-  → PhotoCompressionService → PhotoUploadQueue → /api/photos/upload
+  → PhotoPickerViewModel → PhotoCompressionService
+
+Save:
+  CreateLocationViewModel → create location with first photo
+  → PhotoUploadService (remaining photos, sequential) → /api/photos/upload
 
 Server:
   /api/photos/upload → ClamAV scan → Sharp HEIC/TIFF→JPEG → ImageKit CDN
   → /api/locations/{id}/photos (associate)
 ```
 
-**Feature flag**: `Config.plist → useNewPhotoPipeline = true` activates `PhotoPipelineCoordinator`. Legacy `PhotoPickerViewModel` path remains for rollback.
+There is one client photo pipeline; the `useNewPhotoPipeline` flag was removed.
+`PhotoUploadQueue` is unit-tested but not yet used by the create-location save flow.
 
 ---
 
