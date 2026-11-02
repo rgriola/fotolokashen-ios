@@ -1,4 +1,5 @@
 import XCTest
+import Synchronization
 import AuthenticationServices
 @testable import fotolokashen
 
@@ -14,19 +15,19 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
     private let callbackURL = URL(string: "fotolokashen://oauth-callback?code=test-auth-code&state=test-oauth-state")!
     private let baseURL = URL(string: "https://test.fotolokashen.com")!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         CountingTokenExchangeStub.reset()
         // Defensive: a stale refresh token left in the real Keychain by an
         // unrelated test would make AuthService.init()'s checkAuthStatus()
         // fire its own background network request, polluting the request
         // count this suite asserts on.
-        try? KeychainService.shared.clearTokens()
+        try KeychainService.shared.clearTokens()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         try KeychainService.shared.clearTokens()
-        try super.tearDownWithError()
+        try await super.tearDown()
     }
 
     /// Builds an `APIClient` whose session routes every request through
@@ -46,6 +47,7 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
 
         // Simulate the real-world race: both delivery paths invoke
         // handleCallback for the same redirect at roughly the same time.
+        let callbackURL = self.callbackURL
         async let first: Void = sut.handleCallback(url: callbackURL)
         async let second: Void = sut.handleCallback(url: callbackURL)
         _ = await (first, second)
@@ -279,6 +281,7 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
         let sut = AuthService(apiClient: makeStubbedAPIClient())
         sut.debugSeedCodeVerifierForTesting("test-code-verifier")
 
+        let callbackURL = self.callbackURL
         async let external: Void = sut.handleExternalCallback(url: callbackURL)
         async let session: Void = sut.handleWebAuthSessionCompletion(callbackURL: callbackURL, error: nil)
         _ = await (external, session)
@@ -299,26 +302,21 @@ final class AuthServiceOAuthCallbackTests: XCTestCase {
 /// `URLProtocol.registerClass` needed.
 final class CountingTokenExchangeStub: URLProtocol {
 
-    private static let lock = NSLock()
-    private static var _requestCount = 0
+    private static let count = Mutex(0)
 
     static var requestCount: Int {
-        lock.lock(); defer { lock.unlock() }
-        return _requestCount
+        count.withLock { $0 }
     }
 
     static func reset() {
-        lock.lock(); defer { lock.unlock() }
-        _requestCount = 0
+        count.withLock { $0 = 0 }
     }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
-        CountingTokenExchangeStub.lock.lock()
-        CountingTokenExchangeStub._requestCount += 1
-        CountingTokenExchangeStub.lock.unlock()
+        Self.count.withLock { $0 += 1 }
 
         let json = """
         {

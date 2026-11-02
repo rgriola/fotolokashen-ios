@@ -6,8 +6,8 @@ final class DeepLinkManagerTests: XCTestCase {
 
     private let sut = DeepLinkManager.shared
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         sut.clearPendingNavigation()
         sut.autoLoginToken = nil
         sut.emailVerified = false

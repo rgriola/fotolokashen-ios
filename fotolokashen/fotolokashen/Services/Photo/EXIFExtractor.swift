@@ -5,7 +5,7 @@ import CoreLocation
 
 /// Extracts EXIF metadata from image data using ImageIO (CGImageSource).
 /// Reusable across apps — no fotolokashen-specific dependencies.
-struct EXIFExtractor {
+nonisolated struct EXIFExtractor {
 
     // MARK: - Public API
 

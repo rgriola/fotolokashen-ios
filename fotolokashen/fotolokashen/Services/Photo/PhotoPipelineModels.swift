@@ -12,7 +12,7 @@ enum PhotoSource: String, Codable {
 // MARK: - EXIF Metadata
 
 /// Extracted EXIF metadata from a photo, matching the web app's metadata capture
-struct EXIFMetadata: Codable {
+nonisolated struct EXIFMetadata: Codable, Sendable {
     // GPS
     var latitude: Double?
     var longitude: Double?

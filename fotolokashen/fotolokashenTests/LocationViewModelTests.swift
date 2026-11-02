@@ -14,6 +14,7 @@ final class LocationViewModelTests: XCTestCase {
         CreateLocationViewModel(photoLocation: location)
     }
 
+    @MainActor
     private func makeLocation(
         name: String = "Test Spot",
         type: String = "BROLL",

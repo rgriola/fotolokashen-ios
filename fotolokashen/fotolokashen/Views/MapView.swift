@@ -463,22 +463,25 @@ struct ClusteredMapView: UIViewRepresentable {
         /// If the user has locations (initial fit handles it), skip.
         /// Otherwise animate to their GPS position.
         func observeMyLocation(on mapView: GMSMapView) {
-            locationObservation = mapView.observe(\.myLocation, options: [.new]) { [weak self] mapView, _ in
-                guard let self,
-                      !self.hasCenteredOnUserGPS,
-                      !self.hasPerformedInitialFit,
-                      let location = mapView.myLocation else { return }
+            locationObservation = mapView.observe(\.myLocation, options: [.new]) { [weak self] _, _ in
+                Task { @MainActor [weak self] in
+                    guard let self,
+                          let mapView = self.gmsMapView,
+                          !self.hasCenteredOnUserGPS,
+                          !self.hasPerformedInitialFit,
+                          let location = mapView.myLocation else { return }
 
-                self.hasCenteredOnUserGPS = true
-                let camera = GMSCameraPosition.camera(
-                    withLatitude: location.coordinate.latitude,
-                    longitude: location.coordinate.longitude,
-                    zoom: 14.0
-                )
-                mapView.animate(to: camera)
-                #if DEBUG
-                dlog("MapView", "GPS fix - centered on user")
-                #endif
+                    self.hasCenteredOnUserGPS = true
+                    let camera = GMSCameraPosition.camera(
+                        withLatitude: location.coordinate.latitude,
+                        longitude: location.coordinate.longitude,
+                        zoom: 14.0
+                    )
+                    mapView.animate(to: camera)
+                    #if DEBUG
+                    dlog("MapView", "GPS fix - centered on user")
+                    #endif
+                }
             }
         }
         

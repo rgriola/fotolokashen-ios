@@ -6,14 +6,14 @@ final class AuthServiceTests: XCTestCase {
     
     var sut: AuthService!
     
-    override func setUpWithError() throws {
-        try super.setUpWithError()
+    override func setUp() async throws {
+        try await super.setUp()
         sut = AuthService()
     }
     
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         sut = nil
-        try super.tearDownWithError()
+        try await super.tearDown()
     }
     
     // MARK: - Initial State Tests

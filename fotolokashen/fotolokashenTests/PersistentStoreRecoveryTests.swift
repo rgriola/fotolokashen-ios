@@ -2,6 +2,7 @@ import Foundation
 import XCTest
 @testable import fotolokashen
 
+@MainActor
 final class PersistentStoreRecoveryTests: XCTestCase {
 
     func testSuccessfulCreationDoesNotQuarantineOrRetry() throws {

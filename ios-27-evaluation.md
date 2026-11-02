@@ -45,9 +45,12 @@ performed.
 
 **Status:** 7.1, 7.2 and 7.4 are complete locally. On November 1, the owner
 reported that the app works on a physical device and Google Maps renders.
-Clustering, marker taps, simulator Maps checks and the full physical-device
-regression have not yet been confirmed, so 7.3 and 7.5 remain open. This is not
-a release approval; Phase 2.7 and the accessibility gates also remain open.
+On November 2, the owner confirmed Maps rendering and marker taps, but reported
+that markers do not cluster. Clustering is explicitly deferred for an iOS
+redesign, not verified or fixed. Simulator Maps checks and the full
+physical-device regression remain unconfirmed, so 7.3 and 7.5 remain open.
+This is not a release approval; Phase 2.7 and the accessibility gates also
+remain open.
 
 **Phase 7 baseline environment and tests:** Xcode 27.2 (27B52), iOS 27.2 SDK, iOS 18.6
 deployment target, and Swift 5 language mode. Fresh DerivedData builds succeeded
@@ -154,10 +157,10 @@ release notes and their deprecation sections against the 0.6 baseline.
 
 **Remaining checks and known limits:**
 
-- The owner reports that Google Maps renders on a device; the tested build and
-  OS were not specified. Confirm the SDK-built candidate and exercise
-  clustering and marker taps on simulator and device using an authorized
-  disposable test setup.
+- The owner confirms Maps rendering and marker taps (November 2); the tested
+  build and OS were not specified. Clustering does not work and is deferred
+  for an iOS redesign. Confirm simulator coverage separately; the deferral
+  does not establish a passing clustering check.
 - Complete the device regression, including auth presentation, Keychain,
   photo picking, deep/universal links and a safe data-preserving upgrade. The
   SwiftData quarantine/recreate recovery path is not a migration.
@@ -222,6 +225,60 @@ SwiftLint remains at 315 warnings and 5 existing errors. This follow-up does not
 close Phases 3 or 4: test targets have not moved to Swift 6, the nine warnings
 remain, and the current candidate still needs the outstanding device, Maps and
 accessibility checks.
+
+### All-target Swift 6 migration — November 2, 2026
+
+The app, unit tests and UI tests now use Swift 6 in Debug and Release.
+The app retains MainActor default isolation. Test targets explicitly use
+nonisolated defaults to match XCTest's lifecycle; tests accessing actor-isolated
+app APIs use explicit MainActor isolation and asynchronous setup/teardown.
+Complete strict-concurrency checking remains enabled.
+
+The nine remaining app compiler warnings were resolved:
+
+- The map's location observer hops to MainActor before reading the coordinator's
+  owned map and checking/updating the one-time centering flags. The KVO callback's
+  map is not transferred into the task.
+- Photo-provider callbacks decode the image and extract EXIF inside the item
+  provider's background callback, as before, and hand a `Sendable` result back
+  to the coordinator's actor, which builds the pipeline photo. `EXIFExtractor`
+  and `EXIFMetadata` are now `nonisolated` (pure value code). Format retries,
+  UIImage fallback and dismissal sequencing are unchanged.
+
+Test URL-protocol state now uses `Synchronization.Mutex` instead of shared mutable
+static fields protected by a separate lock. OAuth race tests capture a local URL
+before starting concurrent calls; the upload-event collector predicate is
+explicitly Sendable. No new unsafe isolation or unchecked Sendable annotations
+were added. The two existing unchecked Sendable boundaries remain the immutable
+configuration loader and the camera controller's documented serial-queue boundary.
+
+**Verified with Xcode 27.2 / iOS 27.2 SDK:**
+
+- `xcodebuild test` from an empty derived-data directory, Debug, signed
+  disposable iPhone 17 / iOS 27.0 simulator, serial execution: **130 unit tests
+  and 6 UI tests passed, zero failures or skips** (`** TEST SUCCEEDED **`). The
+  result-bundle summary reports 133 test cases (UI tests repeated across
+  configurations are counted differently); it also reports zero failures.
+  Compiler invocations confirm `-swift-version 6` for the app, unit-test and
+  UI-test modules; only the GoogleMapsUtils and Kingfisher packages compile as
+  Swift 5.
+- Release device app build succeeded unsigned. Release unit/UI test targets
+  also compiled with the command-line `ENABLE_TESTABILITY=YES` override required
+  by `@testable import`; the shipping Release setting is unchanged. The initial
+  Release test build without that override failed because the app module was
+  built without testability.
+- No project Swift compiler warnings or errors in the Debug test run or either
+  Release validation build.
+- `swiftlint lint --no-cache`: unchanged **315 warnings and 5 errors**.
+  `git diff --check` passes.
+
+Tests used an unreachable HTTPS loopback backend, not a production account.
+The disposable simulator was deleted. Release tests were compiled, not executed.
+A concurrency review covered the changed callback boundaries and found no
+issues; physical-device map centering, large multi-photo selection responsiveness,
+picker dismissal/focus restoration and the full manual regression still need
+verification. Phase 4.3 remains open, and the broader Phase 3 refactor checklist
+is not implied complete by a warning-free compiler run.
 
 ### Phase 5 implementation — November 1, 2026
 
@@ -1054,7 +1111,7 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
 
 - [x] 7.1 Clean Debug and signed Release builds with the iOS 27.2 SDK; warning delta recorded above (Nov 1, 2026)
 - [x] 7.2 iOS 27 / 27.2 and Xcode 27.2 release notes and deprecations cross-checked above (Nov 1, 2026)
-- [ ] 7.3 GoogleMaps renders + clusters in Xcode 27 build — owner reports device rendering; build, clustering, marker taps and simulator checks remain unconfirmed (Nov 1, 2026)
+- [ ] 7.3 GoogleMaps renders + clusters in Xcode 27 build — owner confirms rendering and marker taps; clustering does not work and is deferred for iOS redesign; build/OS and simulator coverage remain unconfirmed (Nov 2, 2026)
 - [x] 7.4 Pinned SPM packages build; full 131-test simulator plan passes; lockfile unchanged (Nov 1, 2026)
 - [ ] 7.5 Full regression on iOS 27 device — owner reports the app works on a device; the full checklist remains unconfirmed (Nov 1, 2026)
 
@@ -1074,12 +1131,12 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
 - [ ] 3.3 Delegate methods `nonisolated` (C-4)
 - [ ] 3.4 `CameraService` split — device-tested (C-1)
 - [ ] 3.5 `@preconcurrency` removed where possible (C-6, D-2)
-- [ ] 3.6 Zero strict-concurrency warnings, all targets
+- [x] 3.6 Zero strict-concurrency compiler warnings, all targets — Debug simulator tests and Release compilation verified in Swift 6 (Nov 2, 2026)
 
 **Swift 6 language mode (Phase 4) 🖥️**
 
-- [ ] 4.1 `SWIFT_VERSION = 6.0` on all targets; app Debug/Release now build in Swift 6 with zero errors, but unit/UI tests remain Swift 5 (Nov 1, 2026)
-- [ ] 4.2 Clean build; ≤2 justified `@unchecked`/`nonisolated(unsafe)`
+- [x] 4.1 `SWIFT_VERSION = 6.0` on all targets, Debug and Release (Nov 2, 2026)
+- [x] 4.2 Clean Debug test build and Release compilation; two existing documented unchecked Sendable boundaries, no new unsafe annotations (Nov 2, 2026)
 - [ ] 4.3 Full tests + manual device regression (also build on 🆕 Xcode 27)
 
 ### Step 5 — Accessibility, 1.7.x (Phase 6) 🖥️

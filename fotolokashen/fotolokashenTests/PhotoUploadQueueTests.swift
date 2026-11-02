@@ -12,7 +12,7 @@ final class PhotoUploadQueueTests: XCTestCase {
     private func collectEvents(
         on queue: PhotoUploadQueue,
         timeout: TimeInterval = 5.0,
-        until predicate: @escaping ([PhotoUploadQueue.Event]) -> Bool,
+        until predicate: @escaping @Sendable ([PhotoUploadQueue.Event]) -> Bool,
         while action: @escaping () async -> Void
     ) async -> [PhotoUploadQueue.Event] {
         let stream = queue.events()

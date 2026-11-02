@@ -6,17 +6,17 @@ final class LocationStoreTests: XCTestCase {
 
     var sut: LocationStore!
 
-    override func setUpWithError() throws {
-        try super.setUpWithError()
+    override func setUp() async throws {
+        try await super.setUp()
         sut = LocationStore.shared
         sut.locations = [] // Clear any existing data
         sut.errorMessage = ""
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         sut.clear()
         sut = nil
-        try super.tearDownWithError()
+        try await super.tearDown()
     }
 
     // MARK: - Helper

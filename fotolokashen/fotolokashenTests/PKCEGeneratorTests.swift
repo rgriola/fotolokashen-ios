@@ -2,6 +2,7 @@ import CryptoKit
 import XCTest
 @testable import fotolokashen
 
+@MainActor
 final class PKCEGeneratorTests: XCTestCase {
 
     func testGeneratedVerifierAndChallengeMeetRFC7636EncodingRequirements() {

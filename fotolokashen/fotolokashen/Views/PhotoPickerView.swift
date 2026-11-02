@@ -132,47 +132,51 @@ struct PhotoPickerView: UIViewControllerRepresentable {
             provider: NSItemProvider,
             typeIdentifier: String
         ) async -> PipelinePhoto? {
-            await withCheckedContinuation { continuation in
+            // Decode and extract EXIF in the provider's background callback, off the main actor.
+            let decoded: DecodedPickerPhoto? = await withCheckedContinuation { continuation in
                 provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
-                    guard let data = data, error == nil else {
+                    guard let data, error == nil, let image = UIImage(data: data) else {
                         continuation.resume(returning: nil)
                         return
                     }
-
-                    guard let image = UIImage(data: data) else {
-                        continuation.resume(returning: nil)
-                        return
-                    }
-
-                    // Extract EXIF from raw data (before any UIImage conversion)
-                    let exif = EXIFExtractor.extract(from: data)
-
-                    let photo = PipelinePhoto(source: .library, image: image, exif: exif)
-                    continuation.resume(returning: photo)
+                    continuation.resume(returning: DecodedPickerPhoto(
+                        image: image,
+                        exif: EXIFExtractor.extract(from: data)
+                    ))
                 }
             }
+
+            guard let decoded else { return nil }
+            return PipelinePhoto(source: .library, image: decoded.image, exif: decoded.exif)
         }
 
         /// Fallback: load as UIImage (may lose EXIF).
         private func loadAsUIImage(provider: NSItemProvider) async -> PipelinePhoto? {
             guard provider.canLoadObject(ofClass: UIImage.self) else { return nil }
 
-            return await withCheckedContinuation { continuation in
+            let decoded: DecodedPickerPhoto? = await withCheckedContinuation { continuation in
                 provider.loadObject(ofClass: UIImage.self) { object, error in
                     guard let image = object as? UIImage, error == nil else {
                         continuation.resume(returning: nil)
                         return
                     }
-
-                    // Extract what EXIF we can from the UIImage's JPEG representation
-                    let exif = EXIFExtractor.extract(from: image)
-
-                    let photo = PipelinePhoto(source: .library, image: image, exif: exif)
-                    continuation.resume(returning: photo)
+                    continuation.resume(returning: DecodedPickerPhoto(
+                        image: image,
+                        exif: EXIFExtractor.extract(from: image)
+                    ))
                 }
             }
+
+            guard let decoded else { return nil }
+            return PipelinePhoto(source: .library, image: decoded.image, exif: decoded.exif)
         }
     }
+}
+
+/// Image and EXIF decoded in an item-provider callback, handed back to the main actor.
+private nonisolated struct DecodedPickerPhoto: Sendable {
+    let image: UIImage
+    let exif: EXIFMetadata?
 }
 
 // MARK: - Photo Loading Overlay

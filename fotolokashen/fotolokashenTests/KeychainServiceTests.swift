@@ -2,13 +2,14 @@ import XCTest
 @testable import fotolokashen
 import Security
 
+@MainActor
 final class KeychainServiceTests: XCTestCase {
 
     let sut = KeychainService.shared
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         try sut.clearTokens()
-        try super.tearDownWithError()
+        try await super.tearDown()
     }
 
     nonisolated func testServiceErrorsCanBeLocalizedOutsideMainActor() {

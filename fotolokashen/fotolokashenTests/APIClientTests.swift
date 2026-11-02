@@ -1,17 +1,19 @@
 import XCTest
+import Synchronization
 @testable import fotolokashen
 
 /// Phase 4d — `APIClient` HTTP/decoding/error-mapping coverage via a
 /// `URLProtocol` stub injected into a custom-config session.
 ///
 /// All requests use `authenticated: false` so the Keychain isn't touched.
+@MainActor
 final class APIClientTests: XCTestCase {
 
     private var client: APIClient!
     private let baseURL = URL(string: "https://test.fotolokashen.com")!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         URLProtocolStub.reset()
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [URLProtocolStub.self]
@@ -19,10 +21,10 @@ final class APIClientTests: XCTestCase {
         client = APIClient(session: session, baseURL: baseURL)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         URLProtocolStub.reset()
         client = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: - Test Models
@@ -257,31 +259,28 @@ final class URLProtocolStub: URLProtocol {
         let statusCode: Int
     }
 
-    private static let lock = NSLock()
-    private static var queued: Response?
-    private static var _lastRequest: URLRequest?
-    private static var _lastBody: Data?
+    private struct State {
+        var queued: Response?
+        var lastRequest: URLRequest?
+        var lastBody: Data?
+    }
+
+    private static let state = Mutex(State())
 
     static func stub(json: String, statusCode: Int) {
-        lock.lock(); defer { lock.unlock() }
-        queued = Response(data: Data(json.utf8), statusCode: statusCode)
+        state.withLock { $0.queued = Response(data: Data(json.utf8), statusCode: statusCode) }
     }
 
     static func reset() {
-        lock.lock(); defer { lock.unlock() }
-        queued = nil
-        _lastRequest = nil
-        _lastBody = nil
+        state.withLock { $0 = State() }
     }
 
     static var lastRequest: URLRequest? {
-        lock.lock(); defer { lock.unlock() }
-        return _lastRequest
+        state.withLock { $0.lastRequest }
     }
 
     static var lastRequestBody: Data? {
-        lock.lock(); defer { lock.unlock() }
-        return _lastBody
+        state.withLock { $0.lastBody }
     }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -307,11 +306,11 @@ final class URLProtocolStub: URLProtocol {
             return nil
         }()
 
-        URLProtocolStub.lock.lock()
-        URLProtocolStub._lastRequest = request
-        URLProtocolStub._lastBody = bodyData
-        let queued = URLProtocolStub.queued
-        URLProtocolStub.lock.unlock()
+        let queued = Self.state.withLock {
+            $0.lastRequest = request
+            $0.lastBody = bodyData
+            return $0.queued
+        }
 
         guard let response = queued, let url = request.url else {
             client?.urlProtocol(self, didFailWithError: URLError(.unknown))
