@@ -43,7 +43,7 @@ final class MapPlaceSearchService: NSObject, ObservableObject {
     }
 }
 
-extension MapPlaceSearchService: MKLocalSearchCompleterDelegate {
+extension MapPlaceSearchService: @MainActor MKLocalSearchCompleterDelegate {
     func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
         suggestions = completer.results
         dlog("MapPlaceSearchService", "\(completer.results.count) suggestions for '\(queryFragment)'")

@@ -12,6 +12,7 @@ Updated November 2, 2026.
 - `APIClient` is now `nonisolated` and `Sendable`, and its request path is `@concurrent`, so network I/O and JSON decoding no longer run on the main actor. API request/response models are `nonisolated` so their `Codable` conformances work off the main actor.
 - Create Location's Save button now disables and shows "Creating…" for the whole save. It previously read `isLoading` from a nested `LocationService` the view didn't observe, so it stayed enabled while the first photo uploaded; a repeated Save during create is the suspected cause of the duplicate Spots 152/153 (only the last create is added to the local list, so the other copy appears only after a server refresh). A re-entry guard in `CreateLocationViewModel.save` also ignores repeat calls.
 - `GMSServices.provideAPIKey` now runs on the main thread at launch, as Google requires (`GMSServices` is not thread-safe). This did not remove the Maps SDK's "Multiple instances of CCTClearcutUploader were instantiated" console message, which still appears on device.
+- Delegate conformances for Google Maps, PHPicker, MapKit search completion, web-auth presentation and the cluster algorithm are now explicitly `@MainActor` isolated conformances. Behavior is unchanged; the explicit annotation documents that these frameworks call them on the main thread.
 
 ### Accessibility and Dynamic Type — Phase 6 (in progress)
 

@@ -441,7 +441,7 @@ struct ClusteredMapView: UIViewRepresentable {
     
     // MARK: - Coordinator
     
-    class Coordinator: NSObject, GMSMapViewDelegate {
+    class Coordinator: NSObject, @MainActor GMSMapViewDelegate {
         var parent: ClusteredMapView
         var hasPerformedInitialFit = false
         var isWaitingForInitialFitToSettle = false

@@ -29,7 +29,7 @@ struct PhotoPickerView: UIViewControllerRepresentable {
 
     // MARK: - Coordinator
 
-    class Coordinator: NSObject, PHPickerViewControllerDelegate {
+    class Coordinator: NSObject, @MainActor PHPickerViewControllerDelegate {
         let onPhotosPicked: ([PipelinePhoto]) -> Void
 
         init(onPhotosPicked: @escaping ([PipelinePhoto]) -> Void) {

@@ -8,7 +8,7 @@ import GoogleMapsUtils
 /// 
 /// This prevents clusters from appearing at grid positions (which can be in the ocean)
 /// and ensures clusters only form when markers are within reasonable distance.
-class GeographicClusterAlgorithm: NSObject, GMUClusterAlgorithm {
+final class GeographicClusterAlgorithm: NSObject, @MainActor GMUClusterAlgorithm {
     
     // Maximum distance in miles for markers to be clustered together
     private let maxClusterDistanceMiles: Double

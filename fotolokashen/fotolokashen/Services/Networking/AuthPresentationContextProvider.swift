@@ -1,7 +1,7 @@
 import AuthenticationServices
 import UIKit
 
-final class AuthPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
+final class AuthPresentationContextProvider: NSObject, @MainActor ASWebAuthenticationPresentationContextProviding {
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         let activeScene = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
