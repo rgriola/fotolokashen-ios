@@ -78,22 +78,22 @@ final class APIClientTests: XCTestCase {
 
     // MARK: - Backend URL Security
 
-    func testBackendURLValidatorAcceptsHTTPS() throws {
+    nonisolated func testBackendURLValidatorAcceptsHTTPS() throws {
         let url = URL(string: "https://api.example.test")!
         XCTAssertEqual(try BackendURLValidator.validate(url, allowsInsecureHTTP: false), url)
     }
 
-    func testBackendURLValidatorRejectsHTTPWhenInsecureTransportIsDisabled() {
+    nonisolated func testBackendURLValidatorRejectsHTTPWhenInsecureTransportIsDisabled() {
         let url = URL(string: "http://api.example.test")!
         XCTAssertThrowsError(try BackendURLValidator.validate(url, allowsInsecureHTTP: false))
     }
 
-    func testBackendURLValidatorAllowsHTTPWhenExplicitlyEnabledForDebug() throws {
+    nonisolated func testBackendURLValidatorAllowsHTTPWhenExplicitlyEnabledForDebug() throws {
         let url = URL(string: "http://localhost:8080")!
         XCTAssertEqual(try BackendURLValidator.validate(url, allowsInsecureHTTP: true), url)
     }
 
-    func testBackendURLValidatorRejectsUnsupportedSchemesAndMalformedHosts() {
+    nonisolated func testBackendURLValidatorRejectsUnsupportedSchemesAndMalformedHosts() {
         XCTAssertThrowsError(
             try BackendURLValidator.validate(URL(string: "ftp://api.example.test")!, allowsInsecureHTTP: true)
         )

@@ -15,7 +15,7 @@ import Combine
 // 2. uploadSecurely() has inconsistent response handling — tries both wrapped { data: ... } and
 //    direct SecureUploadResponse formats. Pick one canonical format matching the backend.
 @MainActor
-class PhotoUploadService: ObservableObject {
+class PhotoUploadService: ObservableObject, PhotoUploadServicing {
     
     // MARK: - Published Properties
     

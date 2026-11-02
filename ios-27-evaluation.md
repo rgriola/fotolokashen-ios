@@ -43,11 +43,13 @@ performed.
 
 ### Phase 7 SDK build — November 1, 2026
 
-**Status:** 7.1, 7.2 and 7.4 are complete locally. The current candidate's Maps
-runtime checks (7.3) and physical-device regression (7.5) remain open. This is
-not a release approval; Phase 2.7 and the accessibility gates also remain open.
+**Status:** 7.1, 7.2 and 7.4 are complete locally. On November 1, the owner
+reported that the app works on a physical device and Google Maps renders.
+Clustering, marker taps, simulator Maps checks and the full physical-device
+regression have not yet been confirmed, so 7.3 and 7.5 remain open. This is not
+a release approval; Phase 2.7 and the accessibility gates also remain open.
 
-**Environment and tests:** Xcode 27.2 (27B52), iOS 27.2 SDK, iOS 18.6
+**Phase 7 baseline environment and tests:** Xcode 27.2 (27B52), iOS 27.2 SDK, iOS 18.6
 deployment target, and Swift 5 language mode. Fresh DerivedData builds succeeded
 for Debug simulator testing and a signed Release iOS device artifact. The
 shared test plan passed **131 tests**, with zero failures, skips or reported
@@ -65,12 +67,13 @@ placeholder.
 
 Test hosts were signed and their backend was verified as an unreachable HTTPS
 loopback endpoint before execution. No production account or physical device
-was used. The signed Release device artifact was inspected privately: its
-configured backend is HTTPS, its bundled Maps keys match, Release ATS disables
-local networking, the scene manifest and launch storyboard are present, the
-signature is valid and non-ad-hoc, and no xcconfig files are bundled. This
-build was not installed or submitted. GoogleMaps 10.8.0, GoogleMapsUtils 7.1.0,
-and Kingfisher 8.8.1 linked without changing `Package.resolved`.
+was used for those automated runs. The signed Release device artifact was
+inspected privately: its configured backend is HTTPS, its bundled Maps keys
+match, Release ATS disables local networking, the scene manifest and launch
+storyboard are present, the signature is valid and non-ad-hoc, and no xcconfig
+files are bundled. This artifact had not been installed or submitted at the
+time of that inspection. GoogleMaps 10.8.0, GoogleMapsUtils 7.1.0, and
+Kingfisher 8.8.1 linked without changing `Package.resolved`.
 
 **Diagnostics:** A clean Debug build has **101 compiler warnings** (app 19,
 unit tests 71, UI tests 11), plus a SwiftLint-not-installed script warning at
@@ -151,9 +154,10 @@ release notes and their deprecation sections against the 0.6 baseline.
 
 **Remaining checks and known limits:**
 
-- Exercise Maps rendering, clustering and marker taps in this SDK-built
-  candidate on simulator and device using an authorized disposable test setup.
-  The earlier 1.6.2 device confirmation is not evidence for this build.
+- The owner reports that Google Maps renders on a device; the tested build and
+  OS were not specified. Confirm the SDK-built candidate and exercise
+  clustering and marker taps on simulator and device using an authorized
+  disposable test setup.
 - Complete the device regression, including auth presentation, Keychain,
   photo picking, deep/universal links and a safe data-preserving upgrade. The
   SwiftData quarantine/recreate recovery path is not a migration.
@@ -170,6 +174,54 @@ release notes and their deprecation sections against the 0.6 baseline.
   [`loadPhotos()`](fotolokashen/fotolokashen/Services/LocationDetail/LocationDetailViewModel.swift)
   requests can commit out of order. Gallery revision tracking prevents stale
   pager callbacks; it does not order network responses.
+
+### Swift 6 compiler follow-up — November 1, 2026
+
+The owner enabled Swift 6 language mode for the app's Debug and Release
+configurations. Unit and UI test targets remain in Swift 5 mode. The existing
+MainActor default isolation, complete strict-concurrency checking and iOS 18.6
+deployment target are unchanged.
+
+The two reported `LocalizedError` conformance errors were fixed by making the
+immutable error types in
+[`KeychainService.swift`](fotolokashen/fotolokashen/Services/Networking/KeychainService.swift)
+explicitly `nonisolated`. Subsequent full builds exposed additional actor-boundary
+errors, which were also resolved:
+
+- The stateless backend URL validator is `nonisolated`; HTTPS validation and
+  Debug/Release transport policy are unchanged.
+- SwiftData predicates capture scalar location/photo IDs rather than key paths
+  into captured API models. Cached-location conversion is explicitly MainActor
+  isolated; persisted fields and the schema are unchanged.
+- The location authorization callback reads the owned manager's current status
+  inside its existing MainActor task, without transferring the callback manager.
+- The MainActor upload-service protocol requires checked `Sendable` conformance,
+  allowing its existential to be shared with the upload-queue actor. The
+  conformance is declared on `PhotoUploadService` itself, because Swift 6
+  requires `Sendable` to be declared in the same source file.
+- The custom cluster renderer keeps MainActor isolation and its isolated
+  delegate conformance. Its supported initializer is
+  `init(mapView:iconGenerator:)`; incompatible inherited Objective-C initializers
+  are unavailable. There were no executable call sites to migrate.
+
+No new `@unchecked Sendable`, `@preconcurrency`, runtime actor assumptions,
+Keychain storage/migration changes, or deployment-target changes were introduced.
+
+**Validation:** Debug simulator `build-for-testing` and a Release device
+build (unsigned) both succeeded from a clean build directory with the app
+compiler using `-swift-version 6` and zero compiler errors. Nine app warnings
+remain, in `MapView.swift` (camera-update closure) and `PhotoPickerView.swift`
+(picker callbacks). The full `fotolokashenTests` unit suite passed: **130 tests,
+0 failures**. It ran serially on a disposable, signed iOS 27.0 simulator, which
+was deleted afterwards. The suite includes `KeychainServiceTests`,
+`APIClientTests` and the new `DataManagerTests` upsert regression. Tests used an
+unreachable HTTPS loopback backend; no physical device or production account was
+used. UI tests were not run.
+
+SwiftLint remains at 315 warnings and 5 existing errors. This follow-up does not
+close Phases 3 or 4: test targets have not moved to Swift 6, the nine warnings
+remain, and the current candidate still needs the outstanding device, Maps and
+accessibility checks.
 
 ### Phase 5 implementation — November 1, 2026
 
@@ -607,8 +659,10 @@ was not installed when this baseline was recorded).
 ### Phase 7 — Build against the iOS 27 SDK `(this Mac, Xcode 27.2; 7.0 in Step 0, 7.1–7.5 in Step 3)`
 
 Earlier runtime compatibility was confirmed for 1.6.2 on an iOS 27 device,
-including Google Maps. That does not verify the current candidate built with
-the iOS 27 SDK; its Maps runtime and device regression remain separate gates.
+including Google Maps. On November 1, the owner also reported that the app works
+on a device and Maps renders, without specifying the build or the full test
+coverage. The current candidate's Maps and device regression remain separate
+gates.
 The SDK build does not require the separate Swift 6 language-mode work.
 The original 7.6 table row records the earlier iOS 18.0 decision; the owner
 subsequently chose iOS 18.6 and that target is already set, as noted in Phase 8.
@@ -1000,9 +1054,9 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
 
 - [x] 7.1 Clean Debug and signed Release builds with the iOS 27.2 SDK; warning delta recorded above (Nov 1, 2026)
 - [x] 7.2 iOS 27 / 27.2 and Xcode 27.2 release notes and deprecations cross-checked above (Nov 1, 2026)
-- [ ] 7.3 GoogleMaps renders + clusters in Xcode 27 build
+- [ ] 7.3 GoogleMaps renders + clusters in Xcode 27 build — owner reports device rendering; build, clustering, marker taps and simulator checks remain unconfirmed (Nov 1, 2026)
 - [x] 7.4 Pinned SPM packages build; full 131-test simulator plan passes; lockfile unchanged (Nov 1, 2026)
-- [ ] 7.5 Full regression on iOS 27 device
+- [ ] 7.5 Full regression on iOS 27 device — owner reports the app works on a device; the full checklist remains unconfirmed (Nov 1, 2026)
 
 **Release gate 🚀**
 
@@ -1024,7 +1078,7 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
 
 **Swift 6 language mode (Phase 4) 🖥️**
 
-- [ ] 4.1 `SWIFT_VERSION = 6.0`; error count recorded → **count: ____**
+- [ ] 4.1 `SWIFT_VERSION = 6.0` on all targets; app Debug/Release now build in Swift 6 with zero errors, but unit/UI tests remain Swift 5 (Nov 1, 2026)
 - [ ] 4.2 Clean build; ≤2 justified `@unchecked`/`nonisolated(unsafe)`
 - [ ] 4.3 Full tests + manual device regression (also build on 🆕 Xcode 27)
 

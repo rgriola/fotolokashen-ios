@@ -53,6 +53,7 @@ final class CachedLocation {
     }
     
     /// Convert to API Location model
+    @MainActor
     func toLocation() -> Location {
         return Location(
             id: id,

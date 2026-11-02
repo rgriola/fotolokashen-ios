@@ -54,16 +54,27 @@ class CameraClusterIconGenerator: NSObject, GMUClusterIconGenerator {
 }
 
 /// Custom cluster renderer that applies custom icons to location markers
+@MainActor
 class LocationClusterRenderer: GMUDefaultClusterRenderer {
-    
-    override init(mapView: GMSMapView, clusterIconGenerator iconGenerator: GMUClusterIconGenerator) {
+
+    @available(*, unavailable, message: "Use init(mapView:iconGenerator:) on the main actor.")
+    nonisolated override init() {
+        super.init()
+    }
+
+    @available(*, unavailable, renamed: "init(mapView:iconGenerator:)")
+    nonisolated override init(mapView: GMSMapView, clusterIconGenerator iconGenerator: GMUClusterIconGenerator) {
+        super.init(mapView: mapView, clusterIconGenerator: iconGenerator)
+    }
+
+    init(mapView: GMSMapView, iconGenerator: GMUClusterIconGenerator) {
         super.init(mapView: mapView, clusterIconGenerator: iconGenerator)
         self.delegate = self
     }
 }
 
 // MARK: - GMUClusterRendererDelegate
-extension LocationClusterRenderer: GMUClusterRendererDelegate {
+extension LocationClusterRenderer: @MainActor GMUClusterRendererDelegate {
     
     /// Called before a marker is rendered - customize the icon
     func renderer(_ renderer: GMUClusterRenderer, willRenderMarker marker: GMSMarker) {

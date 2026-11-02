@@ -8,7 +8,7 @@ import CoreLocation
 /// New surface area should be added here when (and only when) the queue grows
 /// to use it.
 @MainActor
-protocol PhotoUploadServicing: AnyObject {
+protocol PhotoUploadServicing: AnyObject, Sendable {
     func uploadCompressedPhoto(
         data compressedData: Data,
         filename: String?,
@@ -18,5 +18,3 @@ protocol PhotoUploadServicing: AnyObject {
         exifMetadata: EXIFMetadata?
     ) async throws -> Photo
 }
-
-extension PhotoUploadService: PhotoUploadServicing {}

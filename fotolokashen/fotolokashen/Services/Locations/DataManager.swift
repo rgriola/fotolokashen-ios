@@ -106,7 +106,8 @@ class DataManager: ObservableObject {
     /// Save or update location in cache (does NOT flush to disk — caller decides when to save)
     private func upsertLocation(_ location: Location) throws {
         // Check if already exists
-        let predicate = #Predicate<CachedLocation> { $0.id == location.id }
+        let locationId = location.id
+        let predicate = #Predicate<CachedLocation> { $0.id == locationId }
         let descriptor = FetchDescriptor<CachedLocation>(predicate: predicate)
         let existing = try modelContext.fetch(descriptor).first
         
@@ -166,7 +167,8 @@ class DataManager: ObservableObject {
     
     /// Save or update photo in cache
     func savePhoto(_ photo: Photo, locationId: Int) throws {
-        let predicate = #Predicate<CachedPhoto> { $0.id == photo.id }
+        let photoId = photo.id
+        let predicate = #Predicate<CachedPhoto> { $0.id == photoId }
         let descriptor = FetchDescriptor<CachedPhoto>(predicate: predicate)
         let existing = try modelContext.fetch(descriptor).first
         

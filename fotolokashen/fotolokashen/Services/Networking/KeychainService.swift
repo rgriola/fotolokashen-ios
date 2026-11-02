@@ -167,7 +167,7 @@ final class KeychainService {
 
 protocol KeychainAccessFailure: Error {}
 
-enum KeychainServiceError: LocalizedError, KeychainAccessFailure {
+nonisolated enum KeychainServiceError: LocalizedError, KeychainAccessFailure {
     case invalidCredentialEncoding
     case migrationVerificationFailed
 
@@ -241,7 +241,7 @@ struct SecItemKeychainStore: KeychainItemStore {
     }
 }
 
-private struct SecItemKeychainError: LocalizedError, KeychainAccessFailure {
+private nonisolated struct SecItemKeychainError: LocalizedError, KeychainAccessFailure {
     let status: OSStatus
     var errorDescription: String? {
         "Keychain operation failed (OSStatus \(status))."

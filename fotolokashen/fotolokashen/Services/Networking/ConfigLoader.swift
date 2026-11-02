@@ -191,7 +191,7 @@ nonisolated final class ConfigLoader: @unchecked Sendable {
 
 /// Validates the backend endpoint before it can be used for network requests.
 /// Release callers must require HTTPS; HTTP is only permitted in Debug builds.
-enum BackendURLValidator {
+nonisolated enum BackendURLValidator {
     enum ValidationError: Error {
         case invalidURL
         case unsupportedScheme

@@ -11,6 +11,16 @@ final class KeychainServiceTests: XCTestCase {
         try super.tearDownWithError()
     }
 
+    nonisolated func testServiceErrorsCanBeLocalizedOutsideMainActor() {
+        let decodingError: any LocalizedError = KeychainServiceError.invalidCredentialEncoding
+        let migrationError: any LocalizedError = KeychainServiceError.migrationVerificationFailed
+
+        XCTAssertEqual(decodingError.errorDescription, "A stored credential could not be decoded.")
+        XCTAssertEqual(migrationError.errorDescription, "Stored credentials could not be verified after migration.")
+        XCTAssertTrue(decodingError is any KeychainAccessFailure)
+        XCTAssertTrue(migrationError is any KeychainAccessFailure)
+    }
+
     /// Regression test for the token-refresh logout bug: refreshing the access token
     /// must not require (or wipe) the existing refresh token or user id.
     func testUpdateAccessTokenRotatesAccessTokenOnly() throws {

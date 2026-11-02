@@ -93,7 +93,7 @@ extension LocationManager: CLLocationManagerDelegate {
     
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         Task { @MainActor in
-            authorizationStatus = manager.authorizationStatus
+            authorizationStatus = self.locationManager.authorizationStatus
             
             if config.enableDebugLogging {
                 dlog("LocationManager", "Authorization status: \(authorizationStatus.rawValue)")
