@@ -73,43 +73,92 @@ private struct PermissionRow: View {
     let description: String
     let isGranted: Bool
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .body) private var iconColumnWidth: CGFloat = 24
+
+    private var permissionIcon: some View {
+        Image(systemName: icon)
+            .font(.body)
+            .foregroundStyle(isGranted ? Color.green : Color.secondary)
+            .frame(minWidth: iconColumnWidth)
+            .accessibilityHidden(true)
+    }
+
+    private var status: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(isGranted ? Color.green : Color.red)
+                .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
+
+            Text(isGranted ? "On" : "Off")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(isGranted ? Color.green : Color.red)
+        }
+    }
+
+    private var settingsIcon: some View {
+        Image(systemName: "arrow.up.right.square")
+            .font(.caption)
+            .foregroundStyle(Color.secondary)
+            .accessibilityHidden(true)
+    }
+
     var body: some View {
         Button {
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 UIApplication.shared.open(url)
             }
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .foregroundStyle(isGranted ? Color.green : Color.secondary)
-                    .frame(width: 24)
+            Group {
+                if dynamicTypeSize >= .accessibility1 {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 12) {
+                            permissionIcon
+                            Text(label)
+                                .foregroundStyle(Color.primary)
+                                .font(.body)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(label)
-                        .foregroundStyle(Color.primary)
-                        .font(.body)
-                    Text(description)
-                        .foregroundStyle(Color.secondary)
-                        .font(.caption)
+                        Text(description)
+                            .foregroundStyle(Color.secondary)
+                            .font(.caption)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        HStack(spacing: 12) {
+                            status
+                            settingsIcon
+                        }
+                    }
+                } else {
+                    HStack(spacing: 12) {
+                        permissionIcon
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(label)
+                                .foregroundStyle(Color.primary)
+                                .font(.body)
+                            Text(description)
+                                .foregroundStyle(Color.secondary)
+                                .font(.caption)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Spacer()
+                        status
+                        settingsIcon
+                    }
                 }
-
-                Spacer()
-
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(isGranted ? Color.green : Color.red)
-                        .frame(width: 8, height: 8)
-                    Text(isGranted ? "On" : "Off")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(isGranted ? Color.green : Color.red)
-                }
-
-                Image(systemName: "arrow.up.right.square")
-                    .font(.caption)
-                    .foregroundStyle(Color.secondary)
             }
+            .frame(minWidth: 44, maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("\(label), \(description)"))
+        .accessibilityValue(Text(isGranted ? "On" : "Off"))
+        .accessibilityHint("Opens iOS Settings to change permissions.")
     }
 }
 

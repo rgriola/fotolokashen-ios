@@ -37,6 +37,34 @@ final class fotolokashenUITests: XCTestCase {
     }
 
     @MainActor
+    func testLoginActionsRemainReachable() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        XCTAssertTrue(app.buttons["login.signInButton"].waitForExistence(timeout: 15))
+        let initialScreenshot = XCTAttachment(screenshot: app.screenshot())
+        initialScreenshot.name = "Login before scrolling"
+        initialScreenshot.lifetime = .keepAlways
+        add(initialScreenshot)
+
+        for name in ["login.signInButton", "Create Account", "Forgot Password?"] {
+            let button = app.buttons[name]
+            XCTAssertTrue(button.waitForExistence(timeout: 15), "\(name) was not found")
+            for _ in 0..<3 {
+                if button.isHittable { break }
+                app.swipeUp()
+            }
+            XCTAssertTrue(button.isHittable, "\(name) must be reachable")
+        }
+
+        app.swipeUp()
+        let scrolledScreenshot = XCTAttachment(screenshot: app.screenshot())
+        scrolledScreenshot.name = "Login after scrolling"
+        scrolledScreenshot.lifetime = .keepAlways
+        add(scrolledScreenshot)
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {

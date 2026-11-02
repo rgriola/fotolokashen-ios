@@ -1143,7 +1143,10 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
 
 - [ ] 6.1 Labels on all icon-only controls (X-3) — static source sweep of user-facing Views and root app UI fixed identified camera, photo, location, search, rating, sorting and error control gaps; six UI tests pass. Required VoiceOver pass on Map, Locations, Detail and People remains open (Nov 2, 2026)
 - [ ] 6.2 Map VoiceOver path (X-2) — added a map-region label and hint; the Spots tab provides the list alternative. VoiceOver verification of map/marker access and focus after opening details remains open (Nov 2, 2026)
-- [ ] 6.3 Dynamic Type at `.accessibility5` (X-4)
+- [ ] 6.3 Dynamic Type at `.accessibility5` (X-4) — in progress (Nov 2, 2026).
+  - Map controls and permission icons now use scaled metrics; permission rows reflow at accessibility sizes. The signed-out login screen now scrolls and wraps instead of truncating its actions.
+  - On a disposable iPhone 17/iOS 27 simulator, login screenshots were reviewed at `.accessibility3` and `.accessibility5`, and a UI test confirmed all three login actions remain reachable at both sizes. The full standard-size suite passed 130 unit and 7 UI tests; an unsigned Release build succeeded.
+  - The screenshot audit remains open for Location Detail, Account Security, Locations, Map, Camera and Edit Profile (selected by pre-change source-line count in `Views/` as a proxy for the six largest screens), plus Permissions. The disposable simulator was signed out, so those authenticated screens were not inspected. Verify both accessibility sizes, narrow/landscape layouts, map occlusion and attribution, and VoiceOver on a signed-in test device.
 - [ ] 6.4 Accessibility Inspector audit clean
 - [ ] 6.5 App Store Accessibility Nutrition Label (X-5)
 

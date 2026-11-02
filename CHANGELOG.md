@@ -4,7 +4,14 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 ## [Unreleased] - iOS 27 readiness
 
-Updated October 30, 2026, 13:52 EDT.
+Updated November 2, 2026.
+
+### Accessibility and Dynamic Type — Phase 6 (in progress)
+
+- Added accessible labels for icon-only camera, photo, location, search, rating, sorting, and error controls. The map now has a region label and hint; the Spots tab is the list alternative.
+- Large text now has a scrolling login layout, scaled map controls, and vertically reflowing permission rows. Login screenshots were reviewed at `.accessibility3` and `.accessibility5`; a UI test confirms all login actions remain reachable at both sizes.
+- The full iOS 27.2 simulator suite passed: 130 unit tests and 7 UI tests. An unsigned Release build succeeded. SwiftLint reports 314 warnings and 5 errors.
+- Phase 6.1/6.2 VoiceOver checks and 6.3 screenshots for signed-in screens, Permissions, landscape, and map occlusion remain open. No Accessibility Inspector audit or device VoiceOver walkthrough has been completed.
 
 Phase 1 completed: production OAuth, physical-device upgrade, native Maps key
 restrictions, and deployed auto-login compatibility confirmed by the user.

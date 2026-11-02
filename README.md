@@ -1,10 +1,10 @@
-# fotolokashen iOS v1.6.0
+# fotolokashen iOS v1.6.3
 
 iOS companion app for fotolokashen — a camera-first location scouting app for photographers and film crews.
 
 **Production URL**: https://fotolokashen.com  
 **Status**: ✅ Active Development | Build: Passing  
-**Last Updated**: November 1, 2026
+**Last Updated**: November 2, 2026
 
 ---
 
@@ -18,6 +18,7 @@ The fotolokashen iOS app allows users to quickly capture photos with GPS coordin
 
 ### Unreleased
 
+- ♿ **Accessibility & Dynamic Type (in progress)** — Icon controls now have accessible labels; the map has a region description; large-text login content scrolls and wraps; map controls scale and permission rows reflow. Login text and action reachability were verified at `.accessibility3` and `.accessibility5`; VoiceOver and the remaining screen audits are still open.
 - 🐛 **Auth Fix** — A single 401 no longer logs the user out; `APIClient` refreshes the access token and retries once before invalidating the session
 - 🐛 **People Search Fix** — Discover search was silently failing on every query (unauthenticated request + a response model mismatch); both are corrected and search now returns results
 - 🐛 **Photo Gallery Fix** — Inline and full-screen selection stays valid as photos are removed or reloaded

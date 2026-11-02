@@ -17,6 +17,8 @@ import MapKit
 //    the unused cluster classes.
 struct MapView: View {
     @EnvironmentObject var authService: AuthService
+    @ScaledMetric(relativeTo: .title3) private var friendsControlSize: CGFloat = 50
+    @ScaledMetric(relativeTo: .title2) private var locationControlSize: CGFloat = 50
     @ObservedObject private var locationStore = LocationStore.shared
     @ObservedObject private var followService = FollowService.shared
     @State private var selectedLocation: Location?
@@ -84,7 +86,10 @@ struct MapView: View {
                             }
                             .font(.title3)
                             .foregroundStyle(Color.white)
-                            .frame(width: 50, height: 50)
+                            .frame(
+                                width: max(44, friendsControlSize),
+                                height: max(44, friendsControlSize)
+                            )
                             .background(showFriendsLocations ? Color.brand : Color(.systemGray2))
                             .clipShape(Circle())
                             .shadow(radius: 4)
@@ -107,7 +112,10 @@ struct MapView: View {
                             Image(systemName: "location.fill")
                                 .font(.title2)
                                 .foregroundStyle(Color.white)
-                                .frame(width: 50, height: 50)
+                                .frame(
+                                    width: max(44, locationControlSize),
+                                    height: max(44, locationControlSize)
+                                )
                                 .background(Color.brand)
                                 .clipShape(Circle())
                                 .shadow(radius: 4)

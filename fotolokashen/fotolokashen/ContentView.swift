@@ -28,6 +28,7 @@ struct ContentView: View {
 struct LoginView: View {
     @EnvironmentObject var authService: AuthService
     @EnvironmentObject var deepLinkManager: DeepLinkManager
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     // Native UI states for auth flow feedback
     @State private var showAwaitingVerification = false
@@ -46,106 +47,13 @@ struct LoginView: View {
             )
             .ignoresSafeArea()
             
-            VStack(spacing: 30) {
-                Spacer()
-                
-                // Logo
-                Image("Flogo")
-                    .resizable()
-                    .scaledToFit()
-                   // .frame(width: 120, height: 120)
-                
-             /*
-                Text("fotolokashen")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.white)
-            */
-                
-                Text("Production Knowledge")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.white)
-                
-                Spacer()
-                
-                VStack(spacing: 15) {
-                    Button(action: {
-                        authService.startLogin()
-                    }) {
-                        HStack {
-                            if authService.isLoading {
-                                ProgressView()
-                                    .progressViewStyle(.circular)
-                                    .tint(.brand)
-                            } else {
-                                Image(systemName: "person.circle.fill")
-                                Text("Sign In")
-                            }
-                        }
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.white)
-                        .foregroundStyle(Color.brand)
-                        .cornerRadius(12)
-                    }
-                    .disabled(authService.isLoading)
-                    .accessibilityIdentifier("login.signInButton")
-                    
-                    Button(action: {
-                        authService.startRegistration()
-                    }) {
-                        HStack {
-                            Image(systemName: "person.badge.plus")
-                            Text("Create Account")
-                        }
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.white.opacity(0.2))
-                        .foregroundStyle(Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                        )
-                    }
-                    .disabled(authService.isLoading)
-
-                    Button(action: {
-                        authService.startForgotPassword()
-                    }) {
-                        Text("Forgot Password?")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.white.opacity(0.8))
-                    }
-                    .disabled(authService.isLoading)
-
-                    #if DEBUG
-                    // Shows which backend the app is hitting, to confirm dev-server connectivity.
-                    Text("Connected to: \(ConfigLoader.shared.backendBaseURL)")
-                        .font(.caption2)
-                        .foregroundStyle(Color.white.opacity(0.6))
-                    #endif
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView {
+                    loginContent
                 }
-                .padding(.horizontal, 40)
-                
-                if let error = authService.errorMessage {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(Color.white)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                        .background(Color.red.opacity(0.3))
-                        .cornerRadius(8)
-                        .padding(.horizontal)
-                }
-                
-                Spacer()
-                
-
+            } else {
+                loginContent
             }
-            .padding()
         }
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
@@ -235,6 +143,146 @@ struct LoginView: View {
         }
         .onDisappear {
             pendingLoginTask?.cancel()
+        }
+    }
+
+    private var loginContent: some View {
+        VStack(spacing: 30) {
+            if !dynamicTypeSize.isAccessibilitySize {
+                Spacer()
+            }
+
+            if dynamicTypeSize.isAccessibilitySize {
+                Image("Flogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 160, maxHeight: 160)
+                    .accessibilityLabel("Fotolokashen")
+            } else {
+                Image("Flogo")
+                    .resizable()
+                    .scaledToFit()
+                    .accessibilityLabel("Fotolokashen")
+            }
+
+            Text("Production Knowledge")
+                .font(.subheadline)
+                .foregroundStyle(Color.white)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if !dynamicTypeSize.isAccessibilitySize {
+                Spacer()
+            }
+
+            VStack(spacing: 15) {
+                Button(action: {
+                    authService.startLogin()
+                }) {
+                    Group {
+                        if authService.isLoading {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(.brand)
+                        } else {
+                            authButtonContent(icon: "person.circle.fill", title: "Sign In")
+                        }
+                    }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .frame(minWidth: 44, minHeight: 44)
+                    .background(Color.white)
+                    .foregroundStyle(Color.brand)
+                    .cornerRadius(12)
+                    .contentShape(Rectangle())
+                }
+                .disabled(authService.isLoading)
+                .accessibilityLabel("Sign In")
+                .accessibilityValue(authService.isLoading ? Text("Loading") : Text(""))
+                .accessibilityIdentifier("login.signInButton")
+
+                Button(action: {
+                    authService.startRegistration()
+                }) {
+                    authButtonContent(icon: "person.badge.plus", title: "Create Account")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .frame(minWidth: 44, minHeight: 44)
+                        .background(Color.white.opacity(0.2))
+                        .foregroundStyle(Color.white)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                        )
+                        .contentShape(Rectangle())
+                }
+                .disabled(authService.isLoading)
+                .accessibilityLabel("Create Account")
+
+                Button(action: {
+                    authService.startForgotPassword()
+                }) {
+                    Text("Forgot Password?")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .disabled(authService.isLoading)
+
+                #if DEBUG
+                // Shows which backend the app is hitting, to confirm dev-server connectivity.
+                Text("Connected to: \(ConfigLoader.shared.backendBaseURL)")
+                    .font(.caption2)
+                    .foregroundStyle(Color.white.opacity(0.6))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                #endif
+            }
+            .padding(.horizontal, dynamicTypeSize.isAccessibilitySize ? 16 : 40)
+
+            if let error = authService.errorMessage {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(Color.white)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding()
+                    .background(Color.red.opacity(0.3))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+            }
+
+            if !dynamicTypeSize.isAccessibilitySize {
+                Spacer()
+            }
+        }
+        .padding()
+    }
+
+    @ViewBuilder
+    private func authButtonContent(icon: String, title: LocalizedStringKey) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack {
+                Image(systemName: icon)
+                    .accessibilityHidden(true)
+                Text(title)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } else {
+            HStack {
+                Image(systemName: icon)
+                    .accessibilityHidden(true)
+                Text(title)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
