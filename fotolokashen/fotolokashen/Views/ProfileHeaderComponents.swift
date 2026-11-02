@@ -39,7 +39,7 @@ struct ProfileBannerView: View {
                 Button {
                     onDelete()
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
+                    Image(systemName: AppIcons.closeCircle)
                         .font(.title3)
                         .foregroundStyle(Color.white)
                         .shadow(radius: 2)
@@ -109,7 +109,7 @@ struct ProfileAvatarView<MenuContent: View>: View {
                 Button {
                     onEdit()
                 } label: {
-                    Image(systemName: "camera.fill")
+                    Image(systemName: AppIcons.cameraFill)
                         .font(.system(size: 10))
                         .foregroundStyle(Color.white)
                         .padding(5)

@@ -559,9 +559,9 @@ struct LocationDetailView: View {
 
     private func visibilityIcon(for visibility: String) -> String {
         switch visibility.lowercased() {
-        case "public": return "globe"
-        case "unlisted": return "person.2"
-        default: return "lock"
+        case "public": return AppIcons.visibilityPublic
+        case "unlisted": return AppIcons.people
+        default: return AppIcons.lock
         }
     }
 

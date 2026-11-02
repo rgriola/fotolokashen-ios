@@ -58,7 +58,7 @@ private struct DiscoverTab: View {
         VStack(spacing: 0) {
             // Search bar
             HStack {
-                Image(systemName: "magnifyingglass")
+                Image(systemName: AppIcons.search)
                     .foregroundStyle(Color.secondary)
 
                 TextField("Search by username, name, or city...", text: $searchText)
@@ -86,7 +86,7 @@ private struct DiscoverTab: View {
                         searchResults = []
                         hasSearched = false
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
+                        Image(systemName: AppIcons.closeCircle)
                             .foregroundStyle(Color.secondary)
                     }
                     .accessibilityLabel("Clear people search")
@@ -104,7 +104,7 @@ private struct DiscoverTab: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if searchResults.isEmpty && hasSearched {
                 VStack(spacing: 12) {
-                    Image(systemName: "person.slash")
+                    Image(systemName: AppIcons.personSlash)
                         .font(.system(size: 40))
                         .foregroundStyle(Color.secondary)
                     Text("No users found")
@@ -117,7 +117,7 @@ private struct DiscoverTab: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if searchResults.isEmpty {
                 VStack(spacing: 12) {
-                    Image(systemName: "person.2.circle")
+                    Image(systemName: AppIcons.peopleCircle)
                         .font(.system(size: 40))
                         .foregroundStyle(Color.secondary)
                     Text("Find People")
@@ -208,7 +208,7 @@ private struct SearchUserRow: View {
 
                 if let location = user.locationString, !location.isEmpty {
                     HStack(spacing: 4) {
-                        Image(systemName: "mappin")
+                        Image(systemName: AppIcons.mappin)
                             .font(.caption2)
                         Text(location)
                             .font(.caption2)
@@ -219,7 +219,7 @@ private struct SearchUserRow: View {
 
             Spacer()
 
-            Image(systemName: "chevron.right")
+            Image(systemName: AppIcons.forward)
                 .font(.caption)
                 .foregroundStyle(Color.secondary)
         }
@@ -256,7 +256,7 @@ private struct MyFollowingTab: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if users.isEmpty {
                 VStack(spacing: 12) {
-                    Image(systemName: "person.2")
+                    Image(systemName: AppIcons.people)
                         .font(.system(size: 40))
                         .foregroundStyle(Color.secondary)
                     Text("Not following anyone yet")
@@ -355,7 +355,7 @@ private struct MyFollowersTab: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if users.isEmpty {
                 VStack(spacing: 12) {
-                    Image(systemName: "person.2.slash")
+                    Image(systemName: AppIcons.peopleSlash)
                         .font(.system(size: 40))
                         .foregroundStyle(Color.secondary)
                     Text("No followers yet")

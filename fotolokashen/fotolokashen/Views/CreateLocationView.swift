@@ -159,7 +159,7 @@ struct CreateLocationView: View {
             // GPS Spread Info Banner
             if let spread = viewModel.spreadResult, spread.exceedsThreshold {
                 HStack(spacing: 8) {
-                    Image(systemName: "mappin.and.ellipse")
+                    Image(systemName: AppIcons.mappinAndEllipse)
                         .foregroundStyle(Color.orange)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Photos span \(spread.spreadDescription)")
@@ -264,7 +264,7 @@ struct CreateLocationView: View {
                     }
                 } else {
                     HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: "mappin.and.ellipse")
+                        Image(systemName: AppIcons.mappinAndEllipse)
                             .foregroundStyle(Color.brand)
                             .frame(width: 20)
                             .padding(.top, 2)
@@ -296,7 +296,7 @@ struct CreateLocationView: View {
                     .padding(.vertical, 4)
                 }
             } else {
-                Label("No GPS data available", systemImage: "location.slash")
+                Label("No GPS data available", systemImage: AppIcons.locationSlash)
                     .foregroundStyle(Color.orange)
             }
         }
@@ -345,8 +345,12 @@ struct CreateLocationView: View {
 // MARK: - Preview
 
 #Preview {
-    CreateLocationView(
-        photo: UIImage(systemName: "photo.fill")!,
-        photoLocation: CLLocation(latitude: 37.7749, longitude: -122.4194)
-    )
+    if let photo = AppIcons.uiImage(for: AppIcons.photoFill) {
+        CreateLocationView(
+            photo: photo,
+            photoLocation: CLLocation(latitude: 37.7749, longitude: -122.4194)
+        )
+    } else {
+        Text("SF Symbol unavailable: \(AppIcons.photoFill)")
+    }
 }

@@ -613,10 +613,10 @@ final class CameraService: NSObject, ObservableObject {
     /// SF Symbol name for the current flash mode.
     var flashIconName: String {
         switch flashMode {
-        case .auto: return "bolt.badge.automatic"
-        case .on:   return "bolt.fill"
-        case .off:  return "bolt.slash.fill"
-        @unknown default: return "bolt.badge.automatic"
+        case .auto: return AppIcons.boltBadgeAutomatic
+        case .on:   return AppIcons.boltFill
+        case .off:  return AppIcons.boltSlashFill
+        @unknown default: return AppIcons.boltBadgeAutomatic
         }
     }
 

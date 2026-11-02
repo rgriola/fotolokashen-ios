@@ -18,25 +18,25 @@ struct PermissionsView: View {
         Form {
             Section {
                 PermissionRow(
-                    icon: "location.fill",
+                    icon: AppIcons.locationFill,
                     label: "Location (GPS)",
                     description: "Used to show nearby locations on the map.",
                     isGranted: locationStatus == .authorizedWhenInUse || locationStatus == .authorizedAlways
                 )
                 PermissionRow(
-                    icon: "camera.fill",
+                    icon: AppIcons.cameraFill,
                     label: "Camera",
                     description: "Used to take photos for your profile and locations.",
                     isGranted: cameraStatus == .authorized
                 )
                 PermissionRow(
-                    icon: "photo.fill",
+                    icon: AppIcons.photoFill,
                     label: "Photo Library",
                     description: "Used to upload photos from your library.",
                     isGranted: photoStatus == .authorized || photoStatus == .limited
                 )
                 PermissionRow(
-                    icon: "bell.fill",
+                    icon: AppIcons.bellFill,
                     label: "Notifications",
                     description: "Used to send alerts for followers and activity.",
                     isGranted: notificationStatus == .authorized || notificationStatus == .provisional
@@ -99,7 +99,7 @@ private struct PermissionRow: View {
     }
 
     private var settingsIcon: some View {
-        Image(systemName: "arrow.up.right.square")
+        Image(systemName: AppIcons.arrowUpRightSquare)
             .font(.caption)
             .foregroundStyle(Color.secondary)
             .accessibilityHidden(true)

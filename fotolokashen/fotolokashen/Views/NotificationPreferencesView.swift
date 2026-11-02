@@ -27,7 +27,7 @@ struct NotificationPreferencesView: View {
             // Future: push notifications section
             Section {
                 HStack {
-                    Label("Push Notifications", systemImage: "bell.badge")
+                    Label("Push Notifications", systemImage: AppIcons.bellBadge)
                     Spacer()
                     Text("Coming Soon")
                         .font(.caption)

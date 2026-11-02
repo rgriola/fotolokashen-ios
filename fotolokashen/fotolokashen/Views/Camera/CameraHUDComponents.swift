@@ -56,7 +56,7 @@ struct ExposureSlider: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: "sun.max.fill")
+            Image(systemName: AppIcons.sunMaxFill)
                 .font(.system(size: 10))
                 .foregroundStyle(Color.yellow.opacity(0.8))
 
@@ -99,7 +99,7 @@ struct ExposureSlider: View {
                 }
             }
 
-            Image(systemName: "sun.min.fill")
+            Image(systemName: AppIcons.sunMinFill)
                 .font(.system(size: 10))
                 .foregroundStyle(Color.yellow.opacity(0.5))
         }
@@ -159,7 +159,7 @@ struct ZoomDialView: View {
             Button {
                 onDismiss()
             } label: {
-                Image(systemName: "xmark")
+                Image(systemName: AppIcons.close)
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.6))
                     .frame(width: 44, height: 44)
@@ -197,7 +197,7 @@ struct CameraGPSBadge: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: location != nil ? "location.fill" : "location.slash.fill")
+                Image(systemName: location != nil ? AppIcons.locationFill : AppIcons.locationSlashFill)
                     .font(.system(size: 10))
                 if showCoordinates, let loc = location {
                     Text(String(format: "%.4f, %.4f", loc.coordinate.latitude, loc.coordinate.longitude))
@@ -242,7 +242,7 @@ struct CameraGPSBadge: View {
 struct CameraPermissionDeniedView: View {
     var body: some View {
         VStack(spacing: 20) {
-            Image(systemName: "camera.fill")
+            Image(systemName: AppIcons.cameraFill)
                 .font(.system(size: 60))
                 .foregroundStyle(Color.secondary)
             Text("Camera Access Required")
@@ -291,7 +291,7 @@ struct CameraThumbnailStrip: View {
                             Button {
                                 onRemove(capture)
                             } label: {
-                                Image(systemName: "xmark.circle.fill")
+                                Image(systemName: AppIcons.closeCircle)
                                     .font(.system(size: 16))
                                     .foregroundStyle(Color.white)
                                     .frame(width: 44, height: 44)

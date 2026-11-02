@@ -50,7 +50,7 @@ struct CachedPhaseImage: View {
                 }
             }
             .onFailureView {
-                Image(systemName: "photo")
+                Image(systemName: AppIcons.photo)
                     .foregroundStyle(Color.secondary)
             }
             .fade(duration: 0.2)

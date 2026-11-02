@@ -71,22 +71,22 @@ struct LocationTypeColors {
         let normalizedType = type.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         
         switch normalizedType {
-        case "BROLL": return "film"
-        case "STORY": return "doc.text"
-        case "INTERVIEW": return "person.wave.2"
-        case "LIVE ANCHOR", "LIVE_ANCHOR": return "antenna.radiowaves.left.and.right"
-        case "REPORTER LIVE", "REPORTER_LIVE": return "mic.fill"
-        case "STAKEOUT": return "eye"
-        case "DRONE": return "airplane"
-        case "SCENE": return "mappin.and.ellipse"
-        case "EVENT": return "calendar"
-        case "BATHROOM": return "toilet"
-        case "OTHER": return "ellipsis.circle"
-        case "HQ": return "building.2.fill"
-        case "BUREAU": return "building"
-        case "REMOTE STAFF", "REMOTE_STAFF": return "person.crop.circle.badge.checkmark"
-        case "STORAGE": return "archivebox"
-        default: return "mappin.circle.fill"
+        case "BROLL": return AppIcons.film
+        case "STORY": return AppIcons.documentText
+        case "INTERVIEW": return AppIcons.personWave2
+        case "LIVE ANCHOR", "LIVE_ANCHOR": return AppIcons.antennaRadiowavesLeftAndRight
+        case "REPORTER LIVE", "REPORTER_LIVE": return AppIcons.micFill
+        case "STAKEOUT": return AppIcons.eye
+        case "DRONE": return AppIcons.airplane
+        case "SCENE": return AppIcons.mappinAndEllipse
+        case "EVENT": return AppIcons.calendar
+        case "BATHROOM": return AppIcons.toilet
+        case "OTHER": return AppIcons.moreCircle
+        case "HQ": return AppIcons.buildingFill
+        case "BUREAU": return AppIcons.buildingOffice
+        case "REMOTE STAFF", "REMOTE_STAFF": return AppIcons.personCropCircleBadgeCheckmark
+        case "STORAGE": return AppIcons.archivebox
+        default: return AppIcons.mapPin
         }
     }
     

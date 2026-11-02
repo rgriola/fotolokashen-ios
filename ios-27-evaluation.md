@@ -1155,5 +1155,5 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
 - [x] 7.6 Decision: iOS 18.0 (Oct 28, 2026)
 - [x] 8.1 `IPHONEOS_DEPLOYMENT_TARGET` raised on all targets — **18.6** by owner decision, landed early in 1.7.0 (Oct 29, 2026)
 - [x] 8.2 Dead `#available(iOS 17.4, *)` branch removed; `ASWebAuthenticationSession` now uses the custom-scheme callback API supported by the iOS 18.6 deployment target (Nov 2, 2026)
-- [ ] 8.3 SF Symbols centralised; verified on iOS 18.0 simulator
+- [ ] 8.3 SF Symbols centralised; verified on iOS 18.0 simulator — symbol names are centralized in `AppIcons.swift`, with a `UIImage(systemName:)` availability test covering the full catalog. The test passed on the installed iOS 27.0 simulator; Xcode 27.2 reports iOS 18.0, 18.6, and 18.7 runtimes unavailable for download, so minimum-version verification remains open (Nov 2, 2026)
 - [ ] 8.4 App Store listing updated

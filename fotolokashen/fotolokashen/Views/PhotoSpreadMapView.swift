@@ -92,7 +92,7 @@ struct PhotoSpreadMapView: View {
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "map")
+                    Image(systemName: AppIcons.map)
                         .font(.caption)
                         .foregroundStyle(Color.brand)
                     Text("Photo Locations (\(geotaggedPhotos.count) with GPS)")
@@ -100,7 +100,7 @@ struct PhotoSpreadMapView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.primary)
                     Spacer()
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    Image(systemName: isExpanded ? AppIcons.chevronUp : AppIcons.chevronDown)
                         .font(.caption)
                         .foregroundStyle(Color.secondary)
                 }
@@ -112,7 +112,7 @@ struct PhotoSpreadMapView: View {
                 Map(initialPosition: .region(mapRegion)) {
                     // Location pin (primary — red)
                     Annotation("Location", coordinate: locationCoordinate) {
-                        Image(systemName: "mappin.circle.fill")
+                        Image(systemName: AppIcons.mapPin)
                             .font(.title2)
                             .foregroundStyle(Color.red)
                             .background(
@@ -141,7 +141,7 @@ struct PhotoSpreadMapView: View {
 
                 // Span label
                 HStack {
-                    Image(systemName: "arrow.left.and.right")
+                    Image(systemName: AppIcons.arrowLeftAndRight)
                         .font(.caption2)
                         .foregroundStyle(Color.secondary)
                     Text("Span: \(spanDescription)")

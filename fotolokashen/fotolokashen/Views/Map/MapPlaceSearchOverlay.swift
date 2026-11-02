@@ -11,7 +11,7 @@ struct MapPlaceSearchOverlay: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Image(systemName: "magnifyingglass")
+                Image(systemName: AppIcons.search)
                     .foregroundStyle(Color.secondary)
                 TextField("Search Apple Maps", text: $searchService.queryFragment)
                     .focused($isSearchFieldFocused)
@@ -20,7 +20,7 @@ struct MapPlaceSearchOverlay: View {
                     Button {
                         searchService.clear()
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
+                        Image(systemName: AppIcons.closeCircle)
                             .foregroundStyle(Color.secondary)
                     }
                     .accessibilityLabel("Clear search")

@@ -61,7 +61,7 @@ struct CreateGroupSheet: View {
                         ForEach(customTypes) { custom in
                             typeRow(
                                 name: custom.typeName,
-                                icon: "tag",
+                                icon: AppIcons.tag,
                                 value: custom.typeName,
                                 isSelected: selectedType == custom.typeName
                             )
@@ -72,7 +72,7 @@ struct CreateGroupSheet: View {
                     Button {
                         showAddCustomType = true
                     } label: {
-                        Label("Add Custom Type…", systemImage: "plus.circle")
+                        Label("Add Custom Type…", systemImage: AppIcons.plusCircle)
                             .foregroundStyle(Color.blue)
                     }
                 } header: {
@@ -90,7 +90,7 @@ struct CreateGroupSheet: View {
                 // ── Error ─────────────────────────────────────────────
                 if let error = errorMessage {
                     Section {
-                        Label(error, systemImage: "exclamationmark.triangle")
+                        Label(error, systemImage: AppIcons.warning)
                             .foregroundStyle(Color.red)
                             .font(.caption)
                     }
@@ -142,7 +142,7 @@ struct CreateGroupSheet: View {
                     .foregroundStyle(Color.primary)
                 Spacer()
                 if isSelected {
-                    Image(systemName: "checkmark")
+                    Image(systemName: AppIcons.checkmark)
                         .foregroundStyle(Color.blue)
                         .fontWeight(.semibold)
                 }

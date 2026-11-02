@@ -25,6 +25,7 @@
 //  ============================================================================
 
 import SwiftUI
+import UIKit
 
 /// Centralized SF Symbol icon names for consistency across the app
 enum AppIcons {
@@ -182,6 +183,113 @@ enum AppIcons {
     
     /// Location coordinates
     static let coordinates = "location.circle"
+
+    static let airplane = "airplane"
+    static let antennaRadiowavesLeftAndRight = "antenna.radiowaves.left.and.right"
+    static let archivebox = "archivebox"
+    static let arrowClockwise = "arrow.clockwise"
+    static let arrowLeftAndRight = "arrow.left.and.right"
+    static let arrowTriangle2CirclepathCamera = "arrow.triangle.2.circlepath.camera"
+    static let arrowUpArrowDown = "arrow.up.arrow.down"
+    static let arrowUpRightSquare = "arrow.up.right.square"
+    static let at = "at"
+    static let bellBadge = "bell.badge"
+    static let bellFill = "bell.fill"
+    static let boltBadgeAutomatic = "bolt.badge.automatic"
+    static let boltFill = "bolt.fill"
+    static let boltSlashFill = "bolt.slash.fill"
+    static let book = "book"
+    static let buildingFill = "building.2.fill"
+    static let buildingOffice = "building"
+    static let calendarBadgeClock = "calendar.badge.clock"
+    static let cameraFill = "camera.fill"
+    static let chevronDown = "chevron.down"
+    static let chevronUp = "chevron.up"
+    static let circle = "circle"
+    static let clock = "clock"
+    static let clockFill = "clock.fill"
+    static let documentText = "doc.text"
+    static let documentTextFill = "doc.text.fill"
+    static let envelope = "envelope"
+    static let envelopeBadge = "envelope.badge"
+    static let envelopeFill = "envelope.fill"
+    static let envelopeOpen = "envelope.open"
+    static let error = "xmark.octagon.fill"
+    static let eye = "eye"
+    static let eyeSlashFill = "eye.slash.fill"
+    static let film = "film"
+    static let folder = "folder"
+    static let gearshapeFill = "gearshape.fill"
+    static let globeAmericas = "globe.americas"
+    static let globeAmericasFill = "globe.americas.fill"
+    static let handRaisedFill = "hand.raised.fill"
+    static let infoCircleFill = "info.circle.fill"
+    static let keyFill = "key.fill"
+    static let locationFill = "location.fill"
+    static let locationSlash = "location.slash"
+    static let locationSlashFill = "location.slash.fill"
+    static let lock = "lock"
+    static let lockShieldFill = "lock.shield.fill"
+    static let mapFill = "map.fill"
+    static let mappin = "mappin"
+    static let mappinAndEllipse = "mappin.and.ellipse"
+    static let mappinCircle = "mappin.circle"
+    static let mappinSlash = "mappin.slash"
+    static let micFill = "mic.fill"
+    static let noteText = "note.text"
+    static let paperplaneFill = "paperplane.fill"
+    static let peopleCircle = "person.2.circle"
+    static let peopleSlash = "person.2.slash"
+    static let personBadgeMinus = "person.badge.minus"
+    static let personCircle = "person.circle"
+    static let personCircleFill = "person.circle.fill"
+    static let personCropCircleBadgeCheckmark = "person.crop.circle.badge.checkmark"
+    static let personFill = "person.fill"
+    static let personSlash = "person.slash"
+    static let personWave2 = "person.wave.2"
+    static let photoFill = "photo.fill"
+    static let photoOnRectangle = "photo.on.rectangle"
+    static let plusCircle = "plus.circle"
+    static let questionmarkCircleFill = "questionmark.circle.fill"
+    static let rectanglePortraitAndArrowRight = "rectangle.portrait.and.arrow.right"
+    static let sunMaxFill = "sun.max.fill"
+    static let sunMinFill = "sun.min.fill"
+    static let tag = "tag"
+    static let textformatAbc = "textformat.abc"
+    static let toilet = "toilet"
+    static let trashFill = "trash.fill"
+    static let tray = "tray"
+    static let video = "video"
+    static let warningFill = "exclamationmark.triangle.fill"
+
+    static let allSystemNames = Array(Set([
+        edit, share, delete, add, close, closeCircle, settings, search, filter,
+        back, forward, expandCollapse, more, moreCircle, locationsList, map,
+        camera, people, profile, mapPin, building, calendar, photo, photoStack,
+        noPhoto, bookmark, bookmarkFilled, star, starFilled, heart, heartFilled,
+        visibilityPublic, visibilityUnlisted, visibilityPrivate, link, checkmark,
+        checkmarkCircle, warning, info, offline, followAdd, following, followers,
+        fullscreen, copy, coordinates, airplane, antennaRadiowavesLeftAndRight,
+        archivebox, arrowClockwise, arrowLeftAndRight,
+        arrowTriangle2CirclepathCamera, arrowUpArrowDown, arrowUpRightSquare, at,
+        bellBadge, bellFill, boltBadgeAutomatic, boltFill, boltSlashFill, book,
+        buildingFill, buildingOffice, calendarBadgeClock, cameraFill, chevronDown, chevronUp,
+        circle, clock, clockFill, documentText, documentTextFill, envelope,
+        envelopeBadge, envelopeFill, envelopeOpen, error, eye, eyeSlashFill, film,
+        folder, gearshapeFill, globeAmericas, globeAmericasFill, handRaisedFill,
+        infoCircleFill, keyFill, locationFill, locationSlash, locationSlashFill,
+        lock, lockShieldFill, mapFill, mappin, mappinAndEllipse, mappinCircle,
+        mappinSlash, micFill, noteText, paperplaneFill, peopleCircle, peopleSlash,
+        personBadgeMinus, personCircle, personCircleFill,
+        personCropCircleBadgeCheckmark, personFill, personSlash, personWave2,
+        photoFill, photoOnRectangle, plusCircle, questionmarkCircleFill,
+        rectanglePortraitAndArrowRight, sunMaxFill, sunMinFill, tag, textformatAbc,
+        toilet, trashFill, tray, video, warningFill
+    ])).sorted()
+
+    static func uiImage(for systemName: String) -> UIImage? {
+        UIImage(systemName: systemName)
+    }
 }
 
 // MARK: - Preview View
@@ -198,52 +306,9 @@ struct AppIconsPreviewView: View {
                     GridItem(.flexible()),
                     GridItem(.flexible())
                 ], spacing: 20) {
-                    iconPreview("edit", AppIcons.edit)
-                    iconPreview("share", AppIcons.share)
-                    iconPreview("delete", AppIcons.delete)
-                    iconPreview("add", AppIcons.add)
-                    iconPreview("close", AppIcons.close)
-                    iconPreview("closeCircle", AppIcons.closeCircle)
-                    iconPreview("settings", AppIcons.settings)
-                    iconPreview("search", AppIcons.search)
-                    iconPreview("filter", AppIcons.filter)
-                    iconPreview("back", AppIcons.back)
-                    iconPreview("forward", AppIcons.forward)
-                    iconPreview("expandCollapse", AppIcons.expandCollapse)
-                    iconPreview("more", AppIcons.more)
-                    iconPreview("moreCircle", AppIcons.moreCircle)
-                    iconPreview("locationsList", AppIcons.locationsList)
-                    iconPreview("map", AppIcons.map)
-                    iconPreview("camera", AppIcons.camera)
-                    iconPreview("people", AppIcons.people)
-                    iconPreview("profile", AppIcons.profile)
-                    iconPreview("mapPin", AppIcons.mapPin)
-                    iconPreview("building", AppIcons.building)
-                    iconPreview("calendar", AppIcons.calendar)
-                    iconPreview("photo", AppIcons.photo)
-                    iconPreview("photoStack", AppIcons.photoStack)
-                    iconPreview("noPhoto", AppIcons.noPhoto)
-                    iconPreview("bookmark", AppIcons.bookmark)
-                    iconPreview("bookmarkFilled", AppIcons.bookmarkFilled)
-                    iconPreview("star", AppIcons.star)
-                    iconPreview("starFilled", AppIcons.starFilled)
-                    iconPreview("heart", AppIcons.heart)
-                    iconPreview("heartFilled", AppIcons.heartFilled)
-                    iconPreview("public", AppIcons.visibilityPublic)
-                    iconPreview("unlisted", AppIcons.visibilityUnlisted)
-                    iconPreview("private", AppIcons.visibilityPrivate)
-                    iconPreview("link", AppIcons.link)
-                    iconPreview("checkmark", AppIcons.checkmark)
-                    iconPreview("checkCircle", AppIcons.checkmarkCircle)
-                    iconPreview("warning", AppIcons.warning)
-                    iconPreview("info", AppIcons.info)
-                    iconPreview("offline", AppIcons.offline)
-                    iconPreview("followAdd", AppIcons.followAdd)
-                    iconPreview("following", AppIcons.following)
-                    iconPreview("followers", AppIcons.followers)
-                    iconPreview("fullscreen", AppIcons.fullscreen)
-                    iconPreview("copy", AppIcons.copy)
-                    iconPreview("coordinates", AppIcons.coordinates)
+                    ForEach(AppIcons.allSystemNames, id: \.self) { systemName in
+                        iconPreview(systemName, systemName)
+                    }
                 }
                 .padding()
             }

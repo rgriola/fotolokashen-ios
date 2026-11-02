@@ -81,7 +81,7 @@ struct MapView: View {
                                         .tint(.white)
                                         .scaleEffect(0.7)
                                 } else {
-                                    Image(systemName: showFriendsLocations ? "person.2.fill" : "person.2")
+                                    Image(systemName: showFriendsLocations ? AppIcons.followers : AppIcons.people)
                                 }
                             }
                             .font(.title3)
@@ -109,7 +109,7 @@ struct MapView: View {
                         Button {
                             centerOnUserLocation = true
                         } label: {
-                            Image(systemName: "location.fill")
+                            Image(systemName: AppIcons.locationFill)
                                 .font(.title2)
                                 .foregroundStyle(Color.white)
                                 .frame(

@@ -98,7 +98,7 @@ struct PhotoGridView: View {
         case .queuedForUpload:
             ZStack {
                 Color.black.opacity(0.35)
-                Image(systemName: "clock.fill")
+                Image(systemName: AppIcons.clockFill)
                     .font(.system(size: 18))
                     .foregroundStyle(Color.white)
             }
@@ -125,7 +125,7 @@ struct PhotoGridView: View {
             VStack {
                 HStack {
                     Spacer()
-                    Image(systemName: "checkmark.circle.fill")
+                    Image(systemName: AppIcons.checkmarkCircle)
                         .font(.system(size: 16))
                         .foregroundStyle(Color.success)
                         .background(Circle().fill(Color.white).frame(width: 14, height: 14))
@@ -143,7 +143,7 @@ struct PhotoGridView: View {
                         onRetry(photo.id)
                     } label: {
                         VStack(spacing: 2) {
-                            Image(systemName: "arrow.clockwise")
+                            Image(systemName: AppIcons.arrowClockwise)
                                 .font(.system(size: 16, weight: .semibold))
                             Text("Retry")
                                 .font(.system(size: 10, weight: .semibold))
@@ -151,7 +151,7 @@ struct PhotoGridView: View {
                         .foregroundStyle(Color.white)
                     }
                 } else {
-                    Image(systemName: "exclamationmark.triangle.fill")
+                    Image(systemName: AppIcons.warningFill)
                         .font(.system(size: 18))
                         .foregroundStyle(Color.white)
                 }
@@ -165,7 +165,7 @@ struct PhotoGridView: View {
 
     @ViewBuilder
     private func sourceBadge(_ source: PhotoSource) -> some View {
-        let icon = source == .camera ? AppIcons.camera : "photo.on.rectangle"
+        let icon = source == .camera ? AppIcons.camera : AppIcons.photoOnRectangle
         Image(systemName: icon)
             .font(.system(size: 9))
             .foregroundStyle(Color.white)

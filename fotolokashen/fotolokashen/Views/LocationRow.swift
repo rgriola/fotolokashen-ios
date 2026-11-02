@@ -104,7 +104,7 @@ struct LocationRow: View {
 
                 // Favorite indicator
                 if location.isFavorite == true {
-                    Image(systemName: "heart.fill")
+                    Image(systemName: AppIcons.heartFilled)
                         .font(.caption2)
                         .foregroundStyle(Color.destructive)
                 }
@@ -145,7 +145,7 @@ struct LocationRow: View {
                                 .overlay { ProgressView() }
                         }
                         .onFailureView {
-                            Image(systemName: "photo")
+                            Image(systemName: AppIcons.photo)
                                 .foregroundStyle(Color.secondary)
                         }
                         .fade(duration: 0.2)
@@ -166,7 +166,7 @@ struct LocationRow: View {
                         .overlay { ProgressView() }
                 }
                 .onFailureView {
-                    Image(systemName: "photo")
+                    Image(systemName: AppIcons.photo)
                         .foregroundStyle(Color.secondary)
                 }
                 .fade(duration: 0.2)
@@ -201,7 +201,7 @@ struct LocationRow: View {
         Rectangle()
             .fill(Color(.systemFill))
             .overlay {
-                Image(systemName: "photo")
+                Image(systemName: AppIcons.photo)
                     .font(.title2)
                     .foregroundStyle(Color.secondary)
             }
@@ -211,7 +211,7 @@ struct LocationRow: View {
         Rectangle()
             .fill(Color(.systemFill))
             .overlay {
-                Image(systemName: "map")
+                Image(systemName: AppIcons.map)
                     .font(.title2)
                     .foregroundStyle(Color.secondary)
             }
@@ -228,13 +228,13 @@ struct LocationRow: View {
     private func visibilityIcon(for visibility: String?) -> some View {
         switch visibility?.lowercased() {
         case "public":
-            Image(systemName: "globe")
+            Image(systemName: AppIcons.visibilityPublic)
         case "unlisted":
-            Image(systemName: "person.2")
+            Image(systemName: AppIcons.people)
         case "private":
-            Image(systemName: "lock")
+            Image(systemName: AppIcons.lock)
         default:
-            Image(systemName: "lock") // Default to private
+            Image(systemName: AppIcons.lock) // Default to private
         }
     }
 }

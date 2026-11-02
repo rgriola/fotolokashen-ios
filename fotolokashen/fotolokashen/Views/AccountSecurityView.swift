@@ -86,27 +86,27 @@ struct AccountSecurityView: View {
             NavigationLink {
                 EditProfileView()
             } label: {
-                Label("Edit Profile", systemImage: "person.fill")
+                Label("Edit Profile", systemImage: AppIcons.personFill)
             }
 
             NavigationLink {
                 ChangeEmailView()
                     .environmentObject(authService)
             } label: {
-                Label("Change Email", systemImage: "envelope.fill")
+                Label("Change Email", systemImage: AppIcons.envelopeFill)
             }
 
             NavigationLink {
                 ChangeUsernameView()
                     .environmentObject(authService)
             } label: {
-                Label("Change Username", systemImage: "at")
+                Label("Change Username", systemImage: AppIcons.at)
             }
 
             NavigationLink {
                 ChangePasswordView()
             } label: {
-                Label("Change Password", systemImage: "key.fill")
+                Label("Change Password", systemImage: AppIcons.keyFill)
             }
         }
     }
@@ -124,7 +124,7 @@ struct AccountSecurityView: View {
                             .padding(.trailing, 8)
                         Text("Deleting...")
                     } else {
-                        Label("Delete Account", systemImage: "trash.fill")
+                        Label("Delete Account", systemImage: AppIcons.trashFill)
                             .fontWeight(.semibold)
                     }
                     Spacer()
@@ -283,7 +283,7 @@ private struct ChangePasswordView: View {
 
     private func validationRow(_ text: String, met: Bool) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: met ? "checkmark.circle.fill" : "circle")
+            Image(systemName: met ? AppIcons.checkmarkCircle : AppIcons.circle)
                 .foregroundStyle(met ? Color.green : Color.secondary)
                 .font(.caption)
             Text(text)
@@ -432,7 +432,7 @@ private struct ChangeUsernameView: View {
 
     private func validationRow(_ text: String, met: Bool) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: met ? "checkmark.circle.fill" : "circle")
+            Image(systemName: met ? AppIcons.checkmarkCircle : AppIcons.circle)
                 .foregroundStyle(met ? Color.green : Color.secondary)
                 .font(.caption)
             Text(text)
@@ -583,7 +583,7 @@ private struct ChangeEmailView: View {
 
     private func validationRow(_ text: String, met: Bool) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: met ? "checkmark.circle.fill" : "circle")
+            Image(systemName: met ? AppIcons.checkmarkCircle : AppIcons.circle)
                 .foregroundStyle(met ? Color.green : Color.secondary)
                 .font(.caption)
             Text(text)

@@ -82,7 +82,7 @@ struct PhotoGallerySection: View {
                                 }
                             }
                             .onFailureView {
-                                Image(systemName: "photo")
+                                Image(systemName: AppIcons.photo)
                                     .foregroundStyle(Color.secondary)
                             }
                             .fade(duration: 0.2)
@@ -179,7 +179,7 @@ struct PhotoGallerySection: View {
                 VStack {
                     Spacer()
                     HStack {
-                        Image(systemName: "photo.badge.exclamationmark")
+                        Image(systemName: AppIcons.noPhoto)
                         Text("No photos available")
                     }
                     .font(.caption)
@@ -201,7 +201,7 @@ struct PhotoGallerySection: View {
                 .frame(height: 200)
 
             VStack(spacing: 12) {
-                Image(systemName: "wifi.slash")
+                Image(systemName: AppIcons.offline)
                     .font(.system(size: 40))
                     .foregroundStyle(Color.secondary)
 
@@ -249,7 +249,7 @@ struct PhotoGalleryFullScreen: View {
             Color.black.ignoresSafeArea()
 
             if photos.isEmpty {
-                ContentUnavailableView("No Photos", systemImage: "photo")
+                ContentUnavailableView("No Photos", systemImage: AppIcons.photo)
                     .foregroundStyle(.white)
                     .accessibilityElement(children: .combine)
                     .onAppear {
@@ -266,7 +266,7 @@ struct PhotoGalleryFullScreen: View {
                                     .tint(.white)
                             }
                             .onFailureView {
-                                Image(systemName: "photo")
+                                Image(systemName: AppIcons.photo)
                                     .foregroundStyle(Color.secondary)
                             }
                             .fade(duration: 0.2)
@@ -289,7 +289,7 @@ struct PhotoGalleryFullScreen: View {
                             isPresented: $isPresented
                         )
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
+                        Image(systemName: AppIcons.closeCircle)
                             .font(.title)
                             .foregroundStyle(Color.white)
                             .padding()

@@ -145,7 +145,7 @@ struct EditProfileView: View {
                                 Button(role: .destructive) {
                                     showingDeleteAvatarConfirm = true
                                 } label: {
-                                    Label("Remove Avatar", systemImage: "trash")
+                                    Label("Remove Avatar", systemImage: AppIcons.delete)
                                 }
 
                             }
@@ -153,7 +153,7 @@ struct EditProfileView: View {
                                 imageUploadStatus = nil
                                 showingAvatarPicker = true
                             } label: {
-                                Label("Change Avatar", systemImage: "camera")
+                                Label("Change Avatar", systemImage: AppIcons.camera)
                             }
                         }
                     }
@@ -167,7 +167,7 @@ struct EditProfileView: View {
                     imageUploadStatus = nil
                     showingBannerPicker = true
                 } label: {
-                    Image(systemName: "camera.fill")
+                    Image(systemName: AppIcons.cameraFill)
                         .font(.caption)
                         .foregroundStyle(Color.white)
                         .padding(8)
@@ -208,7 +208,7 @@ struct EditProfileView: View {
 
     private var profileFieldsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Personal Info", icon: "person.fill")
+            SectionHeader(title: "Personal Info", icon: AppIcons.personFill)
             FormField(label: "First Name", text: $firstName, placeholder: "First name", maxLength: 50)
             FormField(label: "Last Name", text: $lastName, placeholder: "Last name", maxLength: 50)
             FormField(label: "Bio", text: $bio, placeholder: "Tell others about yourself...", isMultiline: true, maxLength: 500)
@@ -220,7 +220,7 @@ struct EditProfileView: View {
 
     private var locationSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Location", icon: "mappin.circle.fill")
+            SectionHeader(title: "Location", icon: AppIcons.mapPin)
             FormField(label: "City", text: $city, placeholder: "City", maxLength: 100)
             FormField(label: "State / Province", text: $state, placeholder: "State or Province", maxLength: 100)
             FormField(label: "Country", text: $country, placeholder: "Country", maxLength: 100)
@@ -232,7 +232,7 @@ struct EditProfileView: View {
 
     private var birthdaySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Birthday", icon: "calendar")
+            SectionHeader(title: "Birthday", icon: AppIcons.calendar)
 
             Button {
                 showDatePicker.toggle()
@@ -241,7 +241,7 @@ struct EditProfileView: View {
                     Text(dateOfBirth.map { formatDOBDisplay($0) } ?? "Not set")
                         .foregroundStyle(dateOfBirth == nil ? Color.secondary : Color.primary)
                     Spacer()
-                    Image(systemName: "chevron.down")
+                    Image(systemName: AppIcons.chevronDown)
                         .foregroundStyle(Color.secondary)
                         .font(.caption)
                 }

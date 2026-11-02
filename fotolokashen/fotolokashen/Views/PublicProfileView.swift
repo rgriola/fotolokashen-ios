@@ -131,7 +131,7 @@ struct PublicProfileView: View {
 
             if let joinedAt = profile.joinedAt {
                 HStack(spacing: 4) {
-                    Image(systemName: "calendar")
+                    Image(systemName: AppIcons.calendar)
                         .font(.caption2)
                     Text("Joined \(formatJoinDate(joinedAt))")
                         .font(.caption)
@@ -198,7 +198,7 @@ struct PublicProfileView: View {
                         .tint(followStatus?.isFollowing == true ? .primary : .white)
                         .scaleEffect(0.8)
                 } else {
-                    Image(systemName: followStatus?.isFollowing == true ? "person.badge.minus" : "person.badge.plus")
+                    Image(systemName: followStatus?.isFollowing == true ? AppIcons.personBadgeMinus : AppIcons.followAdd)
                     Text(followStatus?.isFollowing == true ? "Following" : "Follow")
                 }
             }
@@ -241,7 +241,7 @@ struct PublicProfileView: View {
                     .padding(.vertical, 24)
             } else if locations.isEmpty {
                 VStack(spacing: 6) {
-                    Image(systemName: "mappin.slash")
+                    Image(systemName: AppIcons.mappinSlash)
                         .font(.title2)
                         .foregroundStyle(Color.secondary)
                     Text("No public locations")
@@ -281,12 +281,12 @@ struct PublicProfileView: View {
                         Rectangle()
                             .fill(Color(.systemGray5))
                             .overlay(
-                                Image(systemName: "photo")
+                                Image(systemName: AppIcons.photo)
                                     .foregroundStyle(Color.secondary)
                             )
                     }
                     .onFailureView {
-                        Image(systemName: "photo")
+                        Image(systemName: AppIcons.photo)
                             .foregroundStyle(Color.secondary)
                     }
                     .fade(duration: 0.2)
@@ -311,7 +311,7 @@ struct PublicProfileView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(
                         // Subtle map indicator badge
-                        Image(systemName: "map.fill")
+                        Image(systemName: AppIcons.mapFill)
                             .font(.caption2)
                             .foregroundStyle(Color.white)
                             .padding(4)
@@ -326,7 +326,7 @@ struct PublicProfileView: View {
                     .fill(Color(.systemGray5))
                     .frame(height: 88)
                     .overlay(
-                        Image(systemName: "mappin.circle.fill")
+                        Image(systemName: AppIcons.mapPin)
                             .font(.title3)
                             .foregroundStyle(Color.secondary)
                     )

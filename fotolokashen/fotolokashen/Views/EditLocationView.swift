@@ -102,12 +102,12 @@ struct EditLocationView: View {
                 .tint(.yellow)
 
             Picker("Visibility", selection: $viewModel.visibility) {
-                Label("Public — Anyone can view", systemImage: "globe").tag("public")
-                Label("Unlisted — Only with link", systemImage: "link").tag("unlisted")
-                Label("Private — Only you", systemImage: "lock.fill").tag("private")
+                Label("Public — Anyone can view", systemImage: AppIcons.visibilityPublic).tag("public")
+                Label("Unlisted — Only with link", systemImage: AppIcons.link).tag("unlisted")
+                Label("Private — Only you", systemImage: AppIcons.visibilityPrivate).tag("private")
             }
         } header: {
-            Label("Basic Info", systemImage: "info.circle")
+            Label("Basic Info", systemImage: AppIcons.info)
         }
     }
 
@@ -125,7 +125,7 @@ struct EditLocationView: View {
                 .datePickerStyle(.compact)
             }
         } header: {
-            Label("Production Date", systemImage: "calendar")
+            Label("Production Date", systemImage: AppIcons.calendar)
         }
     }
 
@@ -154,7 +154,7 @@ struct EditLocationView: View {
             Toggle("Permanent Location", isOn: $viewModel.isPermanent)
                 .tint(.green)
         } header: {
-            Label("Production Details", systemImage: "film")
+            Label("Production Details", systemImage: AppIcons.film)
         }
     }
 
@@ -171,7 +171,7 @@ struct EditLocationView: View {
             TextField("Personal Caption", text: $viewModel.caption)
                 .onChange(of: viewModel.caption) { _, _ in viewModel.enforceLimits() }
         } header: {
-            Label("Notes", systemImage: "note.text")
+            Label("Notes", systemImage: AppIcons.noteText)
         }
     }
 
@@ -196,7 +196,7 @@ struct EditLocationView: View {
                 }
             }
         } header: {
-            Label("Tags", systemImage: "tag")
+            Label("Tags", systemImage: AppIcons.tag)
         }
     }
 
@@ -216,7 +216,7 @@ struct EditLocationView: View {
                 .font(.caption)
             }
         } header: {
-            Label("Personal Rating", systemImage: "star")
+            Label("Personal Rating", systemImage: AppIcons.star)
         }
     }
 
@@ -238,7 +238,7 @@ struct EditLocationView: View {
 
                 if !viewModel.photosToDelete.isEmpty {
                     HStack {
-                        Image(systemName: "exclamationmark.triangle")
+                        Image(systemName: AppIcons.warning)
                             .foregroundStyle(Color.warning)
                         Text("\(viewModel.photosToDelete.count) photo(s) will be deleted on save")
                             .font(.caption)
@@ -252,7 +252,7 @@ struct EditLocationView: View {
                 }
             }
         } header: {
-            Label("Photos (\(viewModel.photos.count - viewModel.photosToDelete.count))", systemImage: "photo.stack")
+            Label("Photos (\(viewModel.photos.count - viewModel.photosToDelete.count))", systemImage: AppIcons.photoStack)
         }
     }
 
@@ -266,12 +266,12 @@ struct EditLocationView: View {
                         .fill(Color(.systemGray5))
                         .frame(width: 60, height: 60)
                         .overlay {
-                            Image(systemName: "photo")
+                            Image(systemName: AppIcons.photo)
                                 .foregroundStyle(Color.secondary)
                         }
                 }
                 .onFailureView {
-                    Image(systemName: "photo")
+                    Image(systemName: AppIcons.photo)
                         .foregroundStyle(Color.secondary)
                 }
                 .fade(duration: 0.2)
@@ -317,7 +317,7 @@ struct EditLocationView: View {
             DetailRow(label: "Longitude", value: String(format: "%.6f", location.longitude))
             DetailRow(label: "Place ID", value: location.placeId ?? "N/A")
         } header: {
-            Label("Location Info (Read-Only)", systemImage: "mappin.and.ellipse")
+            Label("Location Info (Read-Only)", systemImage: AppIcons.mappinAndEllipse)
         }
     }
 
@@ -341,7 +341,7 @@ private struct EditLocationRatingPicker: View {
                 Button {
                     rating = Double(star)
                 } label: {
-                    Image(systemName: star <= Int(rating) ? "star.fill" : "star")
+                    Image(systemName: star <= Int(rating) ? AppIcons.starFilled : AppIcons.star)
                         .foregroundStyle(Color.yellow)
                         .frame(width: 44, height: 44)
                 }
@@ -359,7 +359,7 @@ private struct MarkPhotoForDeletionButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "trash")
+            Image(systemName: AppIcons.delete)
                 .foregroundStyle(Color.destructive)
         }
         .buttonStyle(.borderless)

@@ -40,7 +40,7 @@ struct FollowListView: View {
 
     private var emptyState: some View {
         VStack(spacing: 12) {
-            Image(systemName: mode == .followers ? "person.2.slash" : "person.2")
+            Image(systemName: mode == .followers ? AppIcons.peopleSlash : AppIcons.people)
                 .font(.system(size: 40))
                 .foregroundStyle(Color.secondary)
 

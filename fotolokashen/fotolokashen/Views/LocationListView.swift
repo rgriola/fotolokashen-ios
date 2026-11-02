@@ -56,17 +56,17 @@ struct LocationListView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Picker("Sort By", selection: $sortOption) {
-                            Label("Newest First", systemImage: "calendar.badge.clock")
+                            Label("Newest First", systemImage: AppIcons.calendarBadgeClock)
                                 .tag(SortOption.dateNewest)
-                            Label("Oldest First", systemImage: "calendar")
+                            Label("Oldest First", systemImage: AppIcons.calendar)
                                 .tag(SortOption.dateOldest)
-                            Label("Name A-Z", systemImage: "textformat.abc")
+                            Label("Name A-Z", systemImage: AppIcons.textformatAbc)
                                 .tag(SortOption.nameAZ)
-                            Label("Name Z-A", systemImage: "textformat.abc")
+                            Label("Name Z-A", systemImage: AppIcons.textformatAbc)
                                 .tag(SortOption.nameZA)
                         }
                     } label: {
-                        Image(systemName: "arrow.up.arrow.down")
+                        Image(systemName: AppIcons.arrowUpArrowDown)
                     }
                     .accessibilityLabel("Sort locations")
                 }
@@ -90,7 +90,7 @@ struct LocationListView: View {
         HStack(spacing: 8) {
             sourceToggleButton(
                 title: "Friends",
-                systemImage: listViewModel.showFriends ? "person.2.fill" : "person.2",
+                systemImage: listViewModel.showFriends ? AppIcons.followers : AppIcons.people,
                 isOn: listViewModel.showFriends,
                 isLoading: listViewModel.isLoadingFriends
             ) {
@@ -99,7 +99,7 @@ struct LocationListView: View {
 
             sourceToggleButton(
                 title: "Public",
-                systemImage: listViewModel.showPublic ? "globe.americas.fill" : "globe.americas",
+                systemImage: listViewModel.showPublic ? AppIcons.globeAmericasFill : AppIcons.globeAmericas,
                 isOn: listViewModel.showPublic,
                 isLoading: listViewModel.isLoadingPublic
             ) {
@@ -155,7 +155,7 @@ struct LocationListView: View {
                 // "All" chip
                 FilterChip(
                     label: "All",
-                    icon: "mappin.circle",
+                    icon: AppIcons.mappinCircle,
                     isSelected: selectedTypeFilter == nil,
                     color: .gray
                 ) {
@@ -263,7 +263,7 @@ struct LocationListView: View {
                                         locationToDelete = location
                                         showingDeleteConfirmation = true
                                     } label: {
-                                        Label("Delete", systemImage: "trash")
+                                        Label("Delete", systemImage: AppIcons.delete)
                                     }
                                     .disabled(isDeleting)
                                 }
@@ -303,7 +303,7 @@ struct LocationListView: View {
                                 locationToDelete = item.location
                                 showingDeleteConfirmation = true
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Label("Delete", systemImage: AppIcons.delete)
                             }
                             .disabled(isDeleting)
                         }
@@ -418,7 +418,7 @@ struct LocationListView: View {
 
     private var errorStateView: some View {
         VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle")
+            Image(systemName: AppIcons.warning)
                 .font(.system(size: 60))
                 .foregroundStyle(Color.secondary)
 
@@ -435,7 +435,7 @@ struct LocationListView: View {
             Button {
                 Task { await locationStore.refreshLocations() }
             } label: {
-                Label("Retry", systemImage: "arrow.clockwise")
+                Label("Retry", systemImage: AppIcons.arrowClockwise)
                     .font(.headline)
             }
             .buttonStyle(.borderedProminent)
@@ -448,7 +448,7 @@ struct LocationListView: View {
     
     private var emptyStateView: some View {
         VStack(spacing: 20) {
-            Image(systemName: searchText.isEmpty ? "mappin.slash" : "magnifyingglass")
+            Image(systemName: searchText.isEmpty ? AppIcons.mappinSlash : AppIcons.search)
                 .font(.system(size: 60))
                 .foregroundStyle(Color.secondary)
             
@@ -464,7 +464,7 @@ struct LocationListView: View {
             
             if searchText.isEmpty {
                 HStack {
-                    Image(systemName: "camera.fill")
+                    Image(systemName: AppIcons.cameraFill)
                     Text("Use the Capture tab below")
                 }
                 .font(.headline)

@@ -103,7 +103,7 @@ struct MemberSupportView: View {
                                 .padding(.trailing, 8)
                             Text("Sending…")
                         } else {
-                            Image(systemName: "paperplane.fill")
+                            Image(systemName: AppIcons.paperplaneFill)
                                 .padding(.trailing, 4)
                             Text("Send Support Request")
                                 .fontWeight(.semibold)

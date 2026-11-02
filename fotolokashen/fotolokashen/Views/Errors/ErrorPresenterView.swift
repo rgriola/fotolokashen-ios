@@ -35,7 +35,7 @@ struct ErrorBanner: View {
             }
 
             Button(action: onDismiss) {
-                Image(systemName: "xmark")
+                Image(systemName: AppIcons.close)
                     .font(.caption.weight(.bold))
                     .foregroundStyle(Color.secondary)
             }

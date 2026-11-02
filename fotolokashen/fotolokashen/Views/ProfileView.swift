@@ -28,51 +28,51 @@ struct ProfileView: View {
                     NavigationLink {
                         AccountSecurityView()
                     } label: {
-                        Label("Account & Security", systemImage: "lock.shield.fill")
+                        Label("Account & Security", systemImage: AppIcons.lockShieldFill)
                     }
 
                     NavigationLink {
                         PrivacySettingsView()
                     } label: {
-                        Label("Privacy Settings", systemImage: "eye.slash.fill")
+                        Label("Privacy Settings", systemImage: AppIcons.eyeSlashFill)
                     }
 
                     NavigationLink {
                         NotificationPreferencesView()
                     } label: {
-                        Label("Notification Preferences", systemImage: "bell.fill")
+                        Label("Notification Preferences", systemImage: AppIcons.bellFill)
                     }
 
                     NavigationLink {
                         PreferencesView()
                     } label: {
-                        Label("Preferences", systemImage: "gearshape.fill")
+                        Label("Preferences", systemImage: AppIcons.gearshapeFill)
                     }
 
                     NavigationLink {
                         PermissionsView()
                     } label: {
-                        Label("Permissions", systemImage: "hand.raised.fill")
+                        Label("Permissions", systemImage: AppIcons.handRaisedFill)
                     }
                 }
 
                 // ── Support ───────────────────────────────────────────────
                 Section("Support") {
                     Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/help")!) {
-                        Label("Help & FAQ", systemImage: "questionmark.circle.fill")
+                        Label("Help & FAQ", systemImage: AppIcons.questionmarkCircleFill)
                     }
 
                     NavigationLink {
                         MemberSupportView()
                             .environmentObject(authService)
                     } label: {
-                        Label("Contact Support", systemImage: "envelope.fill")
+                        Label("Contact Support", systemImage: AppIcons.envelopeFill)
                     }
 
                     NavigationLink {
                         AboutView()
                     } label: {
-                        Label("About", systemImage: "info.circle.fill")
+                        Label("About", systemImage: AppIcons.infoCircleFill)
                     }
                 }
 
@@ -83,7 +83,7 @@ struct ProfileView: View {
                     } label: {
                         HStack {
                             Spacer()
-                            Label("Log Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            Label("Log Out", systemImage: AppIcons.rectanglePortraitAndArrowRight)
                                 .fontWeight(.semibold)
                             Spacer()
                         }

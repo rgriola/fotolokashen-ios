@@ -25,14 +25,14 @@ struct AboutView: View {
                 NavigationLink {
                     LicensesView()
                 } label: {
-                    Label("Licenses & Acknowledgements", systemImage: "doc.text")
+                    Label("Licenses & Acknowledgements", systemImage: AppIcons.documentText)
                 }
                 Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/privacy-policy")!) {
-                    Label("Privacy Policy", systemImage: "hand.raised.fill")
+                    Label("Privacy Policy", systemImage: AppIcons.handRaisedFill)
                         .foregroundStyle(Color.primary)
                 }
                 Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/terms")!) {
-                    Label("Terms of Service", systemImage: "doc.text.fill")
+                    Label("Terms of Service", systemImage: AppIcons.documentTextFill)
                         .foregroundStyle(Color.primary)
                 }
             }
@@ -40,7 +40,7 @@ struct AboutView: View {
             // ── Credits ───────────────────────────────────────────────────
             Section {
                 VStack(spacing: 8) {
-                    Image(systemName: "mappin.and.ellipse")
+                    Image(systemName: AppIcons.mappinAndEllipse)
                         .font(.largeTitle)
                         .foregroundStyle(Color.brand)
                     Text("fotolokashen")

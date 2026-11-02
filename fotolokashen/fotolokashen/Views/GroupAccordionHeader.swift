@@ -45,7 +45,7 @@ struct GroupAccordionHeader: View {
                     .clipShape(Capsule())
 
                 // Chevron
-                Image(systemName: "chevron.right")
+                Image(systemName: AppIcons.forward)
                     .font(.caption)
                     .foregroundStyle(Color.secondary)
                     .rotationEffect(.degrees(isExpanded ? 90 : 0))
@@ -59,13 +59,13 @@ struct GroupAccordionHeader: View {
     // MARK: - Helpers
 
     private func iconForType(_ type: String?) -> String {
-        guard let t = type?.uppercased() else { return "folder" }
+        guard let t = type?.uppercased() else { return AppIcons.folder }
         switch t {
-        case "EVENT": return "calendar"
-        case "ROUTE": return "map"
-        case "STORY": return "book"
-        case "COVERAGE": return "video"
-        default: return "tag"
+        case "EVENT": return AppIcons.calendar
+        case "ROUTE": return AppIcons.map
+        case "STORY": return AppIcons.book
+        case "COVERAGE": return AppIcons.video
+        default: return AppIcons.tag
         }
     }
 

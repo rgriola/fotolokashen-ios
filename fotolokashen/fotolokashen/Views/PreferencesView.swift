@@ -18,7 +18,7 @@ struct PreferencesView: View {
         Form {
             Section {
                 HStack {
-                    Label("Language", systemImage: "globe")
+                    Label("Language", systemImage: AppIcons.visibilityPublic)
                     Spacer()
                     TextField("en", text: $language)
                         .multilineTextAlignment(.trailing)
@@ -28,7 +28,7 @@ struct PreferencesView: View {
                 .onChange(of: language) { _, _ in checkForChanges() }
 
                 HStack {
-                    Label("Timezone", systemImage: "clock")
+                    Label("Timezone", systemImage: AppIcons.clock)
                     Spacer()
                     TextField("America/New_York", text: $timezone)
                         .multilineTextAlignment(.trailing)
@@ -38,7 +38,7 @@ struct PreferencesView: View {
                 .onChange(of: timezone) { _, _ in checkForChanges() }
 
                 Toggle(isOn: $emailNotifications) {
-                    Label("Email Notifications", systemImage: "envelope")
+                    Label("Email Notifications", systemImage: AppIcons.envelope)
                 }
                 .tint(.brand)
                 .onChange(of: emailNotifications) { _, _ in checkForChanges() }

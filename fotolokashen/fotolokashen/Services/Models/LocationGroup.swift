@@ -51,10 +51,10 @@ enum GroupTypePreset: String, CaseIterable {
 
     var icon: String {
         switch self {
-        case .event: return "calendar"
-        case .route: return "map"
-        case .story: return "book"
-        case .coverage: return "video"
+        case .event: return AppIcons.calendar
+        case .route: return AppIcons.map
+        case .story: return AppIcons.book
+        case .coverage: return AppIcons.video
         }
     }
 }

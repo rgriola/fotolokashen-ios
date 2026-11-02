@@ -104,7 +104,7 @@ private struct LicenseTextView: View {
             } else if failed {
                 ContentUnavailableView(
                     "License Text Unavailable",
-                    systemImage: "doc.text",
+                    systemImage: AppIcons.documentText,
                     description: Text("The acknowledgement could not be loaded. Please reopen this page to try again.")
                 )
             } else {

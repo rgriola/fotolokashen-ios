@@ -110,7 +110,7 @@ struct LoginView: View {
             CheckEmailSheet(
                 title: "Check Your Email",
                 message: "We sent a verification link to your email address. Tap the link to verify your account, then you'll be logged in automatically.",
-                icon: "envelope.badge",
+                icon: AppIcons.envelopeBadge,
                 buttonTitle: "Got It",
                 onDismiss: { showAwaitingVerification = false }
             )
@@ -120,7 +120,7 @@ struct LoginView: View {
             CheckEmailSheet(
                 title: "Check Your Email",
                 message: "If an account exists with that email, you'll receive a password reset link. The link expires in 15 minutes.",
-                icon: "envelope.open",
+                icon: AppIcons.envelopeOpen,
                 buttonTitle: "Got It",
                 onDismiss: { showAwaitingPasswordReset = false }
             )
@@ -185,7 +185,7 @@ struct LoginView: View {
                                 .progressViewStyle(.circular)
                                 .tint(.brand)
                         } else {
-                            authButtonContent(icon: "person.circle.fill", title: "Sign In")
+                            authButtonContent(icon: AppIcons.personCircleFill, title: "Sign In")
                         }
                     }
                     .font(.headline)
@@ -205,7 +205,7 @@ struct LoginView: View {
                 Button(action: {
                     authService.startRegistration()
                 }) {
-                    authButtonContent(icon: "person.badge.plus", title: "Create Account")
+                    authButtonContent(icon: AppIcons.followAdd, title: "Create Account")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -330,14 +330,14 @@ private struct CheckEmailSheet: View {
 
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
-                    Image(systemName: "tray")
+                    Image(systemName: AppIcons.tray)
                         .foregroundStyle(Color.brand)
                     Text("Check your spam or junk folder")
                         .font(.callout)
                         .foregroundStyle(Color.secondary)
                 }
                 HStack(spacing: 8) {
-                    Image(systemName: "clock")
+                    Image(systemName: AppIcons.clock)
                         .foregroundStyle(Color.brand)
                     Text("Wait a few minutes if it hasn't arrived")
                         .font(.callout)
@@ -384,35 +384,35 @@ struct LoggedInView: View {
             // Locations list
             LocationListView()
                 .tabItem {
-                    Label("Spots", systemImage: "list.bullet")
+                    Label("Spots", systemImage: AppIcons.locationsList)
                 }
                 .tag(1)
 
             // Map
             MapView()
                 .tabItem {
-                    Label("Map", systemImage: "map")
+                    Label("Map", systemImage: AppIcons.map)
                 }
                 .tag(0)
 
             // Center camera tab - placeholder that triggers camera
             Color.clear
                 .tabItem {
-                    Label("Create", systemImage: "camera.fill")
+                    Label("Create", systemImage: AppIcons.cameraFill)
                 }
                 .tag(2)
 
             // People search & social
             PeopleSearchView()
                 .tabItem {
-                    Label("People", systemImage: "person.2")
+                    Label("People", systemImage: AppIcons.people)
                 }
                 .tag(3)
 
             // Profile
             ProfileView()
                 .tabItem {
-                    Label("Settings", systemImage: "person.circle")
+                    Label("Settings", systemImage: AppIcons.personCircle)
                 }
                 .tag(4)
         }

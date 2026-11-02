@@ -113,7 +113,7 @@ struct CameraView: View {
                         Button {
                             dismiss()
                         } label: {
-                            Image(systemName: "xmark")
+                            Image(systemName: AppIcons.close)
                                 .font(.title3)
                                 .foregroundStyle(Color.white)
                                 .padding(12)
@@ -258,7 +258,7 @@ struct CameraView: View {
                         Button {
                             showLibraryPicker = true
                         } label: {
-                            Image(systemName: "photo.on.rectangle")
+                            Image(systemName: AppIcons.photoOnRectangle)
                                 .font(.title2)
                                 .foregroundStyle(Color.white)
                                 .frame(width: 50, height: 50)
@@ -299,7 +299,7 @@ struct CameraView: View {
                         Button {
                             cameraService.switchCamera()
                         } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath.camera")
+                            Image(systemName: AppIcons.arrowTriangle2CirclepathCamera)
                                 .font(.title2)
                                 .foregroundStyle(Color.white)
                                 .frame(width: 50, height: 50)

@@ -9,9 +9,9 @@ enum AppErrorSeverity {
 
     var systemImage: String {
         switch self {
-        case .info:    return "info.circle.fill"
-        case .warning: return "exclamationmark.triangle.fill"
-        case .error:   return "xmark.octagon.fill"
+        case .info:    return AppIcons.infoCircleFill
+        case .warning: return AppIcons.warningFill
+        case .error:   return AppIcons.error
         }
     }
 
