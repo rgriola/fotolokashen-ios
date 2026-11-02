@@ -81,6 +81,7 @@ struct LocationRow: View {
                                 .background(.black.opacity(0.4))
                                 .clipShape(Circle())
                         }
+                        .accessibilityLabel("Share \(location.name)")
                         .buttonStyle(.plain)
                     }
                 }

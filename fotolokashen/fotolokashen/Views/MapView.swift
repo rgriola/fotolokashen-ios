@@ -48,6 +48,8 @@ struct MapView: View {
                         selectedReadOnlyContext = ReadOnlyLocationContext(socialLocation: socialLocation)
                     }
                 )
+                .accessibilityLabel("Map of locations")
+                .accessibilityHint("Explore map locations, or switch to Spots to browse and open them in a list.")
                 .ignoresSafeArea()
                 .overlay(alignment: .top) {
                     MapPlaceSearchOverlay(searchService: placeSearchService) { suggestion in

@@ -39,6 +39,7 @@ struct ErrorBanner: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(Color.secondary)
             }
+            .accessibilityLabel("Dismiss error")
         }
         .padding(12)
         .background(Color(.secondarySystemBackground))

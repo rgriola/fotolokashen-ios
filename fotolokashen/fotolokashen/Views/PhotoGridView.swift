@@ -60,6 +60,7 @@ struct PhotoGridView: View {
                     .background(Color.destructive)
                     .clipShape(Circle())
             }
+            .accessibilityLabel("Remove photo")
             .offset(x: 6, y: -6)
 
             // Source badge — bottom-left  
@@ -188,6 +189,8 @@ struct PhotoGridView: View {
             .frame(width: thumbSize, height: thumbSize)
             .background(Color(.systemGray6))
             .cornerRadius(10)
+            .accessibilityLabel("Add photos")
+            .accessibilityValue("\(photos.count) of \(maxPhotos) selected")
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(

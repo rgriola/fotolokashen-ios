@@ -231,6 +231,7 @@ struct LocationDetailView: View {
                             ) {
                                 Image(systemName: AppIcons.share)
                             }
+                            .accessibilityLabel("Share \(currentLocation.name)")
                         }
 
                         // Edit button
@@ -239,6 +240,7 @@ struct LocationDetailView: View {
                         } label: {
                             Image(systemName: AppIcons.edit)
                         }
+                        .accessibilityLabel("Edit location")
                     }
                 }
             }
@@ -254,6 +256,7 @@ struct LocationDetailView: View {
                     ) {
                         Image(systemName: AppIcons.share)
                     }
+                    .accessibilityLabel("Share \(currentLocation.name)")
                 }
             }
         }

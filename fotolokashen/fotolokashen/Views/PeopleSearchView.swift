@@ -89,6 +89,7 @@ private struct DiscoverTab: View {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(Color.secondary)
                     }
+                    .accessibilityLabel("Clear people search")
                 }
             }
             .padding(10)

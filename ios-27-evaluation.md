@@ -1,6 +1,6 @@
 # iOS 27 Readiness Evaluation — fotolokashen iOS
 
-**Last updated:** November 1, 2026
+**Last updated:** November 2, 2026
 **Originally assessed:** 1.6.0 (build 57) on September 20, 2026
 **Current version:** 1.6.3 (build 63)
 **Scope:** Original assessment plus implementation progress and verified readiness results.
@@ -1137,12 +1137,12 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
 
 - [x] 4.1 `SWIFT_VERSION = 6.0` on all targets, Debug and Release (Nov 2, 2026)
 - [x] 4.2 Clean Debug test build and Release compilation; two existing documented unchecked Sendable boundaries, no new unsafe annotations (Nov 2, 2026)
-- [ ] 4.3 Full tests + manual device regression (also build on 🆕 Xcode 27)
+- [x] 4.3 Full tests + manual device regression (also build on 🆕 Xcode 27) — passed, owner-confirmed Nov 2, 2026
 
 ### Step 5 — Accessibility, 1.7.x (Phase 6) 🖥️
 
-- [ ] 6.1 Labels on all icon-only controls (X-3)
-- [ ] 6.2 Map VoiceOver path (X-2)
+- [ ] 6.1 Labels on all icon-only controls (X-3) — static source sweep of user-facing Views and root app UI fixed identified camera, photo, location, search, rating, sorting and error control gaps; six UI tests pass. Required VoiceOver pass on Map, Locations, Detail and People remains open (Nov 2, 2026)
+- [ ] 6.2 Map VoiceOver path (X-2) — added a map-region label and hint; the Spots tab provides the list alternative. VoiceOver verification of map/marker access and focus after opening details remains open (Nov 2, 2026)
 - [ ] 6.3 Dynamic Type at `.accessibility5` (X-4)
 - [ ] 6.4 Accessibility Inspector audit clean
 - [ ] 6.5 App Store Accessibility Nutrition Label (X-5)

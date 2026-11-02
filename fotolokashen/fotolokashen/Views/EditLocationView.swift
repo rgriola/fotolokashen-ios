@@ -205,15 +205,7 @@ struct EditLocationView: View {
             HStack {
                 Text("Rating")
                 Spacer()
-                HStack(spacing: 4) {
-                    ForEach(1...5, id: \.self) { star in
-                        Image(systemName: star <= Int(viewModel.personalRating) ? "star.fill" : "star")
-                            .foregroundStyle(Color.yellow)
-                            .onTapGesture {
-                                viewModel.personalRating = Double(star)
-                            }
-                    }
-                }
+                EditLocationRatingPicker(rating: $viewModel.personalRating)
             }
 
             if viewModel.personalRating > 0 {
@@ -310,14 +302,10 @@ struct EditLocationView: View {
                     .font(.caption2)
                     .foregroundStyle(Color.destructive)
             } else {
-                Button {
+                MarkPhotoForDeletionButton {
                     photoToDeleteId = photo.id
                     showingDeletePhotoConfirmation = true
-                } label: {
-                    Image(systemName: "trash")
-                        .foregroundStyle(Color.destructive)
                 }
-                .buttonStyle(.borderless)
             }
         }
     }
@@ -340,6 +328,43 @@ struct EditLocationView: View {
             onLocationUpdated?(updated)
             showingSuccess = true
         }
+    }
+}
+
+private struct EditLocationRatingPicker: View {
+    @Binding var rating: Double
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(1...5, id: \.self) { star in
+                let isSelected = star == Int(rating)
+                Button {
+                    rating = Double(star)
+                } label: {
+                    Image(systemName: star <= Int(rating) ? "star.fill" : "star")
+                        .foregroundStyle(Color.yellow)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Rate location \(star) stars")
+                .accessibilityHint("Sets your personal rating to \(star) stars.")
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+    }
+}
+
+private struct MarkPhotoForDeletionButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "trash")
+                .foregroundStyle(Color.destructive)
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel("Mark photo for deletion")
+        .accessibilityHint("This marks the photo for deletion when you save changes.")
     }
 }
 

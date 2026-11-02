@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 import CoreLocation
 
 /// Camera view with native-style zoom dial, tap-to-focus, exposure control, GPS badge,
@@ -119,6 +120,7 @@ struct CameraView: View {
                                 .background(Color.black.opacity(0.5))
                                 .clipShape(Circle())
                         }
+                        .accessibilityLabel("Close camera")
 
                         // Flash mode button — Apple-style top bar (B4)
                         if !cameraService.isUsingFrontCamera {
@@ -132,6 +134,8 @@ struct CameraView: View {
                                     .background(Color.black.opacity(0.5))
                                     .clipShape(Circle())
                             }
+                            .accessibilityLabel("Change flash mode")
+                            .accessibilityValue(flashModeAccessibilityValue)
                         }
 
                         Spacer()
@@ -261,6 +265,7 @@ struct CameraView: View {
                                 .background(Color.black.opacity(0.5))
                                 .clipShape(Circle())
                         }
+                        .accessibilityLabel("Choose photos from library")
 
                         // Capture button with count badge
                         ZStack(alignment: .topTrailing) {
@@ -274,6 +279,7 @@ struct CameraView: View {
                                         .frame(width: 82, height: 82)
                                 }
                             }
+                            .accessibilityLabel("Take photo")
                             .disabled(session.isCaptureDisabled)
                             .opacity(session.isWritingToDisk ? 0.6 : 1.0)
 
@@ -300,9 +306,11 @@ struct CameraView: View {
                                 .background(Color.black.opacity(0.5))
                                 .clipShape(Circle())
                         }
+                        .accessibilityLabel("Switch camera")
                     }
                     .padding(.bottom, geo.safeAreaInsets.bottom + 20)
                 }
+
             }
             .ignoresSafeArea()
         }
@@ -347,6 +355,15 @@ struct CameraView: View {
                 errorMessage = error
                 showingError = true
             }
+        }
+    }
+
+    private var flashModeAccessibilityValue: String {
+        switch cameraService.flashMode {
+        case .auto: "Auto"
+        case .on: "On"
+        case .off: "Off"
+        @unknown default: "Auto"
         }
     }
 
