@@ -6,7 +6,7 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 Updated November 2, 2026.
 
-### Strict concurrency cleanup — Phase 3 (in progress)
+### Strict concurrency cleanup — Phase 3
 
 - Removed the `useNewPhotoPipeline` flag, the flag-off compression/upload branches in `PhotoPickerViewModel`, and the unused `PhotoPipelineCoordinator`, `PhotoPipelineProviding`, and `PhotoSelectionService`. The create-location save flow is unchanged.
 - `APIClient` is now `nonisolated` and `Sendable`, and its request path is `@concurrent`, so network I/O and JSON decoding no longer run on the main actor. API request/response models are `nonisolated` so their `Codable` conformances work off the main actor.
