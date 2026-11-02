@@ -1,5 +1,5 @@
 import Foundation
-@preconcurrency import AVFoundation
+import AVFoundation
 import UIKit
 import Combine
 import Photos

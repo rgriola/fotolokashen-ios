@@ -1,5 +1,5 @@
 import Foundation
-@preconcurrency import AVFoundation
+import AVFoundation
 
 /// Owns every mutable capture-session object. All access to its AVFoundation
 /// state is serialized on `sessionQueue`; callbacks carry only Sendable values

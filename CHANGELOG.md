@@ -14,6 +14,7 @@ Updated November 2, 2026.
 - `GMSServices.provideAPIKey` now runs on the main thread at launch, as Google requires (`GMSServices` is not thread-safe). This did not remove the Maps SDK's "Multiple instances of CCTClearcutUploader were instantiated" console message, which still appears on device.
 - Delegate conformances for Google Maps, PHPicker, MapKit search completion, web-auth presentation and the cluster algorithm are now explicitly `@MainActor` isolated conformances. Behavior is unchanged; the explicit annotation documents that these frameworks call them on the main thread.
 - Split the 760-line `CameraService.swift`: the queue-confined AVFoundation engine is now `CameraCaptureEngine` in its own file, and the camera value types and `CameraError` moved to `CameraModels.swift`. `CameraService` keeps only the main-actor published UI state. Camera behavior is unchanged.
+- Removed `@preconcurrency` from the AVFoundation imports; the app now has no `@preconcurrency` imports and still builds with zero strict-concurrency warnings.
 
 ### Accessibility and Dynamic Type — Phase 6 (in progress)
 
