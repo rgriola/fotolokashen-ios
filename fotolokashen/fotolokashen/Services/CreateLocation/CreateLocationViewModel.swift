@@ -12,37 +12,38 @@
 //  so the upload progress state remains driven by that pipeline VM.
 //
 
-import Foundation
-import SwiftUI
-import Combine
 import CoreLocation
+import Foundation
+import Observation
+import SwiftUI
 import UIKit
 
+@Observable
 @MainActor
-final class CreateLocationViewModel: ObservableObject {
+final class CreateLocationViewModel {
 
     // MARK: - Published Form State
 
-    @Published var locationName: String = ""
-    @Published var locationDetails: String = ""
-    @Published var locationType: String = "BROLL"
+    var locationName: String = ""
+    var locationDetails: String = ""
+    var locationType: String = "BROLL"
 
-    @Published var productionDate: Date?
-    @Published var hasProductionDate: Bool = false
+    var productionDate: Date?
+    var hasProductionDate: Bool = false
 
     // MARK: - Published Geocoding State
 
-    @Published var isLoadingAddress: Bool = true
-    @Published var geocodedAddressData: GeocodedAddress?
+    var isLoadingAddress: Bool = true
+    var geocodedAddressData: GeocodedAddress?
 
     // MARK: - Published GPS Spread
 
-    @Published var spreadResult: GPSSpreadAnalyzer.SpreadResult?
+    var spreadResult: GPSSpreadAnalyzer.SpreadResult?
 
     // MARK: - Published Save State
 
-    @Published var createdLocation: Location?
-    @Published var showingSuccess: Bool = false
+    var createdLocation: Location?
+    var showingSuccess: Bool = false
 
     // MARK: - Static / Constant
 
@@ -66,7 +67,7 @@ final class CreateLocationViewModel: ObservableObject {
 
     /// True from the first Save tap until the save finishes. Owned here (not read from
     /// the nested `locationService`) so the view re-renders and repeat taps are ignored.
-    @Published private(set) var isSaving = false
+    private(set) var isSaving = false
 
     // MARK: - Dependencies
 

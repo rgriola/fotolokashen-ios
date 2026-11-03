@@ -1,21 +1,22 @@
-import SwiftUI
-import Combine
 import CoreLocation
+import Observation
+import SwiftUI
 
 /// ViewModel managing the photo pipeline: picking, compression, EXIF extraction, and upload.
 /// Shared between CreateLocationView and any future view that needs photo selection + upload.
 ///
 /// Reusable across apps — replace `ConfigLoader.shared.maxPhotosPerLocation` with your own limit.
+@Observable
 @MainActor
-class PhotoPickerViewModel: ObservableObject {
+final class PhotoPickerViewModel {
 
     // MARK: - Published State
 
-    @Published var photos: [PipelinePhoto] = []
-    @Published var isCompressing = false
-    @Published var isUploading = false
-    @Published var uploadProgress: Double = 0.0
-    @Published var showPicker = false
+    var photos: [PipelinePhoto] = []
+    var isCompressing = false
+    var isUploading = false
+    var uploadProgress: Double = 0.0
+    var showPicker = false
 
     // MARK: - Configuration
 
@@ -25,18 +26,22 @@ class PhotoPickerViewModel: ObservableObject {
 
     private let compressionService = PhotoCompressionService()
     private let uploadQueue = PhotoUploadQueue(uploader: PhotoUploadService())
-    private var queueEventTask: Task<Void, Never>?
-    private var lastUploadLocationId: Int?
+    @ObservationIgnored private var queueEventTask: Task<Void, Never>?
+    @ObservationIgnored private var lastUploadLocationId: Int?
 
     // MARK: - Init
 
     init(maxPhotos: Int? = nil) {
         self.maxPhotos = maxPhotos ?? ConfigLoader.shared.maxPhotosPerLocation
-        subscribeToQueueEvents()
     }
 
     deinit {
         queueEventTask?.cancel()
+    }
+
+    func start() {
+        guard queueEventTask == nil else { return }
+        subscribeToQueueEvents()
     }
 
     // MARK: - Photo Management
@@ -202,10 +207,11 @@ class PhotoPickerViewModel: ObservableObject {
     // MARK: - Queue Event Subscription
 
     private func subscribeToQueueEvents() {
-        queueEventTask = Task { [weak self] in
-            guard let self else { return }
-            for await event in self.uploadQueue.events() {
-                self.handleQueueEvent(event)
+        let uploadQueue = self.uploadQueue
+        queueEventTask = Task { [weak self, uploadQueue] in
+            for await event in uploadQueue.events() {
+                guard !Task.isCancelled else { break }
+                self?.handleQueueEvent(event)
             }
         }
     }

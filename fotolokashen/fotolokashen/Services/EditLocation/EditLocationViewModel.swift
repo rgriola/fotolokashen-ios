@@ -10,11 +10,12 @@
 //
 
 import Foundation
+import Observation
 import SwiftUI
-import Combine
 
+@Observable
 @MainActor
-final class EditLocationViewModel: ObservableObject {
+final class EditLocationViewModel {
 
     // MARK: - Source of Truth
 
@@ -22,44 +23,44 @@ final class EditLocationViewModel: ObservableObject {
 
     // MARK: - Form State (Basic Info)
 
-    @Published var locationName: String = ""
-    @Published var locationType: String = "OTHER"
-    @Published var notes: String = ""
-    @Published var details: String = ""   // Maps to Location.details (free-text from iOS Create form)
+    var locationName: String = ""
+    var locationType: String = "OTHER"
+    var notes: String = ""
+    var details: String = ""   // Maps to Location.details (free-text from iOS Create form)
 
     // MARK: - Form State (Production Details)
 
-    @Published var productionNotes: String = ""
-    @Published var entryPoint: String = ""
-    @Published var parking: String = ""
-    @Published var access: String = ""
-    @Published var indoorOutdoor: String = ""
-    @Published var isPermanent: Bool = false
+    var productionNotes: String = ""
+    var entryPoint: String = ""
+    var parking: String = ""
+    var access: String = ""
+    var indoorOutdoor: String = ""
+    var isPermanent: Bool = false
 
     // MARK: - Form State (Production Date)
 
-    @Published var hasProductionDate: Bool = false
-    @Published var productionDate: Date = Date()
+    var hasProductionDate: Bool = false
+    var productionDate: Date = Date()
 
     // MARK: - Form State (UserSave fields)
 
-    @Published var isFavorite: Bool = false
-    @Published var personalRating: Double = 0
-    @Published var color: String = ""
-    @Published var caption: String = ""
-    @Published var tagsText: String = ""  // comma-separated
-    @Published var visibility: String = "private"
+    var isFavorite: Bool = false
+    var personalRating: Double = 0
+    var color: String = ""
+    var caption: String = ""
+    var tagsText: String = ""  // comma-separated
+    var visibility: String = "private"
 
     // MARK: - Photos State
 
-    @Published var photos: [DetailPhoto] = []
-    @Published var isLoadingPhotos: Bool = true
-    @Published var photosToDelete: [Int] = []
+    var photos: [DetailPhoto] = []
+    var isLoadingPhotos: Bool = true
+    var photosToDelete: [Int] = []
 
     // MARK: - Save State
 
-    @Published var isSaving: Bool = false
-    @Published var errorMessage: String?
+    var isSaving: Bool = false
+    var errorMessage: String?
 
     // MARK: - Field Limits (mirror server)
 

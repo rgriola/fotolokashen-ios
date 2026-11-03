@@ -1,11 +1,11 @@
-import SwiftUI
 import CoreLocation
+import SwiftUI
 
 /// Form for creating a new location with one or more photos.
 ///
 /// Phase 2a-4: form state, sanitization, geocoding, GPS spread analysis, and
 /// the multi-photo save pipeline live in `CreateLocationViewModel`. The view
-/// keeps `PhotoPickerViewModel` as a separate `@StateObject` (it's the photo
+/// keeps `PhotoPickerViewModel` as a separate `@State` (it's the photo
 /// pipeline VM) and passes it to the create VM at save time.
 ///
 // REVIEW: Still missing — caption, tags, personalRating, isFavorite, color at
@@ -15,8 +15,8 @@ import CoreLocation
 // change. Tracked as a follow-up to Phase 2a.
 struct CreateLocationView: View {
 
-    @StateObject private var viewModel: CreateLocationViewModel
-    @StateObject private var photoViewModel = PhotoPickerViewModel()
+    @State private var viewModel: CreateLocationViewModel
+    @State private var photoViewModel = PhotoPickerViewModel()
     @Environment(\.dismiss) var dismiss
 
     /// Initial photo from the camera (optional — user can also add from library)
@@ -35,7 +35,7 @@ struct CreateLocationView: View {
         self.initialLibraryPhotos = nil
         self.initialSessionCaptures = nil
         self.onLocationCreated = onLocationCreated
-        _viewModel = StateObject(wrappedValue: CreateLocationViewModel(photoLocation: photoLocation))
+        _viewModel = State(initialValue: CreateLocationViewModel(photoLocation: photoLocation))
     }
 
     /// Initializer: start with Photo Library photos
@@ -48,7 +48,7 @@ struct CreateLocationView: View {
         self.initialLibraryPhotos = libraryPhotos
         self.initialSessionCaptures = nil
         self.onLocationCreated = onLocationCreated
-        _viewModel = StateObject(wrappedValue: CreateLocationViewModel(photoLocation: photoLocation))
+        _viewModel = State(initialValue: CreateLocationViewModel(photoLocation: photoLocation))
     }
 
     /// Initializer: start with multi-photo camera session captures
@@ -61,7 +61,7 @@ struct CreateLocationView: View {
         self.initialLibraryPhotos = nil
         self.initialSessionCaptures = sessionCaptures
         self.onLocationCreated = onLocationCreated
-        _viewModel = StateObject(wrappedValue: CreateLocationViewModel(photoLocation: photoLocation))
+        _viewModel = State(initialValue: CreateLocationViewModel(photoLocation: photoLocation))
     }
 
     /// Initializer: no initial photo (opens with empty grid + picker)
@@ -73,7 +73,7 @@ struct CreateLocationView: View {
         self.initialLibraryPhotos = nil
         self.initialSessionCaptures = nil
         self.onLocationCreated = onLocationCreated
-        _viewModel = StateObject(wrappedValue: CreateLocationViewModel(photoLocation: photoLocation))
+        _viewModel = State(initialValue: CreateLocationViewModel(photoLocation: photoLocation))
     }
 
     private var photoLocation: CLLocation? { viewModel.photoLocation }
@@ -96,6 +96,8 @@ struct CreateLocationView: View {
             }
         }
         .task {
+            photoViewModel.start()
+
             // Seed initial photos into the pipeline
             if photoViewModel.photos.isEmpty {
                 if let initial = initialPhoto {
