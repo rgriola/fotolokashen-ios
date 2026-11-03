@@ -161,9 +161,13 @@ extension ProfileAvatarView where MenuContent == EmptyView {
 struct ProfileStatItem: View {
     let count: Int
     let label: String
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(spacing: 2) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 6))
+            : AnyLayout(VStackLayout(spacing: 2))
+        layout {
             Text("\(count)")
                 .font(.subheadline)
                 .fontWeight(.bold)
@@ -171,6 +175,32 @@ struct ProfileStatItem: View {
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(Color.secondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Lays out profile stats in a row, stacking them vertically at accessibility
+/// text sizes so labels like "Followers" don't hyphenate.
+struct ProfileStatsRow<Content: View>: View {
+    @ViewBuilder let content: Content
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(HStackLayout(spacing: 16))
+        layout { content }
+    }
+}
+
+/// Vertical separator between profile stats; hidden when the stats stack.
+struct ProfileStatDivider: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        if !dynamicTypeSize.isAccessibilitySize {
+            Divider().frame(height: 28)
         }
     }
 }

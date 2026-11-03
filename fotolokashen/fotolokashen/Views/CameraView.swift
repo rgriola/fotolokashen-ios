@@ -33,6 +33,7 @@ struct CameraView: View {
 
     // Zoom dial
     @State private var showZoomDial = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     // GPS
     @State private var showCoordinates = false
@@ -107,34 +108,21 @@ struct CameraView: View {
                 // --- HUD overlays ---
 
                 // Top bar: Close | Flash | (spacer) | GPS badge
-                VStack {
-                    HStack(spacing: 12) {
-                        // Close button
-                        Button {
+                VStack(alignment: .trailing, spacing: 8) {
+                    HStack(alignment: .top, spacing: 12) {
+                        CameraHUDIconButton(systemImage: AppIcons.close, label: "Close camera") {
                             dismiss()
-                        } label: {
-                            Image(systemName: AppIcons.close)
-                                .font(.title3)
-                                .foregroundStyle(Color.white)
-                                .padding(12)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
                         }
-                        .accessibilityLabel("Close camera")
 
                         // Flash mode button — Apple-style top bar (B4)
                         if !cameraService.isUsingFrontCamera {
-                            Button {
+                            CameraHUDIconButton(
+                                systemImage: cameraService.flashIconName,
+                                label: "Change flash mode",
+                                tint: cameraService.flashIconName.contains("slash") ? Color.white : Color.yellow
+                            ) {
                                 cameraService.cycleFlashMode()
-                            } label: {
-                                Image(systemName: cameraService.flashIconName)
-                                    .font(.title3)
-                                    .foregroundStyle(cameraService.flashIconName.contains("slash") ? Color.white : Color.yellow)
-                                    .padding(12)
-                                    .background(Color.black.opacity(0.5))
-                                    .clipShape(Circle())
                             }
-                            .accessibilityLabel("Change flash mode")
                             .accessibilityValue(flashModeAccessibilityValue)
                         }
 
@@ -146,38 +134,36 @@ struct CameraView: View {
                             showCoordinates: $showCoordinates
                         )
                     }
-                    .padding(.top, geo.safeAreaInsets.top + 8)
-                    .padding(.horizontal, 16)
+
+                    // Done button — below the GPS badge (visible when photos captured)
+                    if !session.sessionCaptures.isEmpty {
+                        Button {
+                            finishSession()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("Done")
+                                    .font(.headline)
+                                Text("(\(session.sessionCaptures.count))")
+                                    .font(.subheadline)
+                                    .fontWeight(.bold)
+                            }
+                            .lineLimit(1)
+                            .dynamicTypeSize(...CameraHUD.maxDynamicTypeSize)
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .frame(minHeight: 44)
+                            .background(Color.brand)
+                            .clipShape(Capsule())
+                        }
+                        .accessibilityShowsLargeContentViewer {
+                            Text("Done (\(session.sessionCaptures.count))")
+                        }
+                    }
                     Spacer()
                 }
-
-                // Done button — top-right below GPS badge (visible when photos captured)
-                if !session.sessionCaptures.isEmpty {
-                    VStack {
-                        HStack {
-                            Spacer()
-                            Button {
-                                finishSession()
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Text("Done")
-                                        .font(.headline)
-                                    Text("(\(session.sessionCaptures.count))")
-                                        .font(.subheadline)
-                                        .fontWeight(.bold)
-                                }
-                                .foregroundStyle(Color.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.brand)
-                                .clipShape(Capsule())
-                            }
-                        }
-                        .padding(.top, geo.safeAreaInsets.top + 48)
-                        .padding(.trailing, geo.safeAreaInsets.trailing + 16)
-                        Spacer()
-                    }
-                }
+                .padding(.top, geo.safeAreaInsets.top + 8)
+                .padding(.horizontal, 16)
 
                 // Capture flash overlay
                 if session.captureFlash {
@@ -235,18 +221,10 @@ struct CameraView: View {
                         .padding(.bottom, 12)
                         .transition(.scale(scale: 0.8).combined(with: .opacity))
                     } else {
-                        // Zoom pill button (tap to expand dial)
-                        Button {
+                        CameraZoomPill(zoomLabel: zoomLabel, isZoomed: cameraService.currentZoom > 1.01) {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 showZoomDial = true
                             }
-                        } label: {
-                            Text(zoomLabel)
-                                .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                                .foregroundStyle(cameraService.currentZoom > 1.01 ? Color.yellow : Color.white)
-                                .frame(width: 44, height: 44)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
                         }
                         .padding(.bottom, 12)
                         .transition(.scale(scale: 0.8).combined(with: .opacity))
@@ -254,18 +232,14 @@ struct CameraView: View {
 
                     // Bottom controls: Library | Capture (with count badge) | Camera flip (B3)
                     HStack(spacing: 32) {
-                        // Library button
-                        Button {
+                        CameraHUDIconButton(
+                            systemImage: AppIcons.photoOnRectangle,
+                            label: "Choose photos from library",
+                            textStyle: .title2,
+                            baseDiameter: 50
+                        ) {
                             showLibraryPicker = true
-                        } label: {
-                            Image(systemName: AppIcons.photoOnRectangle)
-                                .font(.title2)
-                                .foregroundStyle(Color.white)
-                                .frame(width: 50, height: 50)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
                         }
-                        .accessibilityLabel("Choose photos from library")
 
                         // Capture button with count badge
                         ZStack(alignment: .topTrailing) {
@@ -280,33 +254,36 @@ struct CameraView: View {
                                 }
                             }
                             .accessibilityLabel("Take photo")
+                            .accessibilityValue(captureCountAccessibilityValue)
+                            .accessibilityShowsLargeContentViewer {
+                                Label("Take photo", systemImage: AppIcons.cameraFill)
+                            }
                             .disabled(session.isCaptureDisabled)
                             .opacity(session.isWritingToDisk ? 0.6 : 1.0)
 
                             // Photo count badge
                             if !session.sessionCaptures.isEmpty {
                                 Text("\(session.sessionCaptures.count)")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.caption.bold())
+                                    .dynamicTypeSize(...CameraHUD.maxDynamicTypeSize)
                                     .foregroundStyle(Color.white)
-                                    .frame(minWidth: 22, minHeight: 22)
+                                    .frame(minWidth: countBadgeSize, minHeight: countBadgeSize)
                                     .background(Color.brand)
                                     .clipShape(Circle())
                                     .offset(x: 6, y: -4)
+                                    .accessibilityHidden(true)
                             }
                         }
 
                         // Front/back camera toggle — next to shutter (B3)
-                        Button {
+                        CameraHUDIconButton(
+                            systemImage: AppIcons.arrowTriangle2CirclepathCamera,
+                            label: "Switch camera",
+                            textStyle: .title2,
+                            baseDiameter: 50
+                        ) {
                             cameraService.switchCamera()
-                        } label: {
-                            Image(systemName: AppIcons.arrowTriangle2CirclepathCamera)
-                                .font(.title2)
-                                .foregroundStyle(Color.white)
-                                .frame(width: 50, height: 50)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
                         }
-                        .accessibilityLabel("Switch camera")
                     }
                     .padding(.bottom, geo.safeAreaInsets.bottom + 20)
                 }
@@ -368,6 +345,16 @@ struct CameraView: View {
     }
 
     // MARK: - Zoom Label
+
+    private var captureCountAccessibilityValue: String {
+        let count = session.sessionCaptures.count
+        guard count > 0 else { return "" }
+        return count == 1 ? "1 photo" : "\(count) photos"
+    }
+
+    private var countBadgeSize: CGFloat {
+        CameraHUD.scaled(22, relativeTo: .caption, at: dynamicTypeSize)
+    }
 
     private var zoomLabel: String {
         let z = cameraService.currentZoom

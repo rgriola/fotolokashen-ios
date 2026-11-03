@@ -175,17 +175,17 @@ struct ProfileView: View {
             }
 
             // Stats bar
-            HStack(spacing: 16) {
+            ProfileStatsRow {
                 ProfileStatItem(count: locationStore.locations.count, label: "Spots")
 
-                Divider().frame(height: 28)
+                ProfileStatDivider()
 
                 Button { showFollowers = true } label: {
                     ProfileStatItem(count: followersCount, label: "Followers")
                 }
                 .buttonStyle(.plain)
 
-                Divider().frame(height: 28)
+                ProfileStatDivider()
 
                 Button { showFollowing = true } label: {
                     ProfileStatItem(count: followingCount, label: "Following")

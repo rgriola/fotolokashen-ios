@@ -87,6 +87,13 @@ struct LocationListView: View {
     /// Friends' and public locations are additive (not mutually exclusive) — matches
     /// the Map screen's toggle semantics and the existing web/API merge behavior.
     private var sourceToggleRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            sourceToggleButtons.padding(.horizontal)
+        }
+        .padding(.top, 8)
+    }
+
+    private var sourceToggleButtons: some View {
         HStack(spacing: 8) {
             sourceToggleButton(
                 title: "Friends",
@@ -105,11 +112,7 @@ struct LocationListView: View {
             ) {
                 Task { await listViewModel.togglePublic() }
             }
-
-            Spacer()
         }
-        .padding(.horizontal)
-        .padding(.top, 8)
     }
 
     @ViewBuilder
@@ -133,6 +136,7 @@ struct LocationListView: View {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.medium)
+                    .lineLimit(1)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)

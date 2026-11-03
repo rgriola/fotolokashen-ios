@@ -379,6 +379,12 @@ struct LoggedInView: View {
     // preventing the SwiftUI race condition where both transitions fire simultaneously.
     @State private var pendingLibraryPhotos: [PipelinePhoto]?
 
+    /// Spots is portrait-only on iPhone until its header has a landscape layout;
+    /// the camera keeps its own rotation handling.
+    private func updateOrientationLock() {
+        AppOrientation.setPortraitLocked(selectedTab == 1 && !showingCamera)
+    }
+
     var body: some View {
         TabView(selection: $selectedTab) {
             // Locations list
@@ -425,7 +431,11 @@ struct LoggedInView: View {
             } else {
                 previousTab = newTab
             }
+            updateOrientationLock()
         }
+        .onChange(of: showingCamera) { updateOrientationLock() }
+        .onAppear { updateOrientationLock() }
+        .onDisappear { AppOrientation.setPortraitLocked(false) }
         .fullScreenCover(isPresented: $showingCamera, onDismiss: {
             // Camera has fully dismissed — now safe to present the library sheet
             if let pending = pendingLibraryPhotos {

@@ -18,6 +18,10 @@ Updated November 2, 2026.
 
 ### Accessibility and Dynamic Type — Phase 6 (in progress)
 
+- At the largest text sizes, the Spots Friends/Public toggles scroll sideways instead of breaking words, the type badge on Spots photos stays on one line, profile stats and Location Detail labels stack instead of hyphenating, and the camera zoom button text scales. VoiceOver now announces the zoom button as "Zoom" with its current level, and reads each profile stat as one item.
+- Camera controls now scale consistently: like the system Camera app, they stop growing at the largest standard text size, icons stay centered in their circles, and the GPS readout scales and wraps instead of staying at a fixed tiny size. At accessibility sizes, long-press any camera control to see it enlarged (Large Content Viewer). VoiceOver reads the photo count on the shutter and zoom stops as "0.5 times zoom".
+- The Google logo on the map now sits above the Friends and My Location buttons instead of behind them.
+- On iPhone, the Spots tab is now portrait-only until it has a landscape layout; in landscape its search and filter header covered the photos. Other tabs, the camera, and iPad still rotate.
 - Added accessible labels for icon-only camera, photo, location, search, rating, sorting, and error controls. The map now has a region label and hint; the Spots tab is the list alternative.
 - Large text now has a scrolling login layout, scaled map controls, and vertically reflowing permission rows. Login screenshots were reviewed at `.accessibility3` and `.accessibility5`; a UI test confirms all login actions remain reachable at both sizes.
 - The full iOS 27.2 simulator suite passed: 130 unit tests and 7 UI tests. An unsigned Release build succeeded. SwiftLint reports 314 warnings and 5 errors.

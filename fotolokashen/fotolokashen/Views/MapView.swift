@@ -48,7 +48,9 @@ struct MapView: View {
                     onSocialMarkerTap: { socialLocation in
                         // Convert MapSocialLocation to ReadOnlyLocationContext for full detail view
                         selectedReadOnlyContext = ReadOnlyLocationContext(socialLocation: socialLocation)
-                    }
+                    },
+                    // Lift the Google logo above the bottom map controls.
+                    bottomControlsInset: max(44, friendsControlSize, locationControlSize) + 24
                 )
                 .accessibilityLabel("Map of locations")
                 .accessibilityHint("Explore map locations, or switch to Spots to browse and open them in a list.")
@@ -218,6 +220,7 @@ struct ClusteredMapView: UIViewRepresentable {
     @Binding var searchedPlacePin: SearchedPlacePin?
     let onMarkerTap: (Location) -> Void
     let onSocialMarkerTap: (MapSocialLocation) -> Void
+    var bottomControlsInset: CGFloat = 0
     
     func makeUIView(context: Context) -> GMSMapView {
         // Start with a timezone-based fallback position
@@ -245,6 +248,10 @@ struct ClusteredMapView: UIViewRepresentable {
     }
     
     func updateUIView(_ mapView: GMSMapView, context: Context) {
+        if mapView.padding.bottom != bottomControlsInset {
+            mapView.padding = UIEdgeInsets(top: 0, left: 0, bottom: bottomControlsInset, right: 0)
+        }
+
         #if DEBUG
         dlog("MapView", "updateUIView: \(locations.count) locations, \(socialLocations.count) social locations")
         #endif

@@ -52,8 +52,12 @@ struct LocationRow: View {
                     if let type = location.type, !type.isEmpty {
                         HStack(spacing: 3) {
                             Text(type)
+                                .lineLimit(1)
                             visibilityIcon(for: location.visibility)
                         }
+                        // The badge overlays a fixed-height photo, so its size is
+                        // capped to keep the type on one line.
+                        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.white)

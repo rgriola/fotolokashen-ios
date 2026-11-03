@@ -149,11 +149,11 @@ struct PublicProfileView: View {
 
     private var statsSection: some View {
         VStack(spacing: 10) {
-            HStack(spacing: 16) {
+            ProfileStatsRow {
                 // Spots
                 ProfileStatItem(count: profile?.publicLocationCount ?? 0, label: "Spots")
 
-                Divider().frame(height: 28)
+                ProfileStatDivider()
 
                 // Followers
                 Button {
@@ -163,7 +163,7 @@ struct PublicProfileView: View {
                 }
                 .buttonStyle(.plain)
 
-                Divider().frame(height: 28)
+                ProfileStatDivider()
 
                 // Following
                 Button {

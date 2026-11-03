@@ -23,6 +23,7 @@ enum LaunchTimer {
 
 @main
 struct FotolokashenApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var authService = AuthService()
     @StateObject private var networkMonitor = NetworkMonitor.shared
     

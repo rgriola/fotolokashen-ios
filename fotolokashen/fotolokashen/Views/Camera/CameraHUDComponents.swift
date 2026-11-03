@@ -11,6 +11,97 @@
 import SwiftUI
 import CoreLocation
 
+// MARK: - HUD Sizing
+
+/// Camera controls sit over the viewfinder, so like the system Camera app they stop
+/// growing at `maxDynamicTypeSize`. Larger text settings get the Large Content Viewer
+/// instead: long-press a control to see it enlarged.
+///
+/// Apply the cap to a control's label, not the control, so the Large Content Viewer
+/// still sees the user's real text size.
+enum CameraHUD {
+    static let maxDynamicTypeSize = DynamicTypeSize.xxxLarge
+
+    /// Scales `value` with `style`, stopping at `maxDynamicTypeSize`.
+    static func scaled(_ value: CGFloat, relativeTo style: Font.TextStyle, at size: DynamicTypeSize) -> CGFloat {
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(min(size, maxDynamicTypeSize)))
+        return UIFontMetrics(forTextStyle: uiTextStyle(style)).scaledValue(for: value, compatibleWith: traits)
+    }
+
+    private static let uiTextStyles: [Font.TextStyle: UIFont.TextStyle] = [
+        .largeTitle: .largeTitle, .title: .title1, .title2: .title2, .title3: .title3,
+        .headline: .headline, .subheadline: .subheadline, .callout: .callout,
+        .footnote: .footnote, .caption: .caption1, .caption2: .caption2
+    ]
+
+    private static func uiTextStyle(_ style: Font.TextStyle) -> UIFont.TextStyle {
+        uiTextStyles[style] ?? .body
+    }
+}
+
+// MARK: - HUD Icon Button
+
+/// Round icon button for the camera HUD. The icon and its circle grow together.
+struct CameraHUDIconButton: View {
+    let systemImage: String
+    let label: String
+    var textStyle: Font.TextStyle = .title3
+    var baseDiameter: CGFloat = 48
+    var tint: Color = .white
+    let action: () -> Void
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        let diameter = max(44, CameraHUD.scaled(baseDiameter, relativeTo: textStyle, at: dynamicTypeSize))
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(textStyle))
+                .dynamicTypeSize(...CameraHUD.maxDynamicTypeSize)
+                .foregroundStyle(tint)
+                .frame(width: diameter, height: diameter)
+                .background(Color.black.opacity(0.5))
+                .clipShape(Circle())
+        }
+        .accessibilityLabel(label)
+        .accessibilityShowsLargeContentViewer {
+            Label(label, systemImage: systemImage)
+        }
+    }
+}
+
+// MARK: - Zoom Pill
+
+/// Round zoom readout above the shutter; tapping it opens `ZoomDialView`.
+struct CameraZoomPill: View {
+    let zoomLabel: String
+    let isZoomed: Bool
+    let action: () -> Void
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        let diameter = max(44, CameraHUD.scaled(44, relativeTo: .footnote, at: dynamicTypeSize))
+        Button(action: action) {
+            Text(zoomLabel)
+                .font(.system(.footnote, design: .monospaced, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .dynamicTypeSize(...CameraHUD.maxDynamicTypeSize)
+                .foregroundStyle(isZoomed ? Color.yellow : Color.white)
+                .frame(width: diameter, height: diameter)
+                .background(Color.black.opacity(0.5))
+                .clipShape(Circle())
+        }
+        .accessibilityLabel("Zoom")
+        .accessibilityValue("\(zoomLabel) times")
+        .accessibilityHint("Opens the zoom dial.")
+        .accessibilityShowsLargeContentViewer {
+            Text("Zoom \(zoomLabel)×")
+        }
+    }
+}
+
 // MARK: - Focus Square
 
 /// Yellow focus square that animates in, like native iOS Camera.
@@ -57,8 +148,10 @@ struct ExposureSlider: View {
     var body: some View {
         VStack(spacing: 6) {
             Image(systemName: AppIcons.sunMaxFill)
-                .font(.system(size: 10))
+                .font(.caption2)
+                .dynamicTypeSize(...CameraHUD.maxDynamicTypeSize)
                 .foregroundStyle(Color.yellow.opacity(0.8))
+                .accessibilityHidden(true)
 
             ZStack(alignment: .center) {
                 Capsule()
@@ -100,8 +193,10 @@ struct ExposureSlider: View {
             }
 
             Image(systemName: AppIcons.sunMinFill)
-                .font(.system(size: 10))
+                .font(.caption2)
+                .dynamicTypeSize(...CameraHUD.maxDynamicTypeSize)
                 .foregroundStyle(Color.yellow.opacity(0.5))
+                .accessibilityHidden(true)
         }
     }
 
@@ -132,6 +227,8 @@ struct ZoomDialView: View {
     var onZoomChanged: (CGFloat) -> Void
     var onDismiss: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     private var presets: [CGFloat] {
         var stops: [CGFloat] = [0.5, 1.0, 2.0]
         if maxZoom >= 3.0 { stops.append(3.0) }
@@ -140,6 +237,7 @@ struct ZoomDialView: View {
     }
 
     var body: some View {
+        let side = max(44, CameraHUD.scaled(44, relativeTo: .footnote, at: dynamicTypeSize))
         HStack(spacing: 0) {
             ForEach(presets, id: \.self) { preset in
                 Button {
@@ -148,23 +246,33 @@ struct ZoomDialView: View {
                     }
                 } label: {
                     Text(presetLabel(preset))
-                        .font(.system(size: 13, weight: isActive(preset) ? .bold : .medium, design: .monospaced))
+                        .font(.system(.footnote, design: .monospaced, weight: isActive(preset) ? .bold : .medium))
+                        .lineLimit(1)
+                        .dynamicTypeSize(...CameraHUD.maxDynamicTypeSize)
                         .foregroundStyle(isActive(preset) ? Color.yellow : Color.white)
-                        .frame(width: 44, height: 44)
+                        .padding(.horizontal, 8)
+                        .frame(minWidth: 44, minHeight: side)
                 }
-                .accessibilityLabel("\(presetLabel(preset))x zoom")
+                .accessibilityLabel(spokenLabel(preset))
                 .accessibilityAddTraits(isActive(preset) ? .isSelected : [])
+                .accessibilityShowsLargeContentViewer {
+                    Text("\(presetLabel(preset))×")
+                }
             }
 
             Button {
                 onDismiss()
             } label: {
                 Image(systemName: AppIcons.close)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(.caption2, weight: .bold))
+                    .dynamicTypeSize(...CameraHUD.maxDynamicTypeSize)
                     .foregroundStyle(Color.white.opacity(0.6))
-                    .frame(width: 44, height: 44)
+                    .frame(width: 44, height: side)
             }
             .accessibilityLabel("Close zoom controls")
+            .accessibilityShowsLargeContentViewer {
+                Label("Close zoom controls", systemImage: AppIcons.close)
+            }
         }
         .padding(.horizontal, 4)
         .background(Color.black.opacity(0.65))
@@ -176,6 +284,12 @@ struct ZoomDialView: View {
             return String(format: ".%0.f", value * 10)
         }
         return String(format: "%.0f", value)
+    }
+
+    /// Spoken as "0.5 times zoom" rather than the on-screen ".5".
+    private func spokenLabel(_ value: CGFloat) -> String {
+        let number = Double(value).formatted(.number.precision(.fractionLength(0...1)))
+        return "\(number) times zoom"
     }
 
     private func isActive(_ preset: CGFloat) -> Bool {
@@ -196,17 +310,21 @@ struct CameraGPSBadge: View {
                 showCoordinates.toggle()
             }
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: location != nil ? AppIcons.locationFill : AppIcons.locationSlashFill)
-                    .font(.system(size: 10))
-                if showCoordinates, let loc = location {
-                    Text(String(format: "%.4f, %.4f", loc.coordinate.latitude, loc.coordinate.longitude))
-                        .font(.system(size: 10, design: .monospaced))
-                    Text("±\(Int(loc.horizontalAccuracy))m")
-                        .font(.system(size: 9))
-                        .foregroundStyle(Color.white.opacity(0.7))
+            // Falls back to stacked lines when one line doesn't fit beside Close and Flash.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 4) {
+                    icon
+                    coordinateLines
+                }
+                HStack(alignment: .top, spacing: 4) {
+                    icon
+                    VStack(alignment: .leading, spacing: 2) {
+                        coordinateLines
+                    }
                 }
             }
+            .lineLimit(1)
+            .dynamicTypeSize(...CameraHUD.maxDynamicTypeSize)
             .foregroundStyle(Color.white)
             .padding(.horizontal, showCoordinates ? 8 : 6)
             .padding(.vertical, 5)
@@ -221,6 +339,42 @@ struct CameraGPSBadge: View {
             : showCoordinates
                 ? "Double-tap to hide coordinates."
                 : "Double-tap to show coordinates.")
+        .accessibilityShowsLargeContentViewer {
+            Label(largeContentTitle, systemImage: iconName)
+        }
+    }
+
+    private var iconName: String {
+        location != nil ? AppIcons.locationFill : AppIcons.locationSlashFill
+    }
+
+    private var icon: some View {
+        Image(systemName: iconName)
+            .font(.caption)
+    }
+
+    @ViewBuilder
+    private var coordinateLines: some View {
+        if showCoordinates, let loc = location {
+            Text(String(format: "%.4f", loc.coordinate.latitude) + ",")
+                .font(.system(.caption, design: .monospaced))
+            Text(String(format: "%.4f", loc.coordinate.longitude))
+                .font(.system(.caption, design: .monospaced))
+            Text("±\(Int(loc.horizontalAccuracy))m")
+                .font(.caption2)
+                .foregroundStyle(Color.white.opacity(0.7))
+        }
+    }
+
+    private var largeContentTitle: String {
+        guard let location else { return "GPS unavailable" }
+        guard showCoordinates else { return "GPS available" }
+        return String(
+            format: "%.4f, %.4f ±%dm",
+            location.coordinate.latitude,
+            location.coordinate.longitude,
+            Int(location.horizontalAccuracy)
+        )
     }
 
     private var accessibilityValue: String {
@@ -248,7 +402,7 @@ struct CameraPermissionDeniedView: View {
             Text("Camera Access Required")
                 .font(.title2)
                 .fontWeight(.semibold)
-            Text("Please enable camera access in Settings to take photos")
+            Text("Enable Camera Access in Settings to Take Photos")
                 .font(.body)
                 .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.center)
@@ -294,12 +448,17 @@ struct CameraThumbnailStrip: View {
                                 Image(systemName: AppIcons.closeCircle)
                                     .font(.system(size: 16))
                                     .foregroundStyle(Color.white)
-                                    .frame(width: 44, height: 44)
+                                    .frame(width: 24, height: 24)
                                     .background(Color.black.opacity(0.6))
                                     .clipShape(Circle())
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
                             }
                             .accessibilityLabel("Remove photo \(index + 1)")
                             .accessibilityHint("Removes this photo from the capture session.")
+                            .accessibilityShowsLargeContentViewer {
+                                Label("Remove photo \(index + 1)", systemImage: AppIcons.closeCircle)
+                            }
                             .offset(x: 4, y: -4)
                         }
                         .id(capture.id)

@@ -436,16 +436,30 @@ struct SectionHeader: View {
 struct DetailRow: View {
     let label: String
     let value: String
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(alignment: .top) {
-            Text(label)
-                .font(.subheadline)
-                .foregroundStyle(Color.secondary)
-                .frame(width: 120, alignment: .leading)
-            Text(value)
-                .font(.subheadline)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        // At accessibility sizes the fixed label column forces mid-word
+        // hyphenation, so the label stacks above the value instead.
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.secondary)
+                Text(value)
+                    .font(.subheadline)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            HStack(alignment: .top) {
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.secondary)
+                    .frame(width: 120, alignment: .leading)
+                Text(value)
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 }
