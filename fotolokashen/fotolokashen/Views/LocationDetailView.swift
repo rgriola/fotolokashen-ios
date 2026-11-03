@@ -9,12 +9,12 @@
 //  See copilot-instructions.md for usage patterns and initializer documentation.
 //
 //  Phase 2a-1: data/lifecycle moved to `LocationDetailViewModel`. The view
-//  now binds to the VM via `@StateObject` and is a thin presentation shell.
+//  now binds to the VM via `@State` and is a thin presentation shell.
 //
 
-import SwiftUI
 import CoreLocation
 import MapKit
+import SwiftUI
 
 // MARK: - LocationDetailView
 
@@ -24,7 +24,7 @@ struct LocationDetailView: View {
     // MARK: - Properties
     // =========================================================================
 
-    @StateObject private var viewModel: LocationDetailViewModel
+    @State private var viewModel: LocationDetailViewModel
 
     // Convenience read-throughs to keep existing inline code readable.
     private var currentLocation: Location { viewModel.currentLocation }
@@ -61,8 +61,8 @@ struct LocationDetailView: View {
     /// Use this when displaying the user's own saved location
     /// - Parameter location: The Location from the user's saved locations
     init(location: Location) {
-        _viewModel = StateObject(
-            wrappedValue: LocationDetailViewModel(location: location, mode: .owner)
+        _viewModel = State(
+            initialValue: LocationDetailViewModel(location: location, mode: .owner)
         )
     }
 
@@ -91,8 +91,8 @@ struct LocationDetailView: View {
             state: loc.state,
             caption: socialLocation.caption
         )
-        _viewModel = StateObject(
-            wrappedValue: LocationDetailViewModel(
+        _viewModel = State(
+            initialValue: LocationDetailViewModel(
                 location: synthesizedLocation,
                 mode: .readOnly(
                     socialLocationId: socialLocation.id,
@@ -108,8 +108,8 @@ struct LocationDetailView: View {
     /// Use this when navigating from Map after tapping a marker for a friend's location
     /// - Parameter context: The ReadOnlyLocationContext stored when navigating to map
     init(readOnlyContext context: ReadOnlyLocationContext) {
-        _viewModel = StateObject(
-            wrappedValue: LocationDetailViewModel(
+        _viewModel = State(
+            initialValue: LocationDetailViewModel(
                 location: context.location,
                 mode: .readOnly(
                     socialLocationId: context.id,

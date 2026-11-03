@@ -1,4 +1,3 @@
-import Combine
 import Kingfisher
 import Observation
 import SwiftUI
@@ -125,14 +124,17 @@ nonisolated final class PhotoGallerySelectionTests: XCTestCase {
             currentPhotoRevision: { viewModel.photoRevision }
         )
         let original = PhotoGallerySelection.clampedBinding(selection, snapshot: originalSnapshot)
-        var revisionSeenByPublisher: UInt64?
-        let subscription = viewModel.$photos.dropFirst().sink { _ in
-            revisionSeenByPublisher = viewModel.photoRevision
+        let revisionObservation = PhotoRevisionObservation()
+        withObservationTracking {
+            _ = viewModel.photos
+        } onChange: {
+            MainActor.assumeIsolated {
+                revisionObservation.revision = viewModel.photoRevision
+            }
         }
-        defer { subscription.cancel() }
 
         viewModel.photos.removeLast()
-        XCTAssertEqual(revisionSeenByPublisher, initialRevision + 1)
+        XCTAssertEqual(revisionObservation.revision, initialRevision + 1)
         viewModel.photos = initialPhotos
         XCTAssertEqual(viewModel.photoRevision, initialRevision + 2)
         original.wrappedValue = 0
@@ -573,6 +575,11 @@ private final class PhotoGalleryTestState {
     func imageSource(for photo: DetailPhoto) -> Source? {
         .provider(RawImageDataProvider(data: imageData, cacheKey: "\(imageCachePrefix)-\(photo.id)"))
     }
+}
+
+@MainActor
+private final class PhotoRevisionObservation {
+    var revision: UInt64?
 }
 
 private struct PhotoGalleryTestView: View {

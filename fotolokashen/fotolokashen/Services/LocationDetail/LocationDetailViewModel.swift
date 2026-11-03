@@ -1,6 +1,6 @@
 import Foundation
+import Observation
 import SwiftUI
-import Combine
 
 /// Phase 2a-1 — ViewModel for the unified `LocationDetailView`.
 ///
@@ -8,8 +8,9 @@ import Combine
 /// stays thin and the data flow is independently testable. Mode (owner vs
 /// read-only) is encoded in a single enum instead of being scattered across
 /// initialisers + an `isReadOnly` flag.
+@Observable
 @MainActor
-final class LocationDetailViewModel: ObservableObject {
+final class LocationDetailViewModel {
 
     // MARK: - Mode
 
@@ -52,27 +53,46 @@ final class LocationDetailViewModel: ObservableObject {
 
     // MARK: - Published State
 
-    @Published var currentLocation: Location
-    @Published var photos: [DetailPhoto] = [] {
-        willSet {
-            if photos.map(\.id) != newValue.map(\.id) {
+    var currentLocation: Location
+
+    @ObservationIgnored private var storedPhotos: [DetailPhoto] = []
+    var photos: [DetailPhoto] {
+        get {
+            access(keyPath: \.photos)
+            return storedPhotos
+        }
+        set {
+            if storedPhotos.map(\.id) != newValue.map(\.id) {
                 photoRevision += 1
             }
-        }
-    }
-    private(set) var photoRevision: UInt64 = 0
-    @Published var isLoadingPhotos = true {
-        willSet {
-            if isLoadingPhotos != newValue {
-                photoRevision += 1
+            withMutation(keyPath: \.photos) {
+                storedPhotos = newValue
             }
         }
     }
 
-    @Published var userSaveDetails: UserSaveWithLocation?
-    @Published var isLoadingDetails = true
+    @ObservationIgnored private(set) var photoRevision: UInt64 = 0
 
-    @Published var locationVisibility: String
+    @ObservationIgnored private var storedIsLoadingPhotos = true
+    var isLoadingPhotos: Bool {
+        get {
+            access(keyPath: \.isLoadingPhotos)
+            return storedIsLoadingPhotos
+        }
+        set {
+            if storedIsLoadingPhotos != newValue {
+                photoRevision += 1
+            }
+            withMutation(keyPath: \.isLoadingPhotos) {
+                storedIsLoadingPhotos = newValue
+            }
+        }
+    }
+
+    var userSaveDetails: UserSaveWithLocation?
+    var isLoadingDetails = true
+
+    var locationVisibility: String
 
     // MARK: - Configuration
 
