@@ -2,7 +2,6 @@ import SwiftUI
 import GoogleMaps
 import GoogleMapsUtils
 import CoreLocation
-import Combine
 import MapKit
 
 /// Map view showing all user locations as markers with clustering

@@ -6,7 +6,7 @@ import SwiftUI
 ///
 /// Phase 2c: provides a single, consistent surface for banner + alert
 /// presentation so individual services don't each invent their own
-/// `@Published var errorMessage` UI conventions.
+/// observable error-state conventions.
 ///
 /// Usage:
 ///   • Service-side:  `ErrorPresenter.shared.present(.init(message: ...))`

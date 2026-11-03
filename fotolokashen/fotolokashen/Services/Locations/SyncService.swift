@@ -1,22 +1,23 @@
-import Combine
 import CoreLocation
 import Foundation
-import SwiftUI
+import Observation
+import UIKit
 
 /// Manages synchronization between local cache and backend API
+@Observable
 @MainActor
-class SyncService: ObservableObject {
+final class SyncService {
     
     // MARK: - Singleton
     
     static let shared = SyncService()
     
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
     
-    @Published var isSyncing: Bool = false
-    @Published var progress: Double = 0.0
-    @Published var lastSyncDate: Date?
-    @Published private(set) var credentialAccessError: String?
+    var isSyncing = false
+    var progress = 0.0
+    var lastSyncDate: Date?
+    private(set) var credentialAccessError: String?
     
     // MARK: - Properties
     

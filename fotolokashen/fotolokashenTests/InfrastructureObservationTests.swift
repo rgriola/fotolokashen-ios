@@ -99,4 +99,48 @@ nonisolated final class InfrastructureObservationTests: XCTestCase {
         waiter.cancel()
         XCTAssertNil(dataManager.storeRecoveryMessage)
     }
+
+    @MainActor
+    func testSyncServiceStatusIsObservable() async {
+        let syncService = SyncService.shared
+        let initialIsSyncing = syncService.isSyncing
+        let initialProgress = syncService.progress
+        let initialSyncDate = syncService.lastSyncDate
+        let isSyncingChanged = expectation(description: "SyncService.isSyncing change is observed")
+        let progressChanged = expectation(description: "SyncService.progress change is observed")
+        let syncDateChanged = expectation(description: "SyncService.lastSyncDate change is observed")
+        let isSyncingWaiter = ObservationWaiter(
+            syncService,
+            \.isSyncing,
+            fulfilling: isSyncingChanged,
+            where: { $0 }
+        )
+        let progressWaiter = ObservationWaiter(
+            syncService,
+            \.progress,
+            fulfilling: progressChanged,
+            where: { $0 == 0.5 }
+        )
+        let syncDateWaiter = ObservationWaiter(
+            syncService,
+            \.lastSyncDate,
+            fulfilling: syncDateChanged,
+            where: { $0 != nil }
+        )
+
+        syncService.isSyncing = true
+        syncService.progress = 0.5
+        syncService.lastSyncDate = Date()
+
+        await fulfillment(of: [isSyncingChanged, progressChanged, syncDateChanged], timeout: 1)
+        isSyncingWaiter.cancel()
+        progressWaiter.cancel()
+        syncDateWaiter.cancel()
+        XCTAssertTrue(syncService.isSyncing)
+        XCTAssertEqual(syncService.progress, 0.5)
+        XCTAssertNotNil(syncService.lastSyncDate)
+        syncService.isSyncing = initialIsSyncing
+        syncService.progress = initialProgress
+        syncService.lastSyncDate = initialSyncDate
+    }
 }

@@ -4,7 +4,13 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 ## [Unreleased] - iOS 27 readiness
 
-Updated November 2, 2026.
+Updated November 3, 2026.
+
+### Observable migration — P8 cleanup
+
+- Migrated `SyncService` to Swift Observation and removed unused Combine imports.
+- Added an error-level SwiftLint rule preventing regressions to Combine-backed observable wrappers.
+- Updated the services guide and closed the H-4/H-5 migration follow-ups.
 
 ### Strict concurrency cleanup — Phase 3
 

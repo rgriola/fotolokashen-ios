@@ -32,6 +32,7 @@ Services/
 ## Conventions
 
 - **Singletons**: `XxxService.shared` for shared state; inject in constructors for testability.
-- **MainActor**: All `ObservableObject` services are `@MainActor` isolated.
-- **Errors**: New code presents user-facing errors via `ErrorPresenter.shared.present(...)` rather than per-service `@Published var errorMessage`.
+- **MainActor**: All observable services are `@MainActor` isolated.
+- **Observation**: Use `@Observable` for tracked service state and SwiftUI's type-based `@Environment` for dependency injection.
+- **Errors**: New code presents user-facing errors via `ErrorPresenter.shared.present(...)` rather than per-service error state.
 - **Logging**: Use `dlog("ServiceName", "static message")` — never `print()`, `debugPrint()`, or `NSLog()` in app code. `dlog` is DEBUG-only and logs privately. Never log tokens, codes, emails, GPS coordinates, URLs with query strings, request/response bodies, or raw errors.
