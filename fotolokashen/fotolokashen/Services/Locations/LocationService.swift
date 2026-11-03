@@ -1,20 +1,21 @@
-import Foundation
-import OSLog
 import CoreLocation
+import Foundation
+import Observation
+import OSLog
 import UIKit
-import Combine
 
 /// Service for managing locations (CRUD operations)
+@Observable
 @MainActor
-class LocationService: ObservableObject {
+final class LocationService {
     
     // MARK: - Singleton
     
     static let shared = LocationService()
     
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
     
-    @Published var isLoading = false
+    var isLoading = false
     
     // MARK: - Properties
     

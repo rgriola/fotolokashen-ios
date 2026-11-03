@@ -1,8 +1,8 @@
+import CoreLocation
 import Foundation
+import Observation
 import OSLog
 import UIKit
-import CoreLocation
-import Combine
 
 /// Service for secure photo uploads via server-mediated endpoint
 /// All uploads go through /api/photos/upload for virus scanning,
@@ -15,12 +15,13 @@ import Combine
 // 2. uploadSecurely() has inconsistent response handling — tries both wrapped { data: ... } and
 //    direct SecureUploadResponse formats. Pick one canonical format matching the backend.
 @MainActor
-class PhotoUploadService: ObservableObject, PhotoUploadServicing {
+@Observable
+final class PhotoUploadService: PhotoUploadServicing {
     
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
     
-    @Published var isUploading = false
-    @Published var uploadProgress: Double = 0.0
+    var isUploading = false
+    var uploadProgress = 0.0
     
     // MARK: - Properties
     

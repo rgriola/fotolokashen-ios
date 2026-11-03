@@ -42,7 +42,7 @@ struct LocationDetailView: View {
     // MARK: - Environment & Local UI State
     // =========================================================================
 
-    @ObservedObject private var networkMonitor = NetworkMonitor.shared
+    @Environment(NetworkMonitor.self) private var networkMonitor
     @Environment(\.dismiss) private var dismiss
 
     /// Photo gallery selection (UI-only, not persisted).
@@ -698,4 +698,5 @@ struct LocationDetailView: View {
         ))
 
     }
+    .environment(NetworkMonitor.shared)
 }
