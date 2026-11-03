@@ -1,3 +1,4 @@
+import Observation
 import XCTest
 @testable import fotolokashen
 
@@ -150,5 +151,49 @@ final class LocationStoreTests: XCTestCase {
         // When loading complete
         sut.isLoading = false
         XCTAssertFalse(sut.isLoading, "Should not be loading after completion")
+    }
+
+    // MARK: - Observation Pass-through Tests (H-4)
+
+    func testRepositoryChangeNotifiesStoreObserver() {
+        let changed = expectation(description: "store.locations observer fires")
+        withObservationTracking {
+            _ = sut.locations
+        } onChange: {
+            changed.fulfill()
+        }
+
+        sut.repository.locations = [makeLocation(id: 41)]
+
+        wait(for: [changed], timeout: 0)
+        XCTAssertEqual(sut.locations.map(\.id), [41])
+    }
+
+    func testStoreWriteUpdatesRepositoryAndNotifiesRepositoryObserver() {
+        let changed = expectation(description: "repository.locations observer fires")
+        withObservationTracking {
+            _ = sut.repository.locations
+        } onChange: {
+            changed.fulfill()
+        }
+
+        sut.locations = [makeLocation(id: 42)]
+
+        wait(for: [changed], timeout: 0)
+        XCTAssertEqual(sut.repository.locations.map(\.id), [42])
+    }
+
+    func testCoordinatorChangeNotifiesStoreMapFocusObserver() {
+        let changed = expectation(description: "store.mapFocusLocation observer fires")
+        withObservationTracking {
+            _ = sut.mapFocusLocation
+        } onChange: {
+            changed.fulfill()
+        }
+
+        sut.coordinator.focus(on: makeLocation(id: 43))
+
+        wait(for: [changed], timeout: 0)
+        XCTAssertEqual(sut.mapFocusLocation?.id, 43)
     }
 }

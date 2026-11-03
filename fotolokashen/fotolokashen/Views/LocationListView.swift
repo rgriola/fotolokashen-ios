@@ -6,7 +6,7 @@ import UIKit
 /// Main view for displaying a list of saved locations
 struct LocationListView: View {
     @EnvironmentObject var authService: AuthService
-    @ObservedObject private var locationStore = LocationStore.shared
+    private let locationStore = LocationStore.shared
     @State private var listViewModel = LocationListViewModel()
     @State private var searchText = ""
     @State private var selectedTypeFilter: String?
@@ -27,6 +27,8 @@ struct LocationListView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                LocationListSearchBar(searchText: $searchText, sortOption: $sortOption)
+
                 // Friends / Public source toggles
                 sourceToggleRow
 
@@ -49,28 +51,7 @@ struct LocationListView: View {
                     }
                 }
             }
-            .navigationTitle("My Spots")
-            .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $searchText, prompt: "Search")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Picker("Sort By", selection: $sortOption) {
-                            Label("Newest First", systemImage: AppIcons.calendarBadgeClock)
-                                .tag(SortOption.dateNewest)
-                            Label("Oldest First", systemImage: AppIcons.calendar)
-                                .tag(SortOption.dateOldest)
-                            Label("Name A-Z", systemImage: AppIcons.textformatAbc)
-                                .tag(SortOption.nameAZ)
-                            Label("Name Z-A", systemImage: AppIcons.textformatAbc)
-                                .tag(SortOption.nameZA)
-                        }
-                    } label: {
-                        Image(systemName: AppIcons.arrowUpArrowDown)
-                    }
-                    .accessibilityLabel("Sort locations")
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .refreshable {
                 await locationStore.refreshLocations()
                 await listViewModel.refreshEnabledSources()

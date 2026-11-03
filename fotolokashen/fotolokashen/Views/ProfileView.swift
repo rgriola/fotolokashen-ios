@@ -4,7 +4,7 @@ import SwiftUI
 /// Replaces the old dense edit-form approach with a clean list-style hub.
 struct ProfileView: View {
     @EnvironmentObject var authService: AuthService
-    @ObservedObject private var locationStore = LocationStore.shared
+    private let locationStore = LocationStore.shared
 
     // Social stats
     @State private var followersCount: Int = 0

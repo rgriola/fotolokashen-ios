@@ -1,21 +1,22 @@
 import Foundation
-import Combine
+import Observation
 
 /// Owns the canonical list of the current user's saved locations and all
 /// CRUD operations against `LocationService`.
 ///
 /// Phase 2b: extracted from the legacy `LocationStore` singleton so the data
 /// layer can be tested and reused independent of map-navigation concerns.
+@Observable
 @MainActor
-final class LocationRepository: ObservableObject {
+final class LocationRepository {
     static let shared = LocationRepository()
 
-    @Published var locations: [Location] = []
-    @Published var isLoading = false
-    @Published var errorMessage = ""
+    var locations: [Location] = []
+    var isLoading = false
+    var errorMessage = ""
 
     private let locationService: LocationService
-    private let config = ConfigLoader.shared
+    @ObservationIgnored private let config = ConfigLoader.shared
 
     init(locationService: LocationService? = nil) {
         // Construct inside MainActor init body to satisfy Swift 6 isolation.

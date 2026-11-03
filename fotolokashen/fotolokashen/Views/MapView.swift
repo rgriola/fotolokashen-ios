@@ -19,7 +19,7 @@ struct MapView: View {
     @EnvironmentObject var authService: AuthService
     @ScaledMetric(relativeTo: .title3) private var friendsControlSize: CGFloat = 50
     @ScaledMetric(relativeTo: .title2) private var locationControlSize: CGFloat = 50
-    @ObservedObject private var locationStore = LocationStore.shared
+    private let locationStore = LocationStore.shared
     @ObservedObject private var followService = FollowService.shared
     @State private var selectedLocation: Location?
     @State private var selectedReadOnlyContext: ReadOnlyLocationContext?

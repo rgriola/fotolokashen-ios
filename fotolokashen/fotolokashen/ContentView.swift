@@ -365,7 +365,7 @@ private struct CheckEmailSheet: View {
 // MARK: - Logged In View
 
 struct LoggedInView: View {
-    @ObservedObject private var locationStore = LocationStore.shared
+    private let locationStore = LocationStore.shared
     @EnvironmentObject var deepLinkManager: DeepLinkManager
     @State private var selectedTab = 0
     @State private var previousTab = 0
