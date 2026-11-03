@@ -1,21 +1,22 @@
+import AuthenticationServices
 import Foundation
+import Observation
 import OSLog
 import SwiftUI
-import Combine
-import AuthenticationServices
 
 /// Authentication service managing OAuth2 PKCE flow
+@Observable
 @MainActor
-class AuthService: ObservableObject, TokenRefreshing {
+final class AuthService: TokenRefreshing {
     
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
     
-    @Published var isAuthenticated = false
-    @Published var currentUser: User?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    @Published var awaitingVerification = false
-    @Published var awaitingPasswordReset = false
+    var isAuthenticated = false
+    var currentUser: User?
+    var isLoading = false
+    var errorMessage: String?
+    var awaitingVerification = false
+    var awaitingPasswordReset = false
     
     // MARK: - Properties
     
@@ -24,20 +25,20 @@ class AuthService: ObservableObject, TokenRefreshing {
     let config = ConfigLoader.shared
     
     // PKCE state
-    private var codeVerifier: String?
-    private var codeChallenge: String?
+    @ObservationIgnored private var codeVerifier: String?
+    @ObservationIgnored private var codeChallenge: String?
     /// Expected OAuth CSRF state for the currently active login. Never persisted.
-    private var oauthState: String?
+    @ObservationIgnored private var oauthState: String?
     /// True only between `startLogin()` and the end of its browser session.
     /// Externally delivered OAuth callbacks are ignored when this is false.
-    private var isAwaitingOAuthCallback = false
+    @ObservationIgnored private var isAwaitingOAuthCallback = false
     
     // ASWebAuthenticationSession (retained to keep the session alive)
-    private var webAuthSession: ASWebAuthenticationSession?
+    @ObservationIgnored private var webAuthSession: ASWebAuthenticationSession?
     private let presentationContextProvider = AuthPresentationContextProvider()
 
     // In-flight token refresh, shared by concurrent callers
-    var refreshTask: Task<Void, Error>?
+    @ObservationIgnored var refreshTask: Task<Void, Error>?
 
     #if DEBUG
     /// Test-only hook to seed PKCE state without driving a real
@@ -568,7 +569,7 @@ class AuthService: ObservableObject, TokenRefreshing {
     /// same single-use authorization code and an iOS "Token Exchange Failed"
     /// error (the server now also rejects this as a safety net, but
     /// de-duplicating here avoids the spurious failure altogether).
-    private var inFlightCodeExchange: (code: String, task: Task<Void, Error>)?
+    @ObservationIgnored private var inFlightCodeExchange: (code: String, task: Task<Void, Error>)?
 
     /// The most recent authorization code that was exchanged successfully.
     /// The in-flight guard above only covers duplicates that overlap the
@@ -577,7 +578,7 @@ class AuthService: ObservableObject, TokenRefreshing {
     /// cleared PKCE verifier, and surface a login error to a user who is in
     /// fact signed in. Remembering the last completed code makes the late
     /// duplicate a no-op.
-    private var lastCompletedCodeExchange: String?
+    @ObservationIgnored private var lastCompletedCodeExchange: String?
 
     /// Exchange authorization code for access token.
     /// Safe to call multiple times with the same `code`: duplicate calls

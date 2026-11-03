@@ -16,7 +16,7 @@ import MapKit
 //    Verify whether clustering is actually active; if not, consider wiring it up or removing
 //    the unused cluster classes.
 struct MapView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     @ScaledMetric(relativeTo: .title3) private var friendsControlSize: CGFloat = 50
     @ScaledMetric(relativeTo: .title2) private var locationControlSize: CGFloat = 50
     private let locationStore = LocationStore.shared
@@ -526,4 +526,6 @@ struct ClusteredMapView: UIViewRepresentable {
 
 #Preview {
     MapView()
+        .environment(AuthService())
+        .environment(NetworkMonitor.shared)
 }

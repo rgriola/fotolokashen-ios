@@ -24,7 +24,7 @@ enum LaunchTimer {
 @main
 struct FotolokashenApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @StateObject private var authService = AuthService()
+    @State private var authService = AuthService()
     private let networkMonitor = NetworkMonitor.shared
     
     init() {
@@ -62,7 +62,7 @@ struct FotolokashenApp: App {
     var body: some Scene {
         WindowGroup {
             AppRootView()
-                .environmentObject(authService)
+                .environment(authService)
                 .environment(networkMonitor)
                 .onAppear {
                     #if DEBUG
@@ -76,10 +76,10 @@ struct FotolokashenApp: App {
 // MARK: - App Root View (iOS 17+ with SwiftData)
 
 struct AppRootView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     @Environment(\.scenePhase) private var scenePhase
 
-    @ObservedObject private var deepLinkManager = DeepLinkManager.shared
+    private let deepLinkManager = DeepLinkManager.shared
     @State private var hasAppearedOnce = false
 
     var body: some View {
@@ -92,7 +92,7 @@ struct AppRootView: View {
             } else {
                 NavigationStack {
                     LoginView()
-                        .environmentObject(deepLinkManager)
+                        .environment(deepLinkManager)
                 }
             }
         }
@@ -132,18 +132,16 @@ struct AppRootView: View {
 // MARK: - Authenticated Root View (heavy services init deferred here)
 
 struct AuthenticatedRootView: View {
-    @EnvironmentObject var authService: AuthService
     @Environment(NetworkMonitor.self) private var networkMonitor
 
-    @ObservedObject private var deepLinkManager = DeepLinkManager.shared
+    private let deepLinkManager = DeepLinkManager.shared
     private let syncService = SyncService.shared
     private let dataManager = DataManager.shared
 
     var body: some View {
         let storeRecoveryMessage = dataManager.storeRecoveryMessage
         LoggedInView()
-            .environmentObject(syncService)
-            .environmentObject(deepLinkManager)
+            .environment(deepLinkManager)
             .modelContainer(dataManager.modelContainer)
             .alert(
                 "Local data recovery",

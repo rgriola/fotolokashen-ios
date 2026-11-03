@@ -5,7 +5,7 @@ import UIKit
 /// Edit Profile — all form fields for the user's personal info, avatar, and banner.
 /// Extracted from the old ProfileView so it's reachable via Profile → Edit Profile.
 struct EditProfileView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     private let userService = UserService.shared
     @Environment(\.dismiss) private var dismiss
 
@@ -460,6 +460,6 @@ struct EditProfileView: View {
 #Preview {
     NavigationStack {
         EditProfileView()
-            .environmentObject(AuthService())
+            .environment(AuthService())
     }
 }

@@ -5,7 +5,7 @@ import UIKit
 
 /// Main view for displaying a list of saved locations
 struct LocationListView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     private let locationStore = LocationStore.shared
     @State private var listViewModel = LocationListViewModel()
     @State private var searchText = ""
@@ -563,6 +563,8 @@ enum SortOption: String, CaseIterable {
 
 #Preview {
     LocationListView()
+        .environment(AuthService())
+        .environment(NetworkMonitor.shared)
 }
 
 // MARK: - Filter Chip Component

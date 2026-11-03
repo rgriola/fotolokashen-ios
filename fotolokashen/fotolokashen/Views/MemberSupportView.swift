@@ -4,7 +4,7 @@ import SwiftUI
 /// Calls POST /api/member-support — same endpoint as the web app.
 /// Profile → Support → Contact Support
 struct MemberSupportView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     @Environment(\.dismiss) private var dismiss
 
     @State private var subject = ""

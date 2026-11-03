@@ -3,7 +3,7 @@ import SwiftUI
 /// Privacy Settings — controls who can see the user's profile, locations, and social activity.
 /// Profile → Privacy Settings
 struct PrivacySettingsView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     private let userService = UserService.shared
 
     @State private var profileVisibility = "public"
@@ -123,6 +123,6 @@ struct PrivacySettingsView: View {
 #Preview {
     NavigationStack {
         PrivacySettingsView()
-            .environmentObject(AuthService())
+            .environment(AuthService())
     }
 }

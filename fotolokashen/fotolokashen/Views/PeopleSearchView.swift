@@ -9,7 +9,7 @@ import Kingfisher
 //    extract to separate files to reduce this file from ~520 to ~200 lines.
 // 3. No VoiceOver announcements when search results load or are empty.
 struct PeopleSearchView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     private let followService = FollowService.shared
     @State private var selectedTab = 0
 
@@ -242,7 +242,7 @@ private struct SearchUserRow: View {
 // MARK: - My Following Tab
 
 private struct MyFollowingTab: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     private let followService = FollowService.shared
     @State private var users: [FollowListUser] = []
     @State private var isLoading = true
@@ -341,7 +341,7 @@ private struct MyFollowingTab: View {
 // MARK: - My Followers Tab
 
 private struct MyFollowersTab: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     private let followService = FollowService.shared
     @State private var users: [FollowListUser] = []
     @State private var isLoading = true

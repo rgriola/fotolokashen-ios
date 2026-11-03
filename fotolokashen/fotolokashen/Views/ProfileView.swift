@@ -3,7 +3,7 @@ import SwiftUI
 /// Main Profile hub — shows user header, navigation menu, and logout.
 /// Replaces the old dense edit-form approach with a clean list-style hub.
 struct ProfileView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     private let locationStore = LocationStore.shared
 
     // Social stats
@@ -64,7 +64,7 @@ struct ProfileView: View {
 
                     NavigationLink {
                         MemberSupportView()
-                            .environmentObject(authService)
+                            .environment(authService)
                     } label: {
                         Label("Contact Support", systemImage: AppIcons.envelopeFill)
                     }
@@ -228,5 +228,6 @@ struct ProfileView: View {
 
 #Preview {
     ProfileView()
-        .environmentObject(AuthService())
+        .environment(AuthService())
+        .environment(NetworkMonitor.shared)
 }
