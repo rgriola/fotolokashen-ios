@@ -22,6 +22,8 @@ struct AboutView: View {
 
             // ── Links ─────────────────────────────────────────────────────
             Section("Legal") {
+
+                // Privacy Policy and Terms of Service Icons appear Black rather than brand color. 
                 NavigationLink {
                     LicensesView()
                 } label: {
