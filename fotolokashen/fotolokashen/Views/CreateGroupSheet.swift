@@ -17,7 +17,7 @@ struct CreateGroupSheet: View {
 
     // MARK: - State
 
-    @StateObject private var groupService = LocationGroupService.shared
+    private let groupService = LocationGroupService.shared
     @State private var groupName = ""
     @State private var groupDescription = ""
     @State private var selectedType: String = GroupTypePreset.event.rawValue

@@ -56,7 +56,7 @@ struct ErrorBanner: View {
 /// View modifier that attaches the global `ErrorPresenter` UI (banner + alert).
 /// Apply once at the app root (e.g., on `ContentView`).
 struct ErrorPresenterModifier: ViewModifier {
-    @ObservedObject private var presenter = ErrorPresenter.shared
+    private let presenter = ErrorPresenter.shared
 
     func body(content: Content) -> some View {
         content

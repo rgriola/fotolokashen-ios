@@ -7,7 +7,7 @@ import UIKit
 struct LocationListView: View {
     @EnvironmentObject var authService: AuthService
     @ObservedObject private var locationStore = LocationStore.shared
-    @StateObject private var listViewModel = LocationListViewModel()
+    @State private var listViewModel = LocationListViewModel()
     @State private var searchText = ""
     @State private var selectedTypeFilter: String?
     @State private var sortOption: SortOption = .dateNewest

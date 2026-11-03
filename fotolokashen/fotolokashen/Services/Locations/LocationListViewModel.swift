@@ -1,18 +1,19 @@
 import Foundation
-import Combine
+import Observation
 
 /// Owns the "My Spots" screen's friends/public toggle state and data, and merges
 /// them with the user's own locations (from `LocationStore`) into a single,
 /// deduplicated, source-tagged list for `LocationListView`.
+@Observable
 @MainActor
-final class LocationListViewModel: ObservableObject {
+final class LocationListViewModel {
 
-    @Published private(set) var friendLocations: [MapSocialLocation] = []
-    @Published private(set) var publicLocations: [MapSocialLocation] = []
-    @Published private(set) var showFriends = false
-    @Published private(set) var showPublic = false
-    @Published private(set) var isLoadingFriends = false
-    @Published private(set) var isLoadingPublic = false
+    private(set) var friendLocations: [MapSocialLocation] = []
+    private(set) var publicLocations: [MapSocialLocation] = []
+    private(set) var showFriends = false
+    private(set) var showPublic = false
+    private(set) var isLoadingFriends = false
+    private(set) var isLoadingPublic = false
 
     private let followService: FollowService
 
