@@ -8,6 +8,41 @@
 
 > **Progress tracking:** see the [Progress Checklist](#progress-checklist) for the current state of every task. Update it as work lands.
 
+### 1.7.x release path — November 2, 2026
+
+The iOS 27 readiness work is substantially complete. The remaining items are
+split between release gates and work intentionally deferred to the planned UI
+redesign. Do not treat deferred checklist items as completed or as release
+approval.
+
+**Before the next release/submission:**
+
+- **2.7 — Account and media deletion:** deploy the approved backend change,
+  configure its scheduled worker, and verify hard account deletion and media
+  cleanup with a disposable staging account.
+- **7.5 — Device regression:** run and record the full iOS 27 device checklist
+  (login, refresh, deep links, map, camera, upload, profile, logout).
+- **8.4 — App Store listing:** update and review the store listing.
+- **Release gate:** produce and inspect the final archive, then submit only
+  after the above checks pass.
+- **8.3 — Minimum iOS verification (recommended before release):** run the app
+  on iOS 18.6 if a compatible device or runtime is available. The
+  metadata-based SF Symbols check reduces symbol-availability risk but does
+  not replace an actual minimum-OS run; if unavailable, record the accepted
+  verification gap.
+
+**Deferred to the planned UI redesign:**
+
+- **7.3 — Map clustering:** Maps rendering and marker taps work; clustering
+  remains broken and is intentionally deferred.
+- **6.4 — Accessibility Inspector:** defer the screen-by-screen audit until
+  after the affected screens are redesigned; keep it open and do not claim
+  zero findings.
+- **6.5 — Accessibility Nutrition Label:** skip for now and revisit after the
+  UI redesign and accessibility audit. Do not declare unverified capabilities.
+- **H-4/H-5 — `@Observable` migration:** schedule separately with the UI
+  redesign, not as part of iOS 27 readiness.
+
 ### Current Phase 2 status — October 30, 2026, 13:52 EDT
 
 Tasks **2.1–2.6 are complete** based on archive/report/source evidence and owner
@@ -49,8 +84,8 @@ On November 2, the owner confirmed Maps rendering and marker taps, but reported
 that markers do not cluster. Clustering is explicitly deferred for an iOS
 redesign, not verified or fixed. Simulator Maps checks and the full
 physical-device regression remain unconfirmed, so 7.3 and 7.5 remain open.
-This is not a release approval; Phase 2.7 and the accessibility gates also
-remain open.
+This is not a release approval; Phase 2.7 remains a release gate. Accessibility
+items 6.4 and 6.5 are intentionally deferred to the planned UI redesign.
 
 **Phase 7 baseline environment and tests:** Xcode 27.2 (27B52), iOS 27.2 SDK, iOS 18.6
 deployment target, and Swift 5 language mode. Fresh DerivedData builds succeeded
@@ -701,15 +736,15 @@ was not installed when this baseline was recorded).
 > animation completion, or Google Maps camera-idle events. The owner approved
 > selecting full profile images without the old system crop editor.
 
-### Phase 6 — Accessibility `(parallel; ships in 1.7.x, gated before any Nutrition Label declaration)`
+### Phase 6 — Accessibility `(parallel; 6.1–6.3 ship in 1.7.x)`
 
 | #   | Task                                                                                                                                                                                                                         | Verify                                                                                                                      |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | 6.1 | Fix **X-3**: add `.accessibilityLabel` to every icon-only control. Start with the four confirmed sites, then sweep all `Image(systemName:)` inside `Button`/`ToolbarItem` across `Views/`.                                   | VoiceOver pass on Map, Locations, Detail, People — every control announces a human-readable name.                           |
 | 6.2 | Fix **X-2**: `ClusteredMapView` (`MapView.swift:192`). At minimum add `.accessibilityLabel` + `.accessibilityHint` on the representable and ensure the Locations list is a discoverable equivalent path to the same content. | VoiceOver reaches and can describe the map region; a user can accomplish "open a location" without sighted map interaction. |
 | 6.3 | Fix **X-4**: audit at `.accessibility3` and `.accessibility5`. Convert fixed icon frames (`MapView.swift:80`, `PermissionsView.swift:86`) to `@ScaledMetric`.                                                                | Screenshots at `.accessibility5` show no clipped or overlapping text on the 6 largest views.                                |
-| 6.4 | Run Xcode's **Accessibility Inspector audit** on every top-level screen; resolve all findings.                                                                                                                               | Zero audit findings on Map, Locations, Location Detail, Profile, People, Camera, Create Location.                           |
-| 6.5 | Only after 6.1–6.4: complete the App Store Accessibility Nutrition Label declaration (**X-5**).                                                                                                                              | Declared capabilities each demonstrable in a recorded VoiceOver walkthrough.                                                |
+| 6.4 | Run Xcode's **Accessibility Inspector audit** on every top-level screen; resolve all findings. **Deferred until after the planned UI redesign.**                                                                                               | Zero audit findings on Map, Locations, Location Detail, Profile, People, Camera, Create Location.                           |
+| 6.5 | Revisit the App Store Accessibility Nutrition Label declaration (**X-5**) after the UI redesign and 6.4 audit. **Skipped for now.**                                                                                                            | Declare only capabilities demonstrated in a recorded VoiceOver walkthrough.                                                 |
 
 ---
 
@@ -1111,13 +1146,13 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
 
 - [x] 7.1 Clean Debug and signed Release builds with the iOS 27.2 SDK; warning delta recorded above (Nov 1, 2026)
 - [x] 7.2 iOS 27 / 27.2 and Xcode 27.2 release notes and deprecations cross-checked above (Nov 1, 2026)
-- [ ] 7.3 GoogleMaps renders + clusters in Xcode 27 build — owner confirms rendering and marker taps; clustering does not work and is deferred for iOS redesign; build/OS and simulator coverage remain unconfirmed (Nov 2, 2026)
+- [ ] 7.3 GoogleMaps renders + clusters in Xcode 27 build — Maps rendering and marker taps confirmed by owner; clustering remains broken and is intentionally deferred to the iOS redesign. Simulator coverage remains unconfirmed (Nov 2, 2026)
 - [x] 7.4 Pinned SPM packages build; full 131-test simulator plan passes; lockfile unchanged (Nov 1, 2026)
 - [ ] 7.5 Full regression on iOS 27 device — owner reports the app works on a device; the full checklist remains unconfirmed (Nov 1, 2026)
 
 **Release gate 🚀**
 
-- [ ] Step 2 and Phases 2, 5, 7.1–7.5 complete
+- [ ] Phase 2 and Step 2 complete; Phases 5, 7.1, 7.2 and 7.4 complete; 7.3 deferral explicitly accepted; 7.5 full device regression complete
 - [ ] Full test suite green; manual regression on device (login, refresh, deep links, map, camera, upload, profile, logout)
 - [x] Keychain upgrade path tested from 1.6.2 → candidate build — user confirmed physical-device upgrade passes October 29, 2026
 - [ ] Archived on the Xcode 27 computer; submitted / approved
@@ -1150,9 +1185,8 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
   - Signed-in audit (Nov 2, 2026, iPhone 18 Pro Max / iOS 27 simulator, portrait): a temporary UI test captured Spots, Location Detail, Map, Profile, Account & Security, Edit Profile, Permissions and Camera at `.accessibility3` and `.accessibility5`. Fixed: Friends/Public chips wrapped mid-word (now a horizontal scroll row, one line); the type badge on Spots photos clipped ("RE-PORTER LIVE"; now one line, capped at `.accessibility1`); profile stats hyphenated ("Fol-low-ers"; now stacked at accessibility sizes, also on public profiles); Location Detail labels hyphenated ("Pro-duc-tion Date"; `DetailRow` now stacks label over value); the camera zoom pill used a fixed 14 pt font (now scales; it also gained a VoiceOver label, value and hint); the map's Friends button covered the Google logo (map padding now lifts the logo above the controls). Re-captured at `.accessibility5` after the fixes. Account & Security, Edit Profile and Permissions needed no changes; Settings rows hyphenate long words inside the system `List`, which was left as is. Profile stats now read as one VoiceOver element each. Unit tests pass (131); the build has no new warnings; mobile-a11y-specialist approved.
   - Camera controls (Nov 2, 2026): the owner's device screenshot at a large text size showed the controls sized inconsistently. The zoom circle grew without limit while its text stopped at `.accessibility2`; Close and Flash grew without limit; the GPS badge used fixed 9–10 pt text; the library and flip icons outgrew their fixed 50 pt circles. Now, like the system Camera app, every camera control stops growing at `.xxxLarge` (`CameraHUD.maxDynamicTypeSize`), and icons and circles scale together with tap targets of at least 44 pt. The GPS badge text scales and stacks when one line doesn't fit. Icon controls, the zoom pill and dial, Done, the shutter, the GPS badge and the remove-photo buttons show the Large Content Viewer on long-press at accessibility sizes. The zoom dial fits 375 pt screens at the cap. Done sits under the GPS badge instead of at a fixed offset. VoiceOver reads the photo count on the shutter, zoom stops as "0.5 times zoom", and no longer reads the exposure sun icons. The controls were rendered at `.large`, `.xxxLarge` and `.accessibility5` at 375 pt wide for review. Unit tests pass (131); mobile-a11y-specialist approved after the dial-width and alignment fixes.
   - Landscape check (Nov 2, 2026): the owner confirmed the device checks. On iPhone, the Spots tab (including Location Detail opened from it) is portrait-only until it gets a landscape layout, because its search and filter header fills the screen in landscape. `AppOrientation` with an app delegate adaptor enforces this; other tabs, the camera, and iPad still rotate. The owner confirmed that Map, Profile and Location Detail opened from Map are acceptable at `.accessibility5` in landscape.
-- [ ] 6.4 Accessibility Inspector audit clean — in progress (Nov 2, 2026).
-  - Pending interactive audit with Xcode Accessibility Inspector on Map, Locations, Location Detail, Profile, People, Camera and Create Location. Record findings by screen, fix app issues, and rerun until there are zero findings.
-- [ ] 6.5 App Store Accessibility Nutrition Label (X-5)
+- [ ] 6.4 Accessibility Inspector audit clean — deferred until after the planned UI redesign (Nov 2, 2026); keep open.
+- [ ] 6.5 App Store Accessibility Nutrition Label (X-5) — skipped for now; revisit after the UI redesign and 6.4 audit.
 
 ### Step 6 — Minimum iOS 18.0 (Phase 8)
 
@@ -1160,4 +1194,14 @@ _Phase 5 implementation builds; simulator testing resumed in Phase 7. Manual UX 
 - [x] 8.1 `IPHONEOS_DEPLOYMENT_TARGET` raised on all targets — **18.6** by owner decision, landed early in 1.7.0 (Oct 29, 2026)
 - [x] 8.2 Dead `#available(iOS 17.4, *)` branch removed; `ASWebAuthenticationSession` now uses the custom-scheme callback API supported by the iOS 18.6 deployment target (Nov 2, 2026)
 - [ ] 8.3 SF Symbols centralised; verified on iOS 18.0 simulator — symbol names are centralized in `AppIcons.swift`, with a `UIImage(systemName:)` availability test covering the full catalog. The test passed on the installed iOS 27.0 simulator; Xcode 27.2 reports iOS 18.0, 18.6, and 18.7 runtimes unavailable for download, so minimum-version verification remains open. Owner deferred the iOS 18 simulator check (Nov 2, 2026). Availability check (Nov 2, 2026): all 122 catalog symbols were checked against Apple's SF Symbols availability metadata (`name_availability.plist` from the iOS 27 simulator runtime). One, `person.badge.checkmark` (`AppIcons.following`, currently unused), was introduced in iOS 27 and would be missing on iOS 18.6–26; it is now `person.fill.checkmark` (iOS 14). New unit test `testEveryCatalogSymbolExistsOnMinimumOS` fails if any catalog symbol is newer than the app's `MinimumOSVersion`; it was confirmed to catch the iOS 27 symbol. 132 unit tests pass. Running the app on an iOS 18 simulator is still not possible, because Xcode 27.2 doesn't offer iOS 18 runtimes
-- [ ] 8.4 App Store listing updated
+- [ ] 8.4 App Store listing updated — release gate.
+
+
+Open roadmap items:
+
+2.7
+7.5
+8.4: App Store listing
+7.3: clustering, deferred
+8.3: iOS 18 simulator run, deferred
+6.4 and 6.5: deferred until the UI redesign

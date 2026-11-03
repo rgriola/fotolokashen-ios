@@ -87,3 +87,6 @@ Temporary Items
 
 # pdf files.
 *.pdf
+
+# workspace 
+*.code-workspace
