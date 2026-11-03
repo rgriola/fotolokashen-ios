@@ -16,6 +16,10 @@ Updated November 2, 2026.
 - Split the 760-line `CameraService.swift`: the queue-confined AVFoundation engine is now `CameraCaptureEngine` in its own file, and the camera value types and `CameraError` moved to `CameraModels.swift`. `CameraService` keeps only the main-actor published UI state. Camera behavior is unchanged.
 - Removed `@preconcurrency` from the AVFoundation imports; the app now has no `@preconcurrency` imports and still builds with zero strict-concurrency warnings.
 
+### SF Symbols — minimum iOS check (Phase 8)
+
+- Every SF Symbol the app uses now exists on iOS 18.6 through iOS 27. One icon (`person.badge.checkmark`) was iOS 27-only and is now `person.fill.checkmark`. A new unit test fails if any symbol in `AppIcons` is newer than the app's minimum iOS version.
+
 ### Accessibility and Dynamic Type — Phase 6 (in progress)
 
 - At the largest text sizes, the Spots Friends/Public toggles scroll sideways instead of breaking words, the type badge on Spots photos stays on one line, profile stats and Location Detail labels stack instead of hyphenating, and the camera zoom button text scales. VoiceOver now announces the zoom button as "Zoom" with its current level, and reads each profile stat as one item.
@@ -25,7 +29,7 @@ Updated November 2, 2026.
 - Added accessible labels for icon-only camera, photo, location, search, rating, sorting, and error controls. The map now has a region label and hint; the Spots tab is the list alternative.
 - Large text now has a scrolling login layout, scaled map controls, and vertically reflowing permission rows. Login screenshots were reviewed at `.accessibility3` and `.accessibility5`; a UI test confirms all login actions remain reachable at both sizes.
 - The full iOS 27.2 simulator suite passed: 130 unit tests and 7 UI tests. An unsigned Release build succeeded. SwiftLint reports 314 warnings and 5 errors.
-- Phase 6.1/6.2 VoiceOver checks and 6.3 screenshots for signed-in screens, Permissions, landscape, and map occlusion remain open. No Accessibility Inspector audit or device VoiceOver walkthrough has been completed.
+- Phase 6.1–6.3 are complete, including the signed-in VoiceOver check and Dynamic Type screenshots. The Xcode Accessibility Inspector audit (6.4) and Accessibility Nutrition Label (6.5) remain open.
 
 Phase 1 completed: production OAuth, physical-device upgrade, native Maps key
 restrictions, and deployed auto-login compatibility confirmed by the user.

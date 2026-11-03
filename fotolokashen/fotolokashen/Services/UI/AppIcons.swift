@@ -167,8 +167,8 @@ enum AppIcons {
     /// Follow/add person
     static let followAdd = "person.badge.plus"
     
-    /// Following/person with checkmark
-    static let following = "person.badge.checkmark"
+    /// Following/person with checkmark. (`person.badge.checkmark` is iOS 27+; this works back to iOS 14.)
+    static let following = "person.fill.checkmark"
     
     /// Followers
     static let followers = "person.2.fill"
