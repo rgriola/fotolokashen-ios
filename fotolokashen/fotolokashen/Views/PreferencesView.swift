@@ -4,7 +4,7 @@ import SwiftUI
 /// Profile → App Settings → Preferences
 struct PreferencesView: View {
     @EnvironmentObject var authService: AuthService
-    @ObservedObject private var userService = UserService.shared
+    private let userService = UserService.shared
 
     @State private var language = ""
     @State private var timezone = ""

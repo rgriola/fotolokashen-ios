@@ -1,18 +1,19 @@
 import Foundation
-import Combine
+import Observation
 
 /// Service for follow/unfollow operations and social data
 /// Handles follow relationships, public profiles, followers/following lists, and social locations
+@Observable
 @MainActor
-class FollowService: ObservableObject {
+final class FollowService {
 
     // MARK: - Singleton
 
     static let shared = FollowService()
 
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
 
-    @Published var isLoading = false
+    var isLoading = false
 
     // MARK: - Properties
 

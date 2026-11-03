@@ -6,7 +6,7 @@ import UIKit
 /// Extracted from the old ProfileView so it's reachable via Profile → Edit Profile.
 struct EditProfileView: View {
     @EnvironmentObject var authService: AuthService
-    @ObservedObject private var userService = UserService.shared
+    private let userService = UserService.shared
     @Environment(\.dismiss) private var dismiss
 
     // Form fields

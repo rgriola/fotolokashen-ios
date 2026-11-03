@@ -20,7 +20,7 @@ struct MapView: View {
     @ScaledMetric(relativeTo: .title3) private var friendsControlSize: CGFloat = 50
     @ScaledMetric(relativeTo: .title2) private var locationControlSize: CGFloat = 50
     private let locationStore = LocationStore.shared
-    @ObservedObject private var followService = FollowService.shared
+    private let followService = FollowService.shared
     @State private var selectedLocation: Location?
     @State private var selectedReadOnlyContext: ReadOnlyLocationContext?
     @State private var centerOnUserLocation = false

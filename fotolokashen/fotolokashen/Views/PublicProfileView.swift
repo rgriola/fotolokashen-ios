@@ -6,7 +6,7 @@ import Kingfisher
 struct PublicProfileView: View {
     let username: String
 
-    @ObservedObject private var followService = FollowService.shared
+    private let followService = FollowService.shared
     @State private var profile: PublicUser?
     @State private var followStatus: FollowStatus?
     @State private var followersCount: Int = 0

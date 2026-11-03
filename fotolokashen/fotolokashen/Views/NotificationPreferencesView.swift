@@ -4,7 +4,7 @@ import SwiftUI
 /// Profile → Notification Preferences
 struct NotificationPreferencesView: View {
     @EnvironmentObject var authService: AuthService
-    @ObservedObject private var userService = UserService.shared
+    private let userService = UserService.shared
 
     @State private var emailNotifications = true
     @State private var hasChanges = false

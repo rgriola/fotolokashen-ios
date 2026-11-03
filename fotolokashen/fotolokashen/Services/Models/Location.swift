@@ -207,9 +207,15 @@ nonisolated struct Location: Codable, Identifiable {
         (photosCount ?? 0) > 0
     }
 
-    /// Created date
+    /// Created date, accepting API timestamps with or without fractional seconds.
     var createdDate: Date? {
-        ISO8601DateFormatter().date(from: createdAt)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: createdAt) {
+            return date
+        }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: createdAt)
     }
 }
 

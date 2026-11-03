@@ -1,19 +1,20 @@
 import Foundation
-import Combine
+import Observation
 
 /// Service for managing location groups (CRUD) and custom group types.
 ///
 /// Uses the same `APIClient` pattern as `LocationService`.
+@Observable
 @MainActor
-class LocationGroupService: ObservableObject {
+final class LocationGroupService {
 
     // MARK: - Singleton
 
     static let shared = LocationGroupService()
 
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
 
-    @Published var isLoading = false
+    var isLoading = false
 
     // MARK: - Properties
 

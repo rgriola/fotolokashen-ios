@@ -4,7 +4,7 @@ import SwiftUI
 /// Profile → Privacy Settings
 struct PrivacySettingsView: View {
     @EnvironmentObject var authService: AuthService
-    @ObservedObject private var userService = UserService.shared
+    private let userService = UserService.shared
 
     @State private var profileVisibility = "public"
     @State private var showInSearch = true
