@@ -1,37 +1,42 @@
-import Foundation
 import AVFoundation
-import UIKit
-import Combine
+import Foundation
+import Observation
 import Photos
+import UIKit
 
 /// Camera service for capturing photos
+@Observable
 @MainActor
-final class CameraService: NSObject, ObservableObject {
+final class CameraService: NSObject {
     
-    // MARK: - Published Properties
+    // MARK: - Observable UI State
     
-    @Published var isAuthorized = false
-    @Published var capturedImage: UIImage?
+    var isAuthorized = false
+    var capturedImage: UIImage?
     /// Raw photo data from AVCapturePhoto — preserves full EXIF (ISO, shutter, aperture, lens).
     /// Published alongside capturedImage so CameraSessionViewModel can write it to disk directly.
-    @Published var capturedPhotoData: Data?
-    @Published var errorMessage: String?
+    var capturedPhotoData: Data?
+    var errorMessage: String?
     /// Current flash mode: .auto → .on → .off (B4)
-    @Published var flashMode: AVCaptureDevice.FlashMode = .auto
+    var flashMode: AVCaptureDevice.FlashMode = .auto
     /// Whether the device is using the front camera (B3)
-    @Published var isUsingFrontCamera = false
-    @Published var isSessionReady = false
-    @Published var currentZoom: CGFloat = 1.0
-    @Published var currentExposureBias: Float = 0.0
+    var isUsingFrontCamera = false
+    var isSessionReady = false
+    var currentZoom: CGFloat = 1.0
+    var currentExposureBias: Float = 0.0
     
     // MARK: - Properties
     
-    private let sessionController = CameraCaptureEngine()
+    @ObservationIgnored private lazy var sessionController = CameraCaptureEngine()
     private var minDisplayZoom: CGFloat = 1
     private var maxDisplayZoom: CGFloat = 5
     private var minBias: Float = -8
     private var maxBias: Float = 8
-    private var lastAppliedRevision: UInt64 = 0
+    @ObservationIgnored private var lastAppliedRevision: UInt64 = 0
+    // RotationCoordinator holds only a weak reference to its device.
+    @ObservationIgnored private var captureRotationDevice: AVCaptureDevice?
+    @ObservationIgnored private var captureRotationCoordinator: AVCaptureDevice.RotationCoordinator?
+    @ObservationIgnored private var captureDeviceGeneration: UInt64?
 
     /// Min/max zoom range (in user-facing display units)
     var minZoom: CGFloat { minDisplayZoom }
@@ -216,6 +221,19 @@ final class CameraService: NSObject, ObservableObject {
         maxDisplayZoom = state.maxZoom
         minBias = state.minExposureBias
         maxBias = state.maxExposureBias
+
+        if captureDeviceGeneration != state.generation {
+            guard let device = AVCaptureDevice(uniqueID: state.deviceID) else {
+                captureRotationDevice = nil
+                captureRotationCoordinator = nil
+                captureDeviceGeneration = nil
+                errorMessage = "The active camera is no longer available"
+                return
+            }
+            captureRotationDevice = device
+            captureRotationCoordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: nil)
+            captureDeviceGeneration = state.generation
+        }
     }
 
     // MARK: - Flash Mode (B4)
@@ -307,10 +325,16 @@ final class CameraService: NSObject, ObservableObject {
             return
         }
         
-        // Snapshot UI state before crossing to the session queue. The controller
-        // uses the current output/device when this queued operation executes.
-        let requestedFlashMode = CameraFlashMode(flashMode)
-        sessionController.capturePhoto(flashMode: requestedFlashMode) { [weak self] imageData, errorMessage in
+        guard let captureRotationCoordinator, let captureDeviceGeneration else {
+            errorMessage = "Camera is not ready to capture a photo"
+            return
+        }
+        let request = CameraPhotoRequest(
+            flashMode: CameraFlashMode(flashMode),
+            rotationAngle: captureRotationCoordinator.videoRotationAngleForHorizonLevelCapture,
+            deviceGeneration: captureDeviceGeneration
+        )
+        sessionController.capturePhoto(request: request) { [weak self] imageData, errorMessage in
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 if let errorMessage {

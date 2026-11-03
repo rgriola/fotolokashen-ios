@@ -1,8 +1,10 @@
-import Foundation
 import AVFoundation
+import Foundation
 
 /// A value-only snapshot used to update camera controls on the main actor.
 nonisolated struct CameraDeviceState: Sendable {
+    let deviceID: String
+    let generation: UInt64
     let isFrontCamera: Bool
     let currentZoom: CGFloat
     let minZoom: CGFloat
@@ -11,6 +13,13 @@ nonisolated struct CameraDeviceState: Sendable {
     let minExposureBias: Float
     let maxExposureBias: Float
     let revision: UInt64
+}
+
+/// Shutter-time settings for one capture on a specific camera generation.
+nonisolated struct CameraPhotoRequest: Sendable {
+    let flashMode: CameraFlashMode
+    let rotationAngle: CGFloat
+    let deviceGeneration: UInt64
 }
 
 nonisolated enum CameraFlashMode: Sendable {

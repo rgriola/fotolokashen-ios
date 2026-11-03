@@ -1,40 +1,40 @@
-import Foundation
 import CoreLocation
-import Combine
+import Foundation
+import Observation
 
 /// Location manager for GPS tracking
+@Observable
 @MainActor
-class LocationManager: NSObject, ObservableObject {
+final class LocationManager: NSObject {
     
-    // MARK: - Published Properties
+    // MARK: - Observable State
     
-    @Published var location: CLLocation?
-    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    var location: CLLocation?
+    var authorizationStatus: CLAuthorizationStatus = .notDetermined
     
     // MARK: - Properties
     
-    private let locationManager = CLLocationManager()
+    @ObservationIgnored private var locationManager: CLLocationManager?
+    @ObservationIgnored private var shouldTrackLocation = false
     private let config = ConfigLoader.shared
     
     // MARK: - Initialization
     
     override init() {
         super.init()
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 10 // Update every 10 meters
-        authorizationStatus = locationManager.authorizationStatus
     }
     
     // MARK: - Public Methods
     
     /// Request location permission
     func requestPermission() {
-        locationManager.requestWhenInUseAuthorization()
+        locationManagerForUse().requestWhenInUseAuthorization()
     }
     
     /// Start tracking location
     func startTracking() {
+        shouldTrackLocation = true
+        let locationManager = locationManagerForUse()
         guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
             return
         }
@@ -48,7 +48,8 @@ class LocationManager: NSObject, ObservableObject {
     
     /// Stop tracking location
     func stopTracking() {
-        locationManager.stopUpdatingLocation()
+        shouldTrackLocation = false
+        locationManager?.stopUpdatingLocation()
         
         if config.enableDebugLogging {
             dlog("LocationManager", "Stopped tracking location")
@@ -57,11 +58,26 @@ class LocationManager: NSObject, ObservableObject {
     
     /// Get current location once
     func getCurrentLocation() {
+        let locationManager = locationManagerForUse()
         guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
             return
         }
         
         locationManager.requestLocation()
+    }
+
+    private func locationManagerForUse() -> CLLocationManager {
+        if let locationManager {
+            return locationManager
+        }
+
+        let locationManager = CLLocationManager()
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.distanceFilter = 10
+        self.locationManager = locationManager
+        authorizationStatus = locationManager.authorizationStatus
+        return locationManager
     }
 }
 
@@ -92,15 +108,17 @@ extension LocationManager: CLLocationManagerDelegate {
     }
     
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
         Task { @MainActor in
-            authorizationStatus = self.locationManager.authorizationStatus
+            authorizationStatus = status
             
             if config.enableDebugLogging {
                 dlog("LocationManager", "Authorization status: \(authorizationStatus.rawValue)")
             }
             
             // Auto-start tracking if authorized
-            if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
+            if shouldTrackLocation
+                && (authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways) {
                 startTracking()
             }
         }
