@@ -28,7 +28,7 @@ struct MapView: View {
     @State private var showFriendsLocations = false
     @State private var friendsLocations: [MapSocialLocation] = []
     @State private var isLoadingFriends = false
-    @StateObject private var placeSearchService = MapPlaceSearchService()
+    @State private var placeSearchService = MapPlaceSearchService()
     @State private var searchedPlacePin: SearchedPlacePin? = nil
     
     var body: some View {

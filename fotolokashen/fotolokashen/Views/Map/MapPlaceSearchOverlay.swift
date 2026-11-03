@@ -4,7 +4,7 @@ import MapKit
 /// Floating search bar + suggestions list for searching Apple's map data (places,
 /// addresses, POIs) on the Map tab — separate from LocationListView's saved-locations search.
 struct MapPlaceSearchOverlay: View {
-    @ObservedObject var searchService: MapPlaceSearchService
+    @Bindable var searchService: MapPlaceSearchService
     @FocusState private var isSearchFieldFocused: Bool
     let onSelect: (MKLocalSearchCompletion) -> Void
 
@@ -13,9 +13,9 @@ struct MapPlaceSearchOverlay: View {
             HStack {
                 Image(systemName: AppIcons.search)
                     .foregroundStyle(Color.secondary)
-                TextField("Search Apple Maps", text: $searchService.queryFragment)
+                TextField("Search Google Maps", text: $searchService.queryFragment)
                     .focused($isSearchFieldFocused)
-                    .accessibilityLabel("Search Apple Maps for a place or address")
+                    .accessibilityLabel("Search Google Maps")
                 if !searchService.queryFragment.isEmpty {
                     Button {
                         searchService.clear()
