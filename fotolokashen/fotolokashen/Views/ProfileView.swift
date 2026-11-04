@@ -58,7 +58,7 @@ struct ProfileView: View {
 
                 // ── Support ───────────────────────────────────────────────
                 Section("Support") {
-                    // Help & FAQ Text (label) appear brand color should be black 
+                    // Help & FAQ Text (label) appear brand color should be black
                     Link(destination: URL(string: "\(ConfigLoader.shared.backendBaseURL)/help")!) {
                         Label("Help & FAQ", systemImage: AppIcons.questionmarkCircleFill)
                     }

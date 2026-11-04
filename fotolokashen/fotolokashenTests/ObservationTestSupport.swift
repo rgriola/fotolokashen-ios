@@ -34,12 +34,15 @@ final class ObservationWaiter<Root: AnyObject & Observable, Value> {
 
     private func track() {
         guard !isFinished, let root else { return }
+        let evaluateOnMainActor: @MainActor @Sendable () -> Void = { [weak self] in
+            self?.evaluate()
+        }
         withObservationTracking {
             _ = root[keyPath: keyPath]
-        } onChange: { [weak self] in
+        } onChange: {
             // onChange runs before the new value is stored; read it once the mutation completes.
-            Task { @MainActor [weak self] in
-                self?.evaluate()
+            Task { @MainActor in
+                evaluateOnMainActor()
             }
         }
     }

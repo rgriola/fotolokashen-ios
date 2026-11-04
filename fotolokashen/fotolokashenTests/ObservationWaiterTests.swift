@@ -34,15 +34,53 @@ nonisolated final class ObservationWaiterTests: XCTestCase {
     }
 
     @MainActor
+    func testOnlyChecksLatestValueWhenChangesAreMadeInSameTurn() async {
+        let model = WaiterTestModel()
+        let matched = expectation(description: "An intermediate value must not fulfill the waiter")
+        matched.isInverted = true
+        let waiter = ObservationWaiter(model, \.value, fulfilling: matched) { $0 == 2 }
+        defer { waiter.cancel() }
+
+        model.value = 2
+        model.value = 3
+        await fulfillment(of: [matched], timeout: 0.3)
+    }
+
+    @MainActor
     func testCancelPreventsFulfillment() async {
         let model = WaiterTestModel()
         let matched = expectation(description: "Cancelled waiter must not fire")
         matched.isInverted = true
         let waiter = ObservationWaiter(model, \.value, fulfilling: matched) { $0 == 2 }
+        defer { waiter.cancel() }
 
         waiter.cancel()
         model.value = 2
         await fulfillment(of: [matched], timeout: 0.3)
+    }
+
+    @MainActor
+    func testCancelAfterChangePreventsQueuedFulfillment() async {
+        let model = WaiterTestModel()
+        let matched = expectation(description: "Cancelled waiter must not fire after a change")
+        matched.isInverted = true
+        let waiter = ObservationWaiter(model, \.value, fulfilling: matched) { $0 == 2 }
+        defer { waiter.cancel() }
+
+        model.value = 2
+        waiter.cancel()
+        await fulfillment(of: [matched], timeout: 0.3)
+    }
+
+    @MainActor
+    func testSupportsMainActorIsolatedObservableConformance() async {
+        let model = IsolatedConformanceWaiterModel()
+        let matched = expectation(description: "Waiter observes an actor-isolated Observable conformance")
+        let waiter = ObservationWaiter(model, \.value, fulfilling: matched) { $0 == 2 }
+        defer { waiter.cancel() }
+
+        model.value = 2
+        await fulfillment(of: [matched], timeout: 2)
     }
 }
 
@@ -50,4 +88,15 @@ nonisolated final class ObservationWaiterTests: XCTestCase {
 @MainActor
 private final class WaiterTestModel {
     var value = 1
+}
+
+@MainActor
+private final class IsolatedConformanceWaiterModel: @MainActor Observable {
+    // Forward tracked access without making the wrapper's conformance nonisolated.
+    private let storage = WaiterTestModel()
+
+    var value: Int {
+        get { storage.value }
+        set { storage.value = newValue }
+    }
 }
