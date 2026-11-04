@@ -1,12 +1,12 @@
-import SwiftUI
 import Kingfisher
+import SwiftUI
 
 /// Reusable view for displaying followers or following list with pagination
 struct FollowListView: View {
     let username: String
     let mode: FollowListMode
 
-    @ObservedObject private var followService = FollowService.shared
+    private let followService = FollowService.shared
     @State private var users: [FollowListUser] = []
     @State private var isLoading = false
     @State private var isLoadingMore = false

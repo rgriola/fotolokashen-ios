@@ -1,6 +1,6 @@
 import Foundation
-import SwiftUI
 import GoogleMaps
+import SwiftUI
 
 /// Generates custom camera icon markers matching the web app design
 class MarkerIconGenerator {
@@ -222,13 +222,13 @@ class MarkerIconGenerator {
         // Color based on count (matches web thresholds)
         let color: UIColor
         if count > 20 {
-            color = UIColor(hex: "#3BD130") //- Green
+            color = UIColor(hex: "#3BD130") // - Green
         } else if count > 10 {
-            color = UIColor(hex: "#2FA827") //- Light Green
+            color = UIColor(hex: "#2FA827") // - Light Green
         } else if count > 5 {
-            color = UIColor(hex: "#247F1D") //- Dark Green
+            color = UIColor(hex: "#247F1D") // - Dark Green
         } else {
-            color = UIColor(hex: "#185714") //- Darker Green
+            color = UIColor(hex: "#185714") // - Darker Green
             }
 
         let renderer = UIGraphicsImageRenderer(size: size)

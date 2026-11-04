@@ -8,8 +8,8 @@
 //  or `CameraSessionViewModel` — callers pass bindings or callbacks.
 //
 
-import SwiftUI
 import CoreLocation
+import SwiftUI
 
 // MARK: - HUD Sizing
 
@@ -434,7 +434,7 @@ struct CameraThumbnailStrip: View {
                         ZStack(alignment: .topTrailing) {
                             Image(uiImage: capture.thumbnail)
                                 .resizable()
-                                .aspectRatio(contentMode: .fill)
+                                .scaledToFill()
                                 .frame(width: 56, height: 56)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                                 .accessibilityLabel("Captured photo \(index + 1)")

@@ -1,5 +1,5 @@
-import Foundation
 import CoreLocation
+import Foundation
 
 /// Location model matching backend API response
 nonisolated struct Location: Codable, Identifiable {
@@ -207,9 +207,15 @@ nonisolated struct Location: Codable, Identifiable {
         (photosCount ?? 0) > 0
     }
 
-    /// Created date
+    /// Created date, accepting API timestamps with or without fractional seconds.
     var createdDate: Date? {
-        ISO8601DateFormatter().date(from: createdAt)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: createdAt) {
+            return date
+        }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: createdAt)
     }
 }
 
@@ -408,30 +414,30 @@ nonisolated struct UserSaveResponse: Codable {
 /// Combines Location fields AND UserSave fields in a single request
 nonisolated struct UpdateLocationRequest: Codable {
     // Location fields (shared)
-    var name: String? = nil
-    var notes: String? = nil
-    var rating: Double? = nil
-    var type: String? = nil
-    var productionDate: String? = nil  // ISO date string (YYYY-MM-DD), null to remove
-    var productionNotes: String? = nil
-    var entryPoint: String? = nil
-    var parking: String? = nil
-    var access: String? = nil
-    var indoorOutdoor: String? = nil
-    var isPermanent: Bool? = nil
-    var details: String? = nil       // Free-text "Details" field from iOS Create form
+    var name: String?
+    var notes: String?
+    var rating: Double?
+    var type: String?
+    var productionDate: String?  // ISO date string (YYYY-MM-DD), null to remove
+    var productionNotes: String?
+    var entryPoint: String?
+    var parking: String?
+    var access: String?
+    var indoorOutdoor: String?
+    var isPermanent: Bool?
+    var details: String?       // Free-text "Details" field from iOS Create form
     // Address components
-    var street: String? = nil
-    var number: String? = nil
-    var city: String? = nil
-    var state: String? = nil
-    var zipcode: String? = nil
+    var street: String?
+    var number: String?
+    var city: String?
+    var state: String?
+    var zipcode: String?
     // UserSave fields (per-user)
-    var tags: [String]? = nil
-    var isFavorite: Bool? = nil
-    var personalRating: Double? = nil
-    var color: String? = nil
-    var visibility: String? = nil
+    var tags: [String]?
+    var isFavorite: Bool?
+    var personalRating: Double?
+    var color: String?
+    var visibility: String?
 }
 
 // MARK: - Update Location Response

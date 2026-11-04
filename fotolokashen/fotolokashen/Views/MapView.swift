@@ -1,9 +1,8 @@
-import SwiftUI
+import CoreLocation
 import GoogleMaps
 import GoogleMapsUtils
-import CoreLocation
-import Combine
 import MapKit
+import SwiftUI
 
 /// Map view showing all user locations as markers with clustering
 /// Supports toggling friends' locations (purple markers) on the map
@@ -16,20 +15,20 @@ import MapKit
 //    Verify whether clustering is actually active; if not, consider wiring it up or removing
 //    the unused cluster classes.
 struct MapView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     @ScaledMetric(relativeTo: .title3) private var friendsControlSize: CGFloat = 50
     @ScaledMetric(relativeTo: .title2) private var locationControlSize: CGFloat = 50
-    @ObservedObject private var locationStore = LocationStore.shared
-    @ObservedObject private var followService = FollowService.shared
+    private let locationStore = LocationStore.shared
+    private let followService = FollowService.shared
     @State private var selectedLocation: Location?
     @State private var selectedReadOnlyContext: ReadOnlyLocationContext?
     @State private var centerOnUserLocation = false
-    @State private var focusCoordinate: CLLocationCoordinate2D? = nil
+    @State private var focusCoordinate: CLLocationCoordinate2D?
     @State private var showFriendsLocations = false
     @State private var friendsLocations: [MapSocialLocation] = []
     @State private var isLoadingFriends = false
-    @StateObject private var placeSearchService = MapPlaceSearchService()
-    @State private var searchedPlacePin: SearchedPlacePin? = nil
+    @State private var placeSearchService = MapPlaceSearchService()
+    @State private var searchedPlacePin: SearchedPlacePin?
     
     var body: some View {
         NavigationStack {
@@ -405,7 +404,7 @@ struct ClusteredMapView: UIViewRepresentable {
         UIColor(red: 0.90, green: 0.49, blue: 0.13, alpha: 1),   // orange
         UIColor(red: 0.15, green: 0.68, blue: 0.38, alpha: 1),   // green
         UIColor(red: 0.91, green: 0.30, blue: 0.24, alpha: 1),   // red
-        UIColor(red: 0.95, green: 0.77, blue: 0.06, alpha: 1),   // yellow
+        UIColor(red: 0.95, green: 0.77, blue: 0.06, alpha: 1)   // yellow
     ]
 
     /// Draws polylines connecting locations within the same group.
@@ -526,4 +525,6 @@ struct ClusteredMapView: UIViewRepresentable {
 
 #Preview {
     MapView()
+        .environment(AuthService())
+        .environment(NetworkMonitor.shared)
 }

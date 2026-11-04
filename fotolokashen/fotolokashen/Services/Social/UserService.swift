@@ -1,21 +1,22 @@
 import Foundation
+import Observation
 import UIKit
-import Combine
 
 /// Service for user profile management
 /// Handles profile updates, privacy settings, and avatar/banner uploads
+@Observable
 @MainActor
-class UserService: ObservableObject {
+final class UserService {
 
     // MARK: - Singleton
 
     static let shared = UserService()
 
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
 
-    @Published var isLoading = false
-    @Published var isUploading = false
-    @Published var uploadProgress: Double = 0.0
+    var isLoading = false
+    var isUploading = false
+    var uploadProgress: Double = 0.0
 
     // MARK: - Properties
 

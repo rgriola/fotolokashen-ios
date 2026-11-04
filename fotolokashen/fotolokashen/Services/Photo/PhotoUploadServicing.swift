@@ -1,5 +1,5 @@
-import Foundation
 import CoreLocation
+import Foundation
 
 /// Phase 4a — Protocol surface for `PhotoUploadService` so that
 /// `PhotoUploadQueue` can be unit-tested with an in-process mock.

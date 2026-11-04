@@ -1,5 +1,5 @@
-import SwiftUI
 import CoreLocation
+import SwiftUI
 
 // MARK: - Notification Names
 extension Notification.Name {
@@ -7,7 +7,7 @@ extension Notification.Name {
 }
 
 struct ContentView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
     
     var body: some View {
         Group {
@@ -26,8 +26,8 @@ struct ContentView: View {
 // MARK: - Login View
 
 struct LoginView: View {
-    @EnvironmentObject var authService: AuthService
-    @EnvironmentObject var deepLinkManager: DeepLinkManager
+    @Environment(AuthService.self) private var authService
+    @Environment(DeepLinkManager.self) private var deepLinkManager
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     // Native UI states for auth flow feedback
@@ -365,8 +365,8 @@ private struct CheckEmailSheet: View {
 // MARK: - Logged In View
 
 struct LoggedInView: View {
-    @ObservedObject private var locationStore = LocationStore.shared
-    @EnvironmentObject var deepLinkManager: DeepLinkManager
+    private let locationStore = LocationStore.shared
+    @Environment(DeepLinkManager.self) private var deepLinkManager
     @State private var selectedTab = 0
     @State private var previousTab = 0
     @State private var showingCamera = false
@@ -526,4 +526,7 @@ struct LoggedInView: View {
 
 #Preview {
     ContentView()
+        .environment(AuthService())
+        .environment(DeepLinkManager.shared)
+        .environment(NetworkMonitor.shared)
 }

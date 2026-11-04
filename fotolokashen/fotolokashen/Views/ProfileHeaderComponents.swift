@@ -1,6 +1,6 @@
+import Kingfisher
 import SwiftUI
 import UIKit
-import Kingfisher
 
 // MARK: - Profile Banner
 

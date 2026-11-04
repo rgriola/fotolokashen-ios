@@ -1,6 +1,6 @@
+import CoreLocation
 import Foundation
 import UIKit
-import CoreLocation
 
 /// A single photo captured during a multi-photo camera session.
 /// Disk-backed: the full-resolution JPEG lives at `fileURL`, while only a

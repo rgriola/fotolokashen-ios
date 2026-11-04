@@ -1,5 +1,5 @@
-import SwiftUI
 import Kingfisher
+import SwiftUI
 
 /// Edit view for an existing location with all editable fields.
 ///
@@ -8,7 +8,7 @@ import Kingfisher
 struct EditLocationView: View {
     var onLocationUpdated: ((Location) -> Void)?
 
-    @StateObject private var viewModel: EditLocationViewModel
+    @State private var viewModel: EditLocationViewModel
     @Environment(\.dismiss) var dismiss
 
     // UI-only sheet/alert state
@@ -18,7 +18,7 @@ struct EditLocationView: View {
 
     init(location: Location, onLocationUpdated: ((Location) -> Void)? = nil) {
         self.onLocationUpdated = onLocationUpdated
-        _viewModel = StateObject(wrappedValue: EditLocationViewModel(location: location))
+        _viewModel = State(initialValue: EditLocationViewModel(location: location))
     }
 
     private var location: Location { viewModel.location }

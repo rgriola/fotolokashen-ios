@@ -1,26 +1,27 @@
 import Foundation
+import Observation
 import SwiftUI
-import Combine
 
 /// App-wide presenter for user-facing errors and notices.
 ///
 /// Phase 2c: provides a single, consistent surface for banner + alert
 /// presentation so individual services don't each invent their own
-/// `@Published var errorMessage` UI conventions.
+/// observable error-state conventions.
 ///
 /// Usage:
 ///   • Service-side:  `ErrorPresenter.shared.present(.init(message: ...))`
 ///   • View-side:     attach `.errorPresenter()` once at the app root.
+@Observable
 @MainActor
-final class ErrorPresenter: ObservableObject {
+final class ErrorPresenter {
     static let shared = ErrorPresenter()
 
     /// The currently visible banner (auto-dismisses).
-    @Published var banner: AppError?
+    var banner: AppError?
     /// The currently visible alert (modal, requires acknowledgement).
-    @Published var alert: AppError?
+    var alert: AppError?
 
-    private var bannerDismissTask: Task<Void, Never>?
+    @ObservationIgnored private var bannerDismissTask: Task<Void, Never>?
 
     init() {}
 

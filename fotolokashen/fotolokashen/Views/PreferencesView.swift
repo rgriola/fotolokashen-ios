@@ -3,8 +3,8 @@ import SwiftUI
 /// Preferences — language, timezone, and email notification settings.
 /// Profile → App Settings → Preferences
 struct PreferencesView: View {
-    @EnvironmentObject var authService: AuthService
-    @ObservedObject private var userService = UserService.shared
+    @Environment(AuthService.self) private var authService
+    private let userService = UserService.shared
 
     @State private var language = ""
     @State private var timezone = ""
@@ -114,6 +114,6 @@ struct PreferencesView: View {
 #Preview {
     NavigationStack {
         PreferencesView()
-            .environmentObject(AuthService())
+            .environment(AuthService())
     }
 }

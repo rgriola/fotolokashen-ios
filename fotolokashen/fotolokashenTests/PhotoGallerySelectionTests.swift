@@ -1,5 +1,5 @@
-import Combine
 import Kingfisher
+import Observation
 import SwiftUI
 import XCTest
 @testable import fotolokashen
@@ -124,14 +124,17 @@ nonisolated final class PhotoGallerySelectionTests: XCTestCase {
             currentPhotoRevision: { viewModel.photoRevision }
         )
         let original = PhotoGallerySelection.clampedBinding(selection, snapshot: originalSnapshot)
-        var revisionSeenByPublisher: UInt64?
-        let subscription = viewModel.$photos.dropFirst().sink { _ in
-            revisionSeenByPublisher = viewModel.photoRevision
+        let revisionObservation = PhotoRevisionObservation()
+        withObservationTracking {
+            _ = viewModel.photos
+        } onChange: {
+            MainActor.assumeIsolated {
+                revisionObservation.revision = viewModel.photoRevision
+            }
         }
-        defer { subscription.cancel() }
 
         viewModel.photos.removeLast()
-        XCTAssertEqual(revisionSeenByPublisher, initialRevision + 1)
+        XCTAssertEqual(revisionObservation.revision, initialRevision + 1)
         viewModel.photos = initialPhotos
         XCTAssertEqual(viewModel.photoRevision, initialRevision + 2)
         original.wrappedValue = 0
@@ -354,28 +357,22 @@ nonisolated final class PhotoGallerySelectionTests: XCTestCase {
 
         await fulfillment(of: [appeared, initialPhotos], timeout: 10)
         XCTAssertEqual(state.selectedIndex, 2)
-        let removalSubscription = state.$selectedIndex.dropFirst().filter { $0 == 1 }.prefix(1).sink { _ in
-            selectedRemainingPhoto.fulfill()
-        }
-        defer { removalSubscription.cancel() }
+        let removalWaiter = ObservationWaiter(state, \.selectedIndex, fulfilling: selectedRemainingPhoto) { $0 == 1 }
+        defer { removalWaiter.cancel() }
         state.photos.removeLast()
         await fulfillment(of: [selectedRemainingPhoto, reduced], timeout: 10)
         XCTAssertEqual(state.selectedIndex, 1)
 
         let remainingPhoto = try XCTUnwrap(state.photos.first)
-        let emptySubscription = state.$selectedIndex.dropFirst().filter { $0 == 0 }.prefix(1).sink { _ in
-            resetEmptySelection.fulfill()
-        }
-        defer { emptySubscription.cancel() }
+        let emptyWaiter = ObservationWaiter(state, \.selectedIndex, fulfilling: resetEmptySelection) { $0 == 0 }
+        defer { emptyWaiter.cancel() }
         state.photos.removeAll()
         await fulfillment(of: [resetEmptySelection, empty], timeout: 10)
         XCTAssertEqual(state.selectedIndex, 0)
 
         state.selectedIndex = 9
-        let reloadSubscription = state.$selectedIndex.dropFirst().filter { $0 == 0 }.prefix(1).sink { _ in
-            resetReloadedSelection.fulfill()
-        }
-        defer { reloadSubscription.cancel() }
+        let reloadWaiter = ObservationWaiter(state, \.selectedIndex, fulfilling: resetReloadedSelection) { $0 == 0 }
+        defer { reloadWaiter.cancel() }
         state.photos = [remainingPhoto]
         await fulfillment(of: [reloaded, resetReloadedSelection], timeout: 10)
         XCTAssertEqual(state.selectedIndex, 0)
@@ -392,9 +389,7 @@ nonisolated final class PhotoGallerySelectionTests: XCTestCase {
         let resetSelection = expectation(description: "Empty full-screen selection resets")
         let reloaded = expectation(description: "Full-screen gallery reloads")
         let resetReloadedSelection = expectation(description: "Reloaded full-screen selection resets")
-        let subscription = state.$selectedIndex.dropFirst().filter { $0 == 0 }.prefix(1).sink { _ in
-            resetSelection.fulfill()
-        }
+        let resetWaiter = ObservationWaiter(state, \.selectedIndex, fulfilling: resetSelection) { $0 == 0 }
 
         let (window, previousWindow) = try makeVisibleWindow(
             rootView: PhotoGalleryFullScreenTestView(state: state) { count in
@@ -406,7 +401,7 @@ nonisolated final class PhotoGallerySelectionTests: XCTestCase {
             }.onAppear { appeared.fulfill() }
         )
         defer {
-            subscription.cancel()
+            resetWaiter.cancel()
             restoreWindow(window, previousWindow: previousWindow)
         }
 
@@ -414,10 +409,8 @@ nonisolated final class PhotoGallerySelectionTests: XCTestCase {
         XCTAssertEqual(state.selectedIndex, 0)
 
         state.selectedIndex = 9
-        let reloadSubscription = state.$selectedIndex.dropFirst().filter { $0 == 0 }.prefix(1).sink { _ in
-            resetReloadedSelection.fulfill()
-        }
-        defer { reloadSubscription.cancel() }
+        let reloadWaiter = ObservationWaiter(state, \.selectedIndex, fulfilling: resetReloadedSelection) { $0 == 0 }
+        defer { reloadWaiter.cancel() }
         state.photos = [reloadedPhoto]
         await fulfillment(of: [reloaded, resetReloadedSelection], timeout: 10)
         XCTAssertEqual(state.selectedIndex, 0)
@@ -446,20 +439,16 @@ nonisolated final class PhotoGallerySelectionTests: XCTestCase {
         await fulfillment(of: [initialPhotos], timeout: 10)
         XCTAssertEqual(state.selectedIndex, 2)
 
-        let removalSubscription = state.$selectedIndex.dropFirst().filter { $0 == 1 }.prefix(1).sink { _ in
-            selectedRemainingPhoto.fulfill()
-        }
-        defer { removalSubscription.cancel() }
+        let removalWaiter = ObservationWaiter(state, \.selectedIndex, fulfilling: selectedRemainingPhoto) { $0 == 1 }
+        defer { removalWaiter.cancel() }
         state.photos.removeLast()
         await fulfillment(of: [selectedRemainingPhoto, reduced], timeout: 10)
         XCTAssertEqual(state.selectedIndex, 1)
 
         let remainingPhoto = try XCTUnwrap(state.photos.first)
         state.selectedIndex = 9
-        let reloadSubscription = state.$selectedIndex.dropFirst().filter { $0 == 0 }.prefix(1).sink { _ in
-            resetReloadedSelection.fulfill()
-        }
-        defer { reloadSubscription.cancel() }
+        let reloadWaiter = ObservationWaiter(state, \.selectedIndex, fulfilling: resetReloadedSelection) { $0 == 0 }
+        defer { reloadWaiter.cancel() }
         state.photos.removeAll()
         state.photos = [remainingPhoto]
         await fulfillment(of: [reloaded, resetReloadedSelection], timeout: 10)
@@ -540,14 +529,15 @@ nonisolated final class PhotoGallerySelectionTests: XCTestCase {
     }
 }
 
+@Observable
 @MainActor
-private final class PhotoGalleryTestState: ObservableObject {
+private final class PhotoGalleryTestState {
     private let imageCachePrefix = UUID().uuidString
     private let imageData = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1)).pngData { context in
         UIColor.blue.setFill()
         context.fill(CGRect(x: 0, y: 0, width: 1, height: 1))
     }
-    @Published var photos: [DetailPhoto] = (1...3).map({ id in
+    @ObservationIgnored private var storedPhotos: [DetailPhoto] = (1...3).map({ id in
         DetailPhoto(
             id: id,
             imagekitFilePath: "/test/\(id)",
@@ -563,23 +553,37 @@ private final class PhotoGalleryTestState: ObservableObject {
             fileSize: nil,
             mimeType: nil
         )
-    }) {
-        willSet {
-            if photos.map(\.id) != newValue.map(\.id) {
+    })
+    // Explicit accessors guarantee the revision is bumped before observers are notified of the change.
+    var photos: [DetailPhoto] {
+        get {
+            access(keyPath: \.photos)
+            return storedPhotos
+        }
+        set {
+            if storedPhotos.map(\.id) != newValue.map(\.id) {
                 photoRevision += 1
+            }
+            withMutation(keyPath: \.photos) {
+                storedPhotos = newValue
             }
         }
     }
-    private(set) var photoRevision: UInt64 = 0
-    @Published var selectedIndex = 2
+    @ObservationIgnored private(set) var photoRevision: UInt64 = 0
+    var selectedIndex = 2
 
     func imageSource(for photo: DetailPhoto) -> Source? {
         .provider(RawImageDataProvider(data: imageData, cacheKey: "\(imageCachePrefix)-\(photo.id)"))
     }
 }
 
+@MainActor
+private final class PhotoRevisionObservation {
+    var revision: UInt64?
+}
+
 private struct PhotoGalleryTestView: View {
-    @ObservedObject var state: PhotoGalleryTestState
+    @Bindable var state: PhotoGalleryTestState
     let onPhotoCountChange: (Int) -> Void
 
     var body: some View {
@@ -602,7 +606,7 @@ private struct PhotoGalleryTestView: View {
 }
 
 private struct PhotoGalleryFullScreenTestView: View {
-    @ObservedObject var state: PhotoGalleryTestState
+    @Bindable var state: PhotoGalleryTestState
     let onPhotoCountChange: (Int) -> Void
 
     var body: some View {
@@ -617,15 +621,16 @@ private struct PhotoGalleryFullScreenTestView: View {
     }
 }
 
+@Observable
 @MainActor
-private final class PhotoGalleryPresentationTestRequests: ObservableObject {
-    @Published var openCount = 0
-    @Published var closeCount = 0
+private final class PhotoGalleryPresentationTestRequests {
+    var openCount = 0
+    var closeCount = 0
 }
 
 private struct PhotoGalleryPresentationTestView: View {
-    @ObservedObject var photos: PhotoGalleryTestState
-    @ObservedObject var requests: PhotoGalleryPresentationTestRequests
+    @Bindable var photos: PhotoGalleryTestState
+    let requests: PhotoGalleryPresentationTestRequests
     let onOpen: (UUID) -> Void
     let onDismiss: () -> Void
     @State private var session: PhotoGalleryPresentationSession?

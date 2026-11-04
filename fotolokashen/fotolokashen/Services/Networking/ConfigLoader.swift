@@ -19,8 +19,8 @@ nonisolated final class ConfigLoader: @unchecked Sendable {
     // MARK: - Initialization
     
     // REVIEW: fatalError() on missing Config.plist is too aggressive for production.
-    // Consider logging the error and falling back to default values, or using a
-    // @Published var configError to surface this in the UI gracefully.
+    // Consider logging the error and falling back to default values, or exposing
+    // a tracked config error to the UI.
     private init() {
         guard let path = Bundle.main.path(forResource: "Config", ofType: "plist"),
               let dict = NSDictionary(contentsOfFile: path) as? [String: Any] else {

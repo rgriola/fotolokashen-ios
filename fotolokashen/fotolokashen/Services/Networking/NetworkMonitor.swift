@@ -1,18 +1,20 @@
 import Foundation
 import Network
-import Combine
+import Observation
 
 /// Monitors network connectivity status
-class NetworkMonitor: ObservableObject {
+@Observable
+@MainActor
+final class NetworkMonitor {
     
     // MARK: - Singleton
     
     static let shared = NetworkMonitor()
     
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
     
-    @Published var isConnected: Bool = true
-    @Published var connectionType: NWInterface.InterfaceType?
+    var isConnected = true
+    var connectionType: NWInterface.InterfaceType?
     
     // MARK: - Properties
     
@@ -25,19 +27,29 @@ class NetworkMonitor: ObservableObject {
         monitor = NWPathMonitor()
         startMonitoring()
     }
+
+    init(startMonitoring: Bool) {
+        monitor = NWPathMonitor()
+        if startMonitoring {
+            self.startMonitoring()
+        }
+    }
     
     // MARK: - Monitoring
     
     private func startMonitoring() {
         monitor.pathUpdateHandler = { [weak self] path in
+            let isConnected = path.status == .satisfied
+            let connectionType = path.availableInterfaces.first?.type
             DispatchQueue.main.async {
-                self?.isConnected = path.status == .satisfied
-                self?.connectionType = path.availableInterfaces.first?.type
-                
+                guard let self else { return }
+                self.isConnected = isConnected
+                self.connectionType = connectionType
+
                 if ConfigLoader.shared.enableDebugLogging {
-                    let status = path.status == .satisfied ? "Connected" : "Disconnected"
+                    let status = isConnected ? "Connected" : "Disconnected"
                     dlog("NetworkMonitor", "\(status)")
-                    if let type = self?.connectionType {
+                    if let type = connectionType {
                         dlog("NetworkMonitor", "Connection type: \(type)")
                     }
                 }

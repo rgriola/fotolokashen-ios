@@ -1,20 +1,21 @@
 import Foundation
+import Observation
 import OSLog
 import SwiftData
-import Combine
 
 /// Manages SwiftData persistence and caching
+@Observable
 @MainActor
-class DataManager: ObservableObject {
+final class DataManager {
     
     // MARK: - Singleton
     
     static let shared = DataManager()
     
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
     
-    @Published var pendingUploads: Int = 0
-    @Published private(set) var storeRecoveryMessage: String?
+    var pendingUploads = 0
+    private(set) var storeRecoveryMessage: String?
     
     // MARK: - Properties
     
@@ -87,6 +88,12 @@ class DataManager: ObservableObject {
         if ConfigLoader.shared.enableDebugLogging {
             dlog("DataManager", "SwiftData initialized successfully")
         }
+    }
+
+    init(modelContainer: ModelContainer, initialStoreRecoveryMessage: String? = nil) {
+        self.modelContainer = modelContainer
+        self.modelContext = ModelContext(modelContainer)
+        self.storeRecoveryMessage = initialStoreRecoveryMessage
     }
 
     func dismissStoreRecoveryNotice() {

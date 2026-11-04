@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 /// Context for displaying a read-only location on the map.
 /// Used when navigating from PublicProfileView → LocationDetailView (read-only) → Map.
@@ -38,14 +37,16 @@ extension ReadOnlyLocationContext {
 /// `.mapFocusLocation = ...`, etc.) keep working through this facade. New code
 /// should depend on `LocationRepository.shared` / `MapNavigationCoordinator.shared`
 /// directly.
+///
+/// The facade holds no observable state of its own: its pass-throughs read
+/// the `@Observable` repository and coordinator, so SwiftUI tracks those
+/// inner properties directly.
 @MainActor
-final class LocationStore: ObservableObject {
+final class LocationStore {
     static let shared = LocationStore()
 
     let repository: LocationRepository
     let coordinator: MapNavigationCoordinator
-
-    private var cancellables = Set<AnyCancellable>()
 
     private init(
         repository: LocationRepository? = nil,
@@ -54,15 +55,6 @@ final class LocationStore: ObservableObject {
         // Construct inside MainActor init body to satisfy Swift 6 isolation.
         self.repository = repository ?? LocationRepository.shared
         self.coordinator = coordinator ?? MapNavigationCoordinator.shared
-
-        // Forward inner objectWillChange so existing @ObservedObject locationStore
-        // call-sites keep getting view-update notifications.
-        self.repository.objectWillChange
-            .sink { [weak self] _ in self?.objectWillChange.send() }
-            .store(in: &cancellables)
-        self.coordinator.objectWillChange
-            .sink { [weak self] _ in self?.objectWillChange.send() }
-            .store(in: &cancellables)
     }
 
     // MARK: - Repository pass-through

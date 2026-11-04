@@ -1,8 +1,8 @@
-import Foundation
 import CoreLocation
-import UIKit
+import Foundation
 import GoogleMaps
 import GoogleMapsUtils
+import UIKit
 
 /// Custom cluster item for locations with pre-generated marker icon
 class LocationClusterItem: NSObject, GMUClusterItem {

@@ -1,33 +1,34 @@
 import Foundation
-import Combine
+import Observation
 
 /// Manages deep link navigation state for the app.
 /// Handles both custom URL scheme (`fotolokashen://`) and Universal Links (`https://fotolokashen.com/shared/`).
+@Observable
 @MainActor
-class DeepLinkManager: ObservableObject {
+final class DeepLinkManager {
     static let shared = DeepLinkManager()
     private static let universalLinkHosts: Set<String> = ["fotolokashen.com"]
 
     /// When set, the app should present a location detail view for this location ID.
-    @Published var pendingLocationId: Int?
+    var pendingLocationId: Int?
 
     /// Whether a deep link location is currently being loaded.
-    @Published var isLoadingDeepLink = false
+    var isLoadingDeepLink = false
 
     /// Error message if deep link resolution fails.
-    @Published var deepLinkError: String?
+    var deepLinkError: String?
 
     /// Set when the user verified their email from the iOS registration flow.
     /// Observe this to auto-login after email verification.
-    @Published var emailVerified = false
+    var emailVerified = false
 
     /// One-time auto-login token received from the email verification deep link.
     /// Used by AuthService to exchange for proper OAuth tokens without manual login.
-    @Published var autoLoginToken: String?
+    var autoLoginToken: String?
 
     /// Set when the user completed a password reset in Safari.
     /// Observe this to prompt the user to log in with their new password.
-    @Published var passwordResetComplete = false
+    var passwordResetComplete = false
 
     private init() {}
 

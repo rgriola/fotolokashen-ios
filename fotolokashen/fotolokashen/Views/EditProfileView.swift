@@ -1,12 +1,12 @@
-import SwiftUI
 import PhotosUI
+import SwiftUI
 import UIKit
 
 /// Edit Profile — all form fields for the user's personal info, avatar, and banner.
 /// Extracted from the old ProfileView so it's reachable via Profile → Edit Profile.
 struct EditProfileView: View {
-    @EnvironmentObject var authService: AuthService
-    @ObservedObject private var userService = UserService.shared
+    @Environment(AuthService.self) private var authService
+    private let userService = UserService.shared
     @Environment(\.dismiss) private var dismiss
 
     // Form fields
@@ -16,7 +16,7 @@ struct EditProfileView: View {
     @State private var city = ""
     @State private var state = ""
     @State private var country = ""
-    @State private var dateOfBirth: Date? = nil
+    @State private var dateOfBirth: Date?
     @State private var showDatePicker = false
 
     // Image picker state
@@ -268,7 +268,6 @@ struct EditProfileView: View {
         }
     }
 
-
     // MARK: - Actions
 
     private func loadUserData() {
@@ -460,6 +459,6 @@ struct EditProfileView: View {
 #Preview {
     NavigationStack {
         EditProfileView()
-            .environmentObject(AuthService())
+            .environment(AuthService())
     }
 }

@@ -15,20 +15,21 @@
 //  previously lived inline in `CameraView.handleCapturedPhoto(_:)`.
 //
 
-import Foundation
-import SwiftUI
-import Combine
 import CoreLocation
+import Foundation
+import Observation
+import SwiftUI
 
+@Observable
 @MainActor
-final class CameraSessionViewModel: ObservableObject {
+final class CameraSessionViewModel {
 
-    // MARK: - Published State
+    // MARK: - Observable State
 
-    @Published var sessionCaptures: [SessionCapture] = []
-    @Published var isWritingToDisk = false
-    @Published var captureFlash = false
-    private var captureFlashTask: Task<Void, Never>?
+    var sessionCaptures: [SessionCapture] = []
+    var isWritingToDisk = false
+    var captureFlash = false
+    @ObservationIgnored private var captureFlashTask: Task<Void, Never>?
 
     // MARK: - Constants
 

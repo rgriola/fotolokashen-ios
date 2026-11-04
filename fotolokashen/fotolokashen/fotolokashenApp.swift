@@ -5,10 +5,10 @@
 //  Created by rgriola on 1/15/26.
 //
 
-import SwiftUI
-import SwiftData
 import GoogleMaps
 import Kingfisher
+import SwiftData
+import SwiftUI
 
 // MARK: - Launch Timer (DEBUG only)
 #if DEBUG
@@ -24,8 +24,8 @@ enum LaunchTimer {
 @main
 struct FotolokashenApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @StateObject private var authService = AuthService()
-    @StateObject private var networkMonitor = NetworkMonitor.shared
+    @State private var authService = AuthService()
+    private let networkMonitor = NetworkMonitor.shared
     
     init() {
         #if DEBUG
@@ -62,8 +62,8 @@ struct FotolokashenApp: App {
     var body: some Scene {
         WindowGroup {
             AppRootView()
-                .environmentObject(authService)
-                .environmentObject(networkMonitor)
+                .environment(authService)
+                .environment(networkMonitor)
                 .onAppear {
                     #if DEBUG
                     LaunchTimer.mark("AppRootView.onAppear — UI VISIBLE")
@@ -76,11 +76,10 @@ struct FotolokashenApp: App {
 // MARK: - App Root View (iOS 17+ with SwiftData)
 
 struct AppRootView: View {
-    @EnvironmentObject var authService: AuthService
-    @EnvironmentObject var networkMonitor: NetworkMonitor
+    @Environment(AuthService.self) private var authService
     @Environment(\.scenePhase) private var scenePhase
 
-    @ObservedObject private var deepLinkManager = DeepLinkManager.shared
+    private let deepLinkManager = DeepLinkManager.shared
     @State private var hasAppearedOnce = false
 
     var body: some View {
@@ -93,7 +92,7 @@ struct AppRootView: View {
             } else {
                 NavigationStack {
                     LoginView()
-                        .environmentObject(deepLinkManager)
+                        .environment(deepLinkManager)
                 }
             }
         }
@@ -133,23 +132,21 @@ struct AppRootView: View {
 // MARK: - Authenticated Root View (heavy services init deferred here)
 
 struct AuthenticatedRootView: View {
-    @EnvironmentObject var authService: AuthService
-    @EnvironmentObject var networkMonitor: NetworkMonitor
+    @Environment(NetworkMonitor.self) private var networkMonitor
 
-    @ObservedObject private var deepLinkManager = DeepLinkManager.shared
+    private let deepLinkManager = DeepLinkManager.shared
     private let syncService = SyncService.shared
-    @ObservedObject private var dataManager = DataManager.shared
+    private let dataManager = DataManager.shared
 
     var body: some View {
+        let storeRecoveryMessage = dataManager.storeRecoveryMessage
         LoggedInView()
-            .environmentObject(syncService)
-            .environmentObject(dataManager)
-            .environmentObject(deepLinkManager)
+            .environment(deepLinkManager)
             .modelContainer(dataManager.modelContainer)
             .alert(
                 "Local data recovery",
                 isPresented: Binding(
-                    get: { dataManager.storeRecoveryMessage != nil },
+                    get: { storeRecoveryMessage != nil },
                     set: { isPresented in
                         if !isPresented {
                             dataManager.dismissStoreRecoveryNotice()
@@ -161,7 +158,7 @@ struct AuthenticatedRootView: View {
                     dataManager.dismissStoreRecoveryNotice()
                 }
             } message: {
-                Text(dataManager.storeRecoveryMessage ?? "")
+                Text(storeRecoveryMessage ?? "")
             }
             .task(priority: .utility) {
                 guard networkMonitor.isConnected else { return }

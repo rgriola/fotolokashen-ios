@@ -4,7 +4,18 @@ All notable changes to Fotolokashen iOS are documented in this file.
 
 ## [Unreleased] - iOS 27 readiness
 
-Updated November 2, 2026.
+Updated November 3, 2026.
+
+### SwiftLint remediation
+
+- Addressed all five error-level findings without suppressing lint rules; split EXIF extraction into focused helpers, moved authentication methods into a same-file extension, and renamed unused color constants.
+- Applied safe mechanical corrections and added EXIF and location-request encoding regression tests. SwiftLint now reports 159 warnings and no errors; Debug/Release builds and the full signed suite (173 unit, 7 UI) pass.
+
+### Observable migration — P8 cleanup
+
+- Migrated `SyncService` to Swift Observation and removed unused Combine imports.
+- Added an error-level SwiftLint rule preventing regressions to Combine-backed observable wrappers.
+- Updated the services guide and closed the H-4/H-5 migration follow-ups.
 
 ### Strict concurrency cleanup — Phase 3
 

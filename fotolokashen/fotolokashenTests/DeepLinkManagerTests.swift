@@ -1,3 +1,4 @@
+import Observation
 import XCTest
 @testable import fotolokashen
 
@@ -12,6 +13,94 @@ final class DeepLinkManagerTests: XCTestCase {
         sut.autoLoginToken = nil
         sut.emailVerified = false
         sut.passwordResetComplete = false
+    }
+
+    override func tearDown() async throws {
+        sut.clearPendingNavigation()
+        sut.autoLoginToken = nil
+        sut.emailVerified = false
+        sut.passwordResetComplete = false
+        try await super.tearDown()
+    }
+
+    func testLocationNavigationIsObservable() {
+        let changed = expectation(description: "Pending deep-link navigation is observed")
+        withObservationTracking {
+            _ = sut.pendingLocationId
+        } onChange: {
+            changed.fulfill()
+        }
+
+        XCTAssertTrue(sut.handleURL(URL(string: "fotolokashen://location/123")!))
+
+        wait(for: [changed], timeout: 0)
+        XCTAssertEqual(sut.pendingLocationId, 123)
+    }
+
+    func testClearingNavigationAndLoadingAndErrorIsObservable() {
+        sut.navigateToLocation(id: 123)
+        sut.isLoadingDeepLink = true
+        sut.deepLinkError = "Location not found"
+        let navigationChanged = expectation(description: "Cleared navigation is observed")
+        let loadingChanged = expectation(description: "Cleared loading state is observed")
+        let errorChanged = expectation(description: "Cleared error is observed")
+        withObservationTracking {
+            _ = sut.pendingLocationId
+        } onChange: {
+            navigationChanged.fulfill()
+        }
+        withObservationTracking {
+            _ = sut.isLoadingDeepLink
+        } onChange: {
+            loadingChanged.fulfill()
+        }
+        withObservationTracking {
+            _ = sut.deepLinkError
+        } onChange: {
+            errorChanged.fulfill()
+        }
+
+        sut.clearPendingNavigation()
+
+        wait(for: [navigationChanged, loadingChanged, errorChanged], timeout: 0)
+        XCTAssertNil(sut.pendingLocationId)
+        XCTAssertFalse(sut.isLoadingDeepLink)
+        XCTAssertNil(sut.deepLinkError)
+    }
+
+    func testEmailVerificationAndAutoLoginTokenAreObservable() {
+        let verifiedChanged = expectation(description: "Email verification is observed")
+        let tokenChanged = expectation(description: "Auto-login token is observed")
+        withObservationTracking {
+            _ = sut.emailVerified
+        } onChange: {
+            verifiedChanged.fulfill()
+        }
+        withObservationTracking {
+            _ = sut.autoLoginToken
+        } onChange: {
+            tokenChanged.fulfill()
+        }
+
+        XCTAssertTrue(sut.handleURL(URL(string: "fotolokashen://email-verified?token=test-token")!))
+
+        wait(for: [verifiedChanged, tokenChanged], timeout: 0)
+        XCTAssertTrue(sut.emailVerified)
+        XCTAssertEqual(sut.autoLoginToken, "test-token")
+    }
+
+    func testPasswordResetCompletionIsObservable() {
+        let changed = expectation(description: "Password-reset completion is observed")
+        withObservationTracking {
+            _ = sut.passwordResetComplete
+        } onChange: {
+            changed.fulfill()
+        }
+
+        XCTAssertTrue(sut.handleURL(URL(string: "fotolokashen://password-reset-complete")!))
+
+        wait(for: [changed], timeout: 0)
+        XCTAssertTrue(sut.passwordResetComplete)
     }
 
     func testLocationCustomURLNavigatesToLocation() {

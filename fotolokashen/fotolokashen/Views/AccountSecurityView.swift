@@ -4,7 +4,7 @@ import SwiftUI
 /// Replaces the old SettingsView as the security-focused subview.
 /// Profile → Account & Security
 struct AccountSecurityView: View {
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
 
     @State private var showingDeleteAccountConfirmation = false
     @State private var isDeletingAccount = false
@@ -91,14 +91,14 @@ struct AccountSecurityView: View {
 
             NavigationLink {
                 ChangeEmailView()
-                    .environmentObject(authService)
+                    .environment(authService)
             } label: {
                 Label("Change Email", systemImage: AppIcons.envelopeFill)
             }
 
             NavigationLink {
                 ChangeUsernameView()
-                    .environmentObject(authService)
+                    .environment(authService)
             } label: {
                 Label("Change Username", systemImage: AppIcons.at)
             }
@@ -110,7 +110,6 @@ struct AccountSecurityView: View {
             }
         }
     }
-
 
     private var dangerZoneSection: some View {
         Section {
@@ -327,7 +326,7 @@ private nonisolated struct ChangePasswordRequest: Codable {
 
 private struct ChangeUsernameView: View {
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
 
     @State private var newUsername = ""
     @State private var currentPassword = ""
@@ -486,7 +485,7 @@ private nonisolated struct ChangeUsernameResponse: Codable {
 
 private struct ChangeEmailView: View {
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var authService: AuthService
+    @Environment(AuthService.self) private var authService
 
     @State private var newEmail = ""
     @State private var currentPassword = ""
@@ -621,10 +620,7 @@ private nonisolated struct ChangeEmailRequest: Codable {
     let currentPassword: String
 }
 
-
-
 // MARK: - Profile Detail Row
-
 
 private struct ProfileDetailRow: View {
     let label: String
@@ -644,6 +640,6 @@ private struct ProfileDetailRow: View {
 #Preview {
     NavigationStack {
         AccountSecurityView()
-            .environmentObject(AuthService())
+            .environment(AuthService())
     }
 }

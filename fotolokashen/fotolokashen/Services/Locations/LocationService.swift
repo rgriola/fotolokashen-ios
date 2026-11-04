@@ -1,20 +1,21 @@
-import Foundation
-import OSLog
 import CoreLocation
+import Foundation
+import Observation
+import OSLog
 import UIKit
-import Combine
 
 /// Service for managing locations (CRUD operations)
+@Observable
 @MainActor
-class LocationService: ObservableObject {
+final class LocationService {
     
     // MARK: - Singleton
     
     static let shared = LocationService()
     
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
     
-    @Published var isLoading = false
+    var isLoading = false
     
     // MARK: - Properties
     
@@ -60,7 +61,7 @@ class LocationService: ObservableObject {
             #endif
 
             // Convert production date to ISO string if provided
-            var productionDateString: String? = nil
+            var productionDateString: String?
             if let date = productionDate {
                 let formatter = ISO8601DateFormatter()
                 formatter.formatOptions = [.withFullDate]  // YYYY-MM-DD only

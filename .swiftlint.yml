@@ -62,6 +62,11 @@ identifier_name:
 
 # Custom rules
 custom_rules:
+  observable_migration:
+    name: "Use Swift Observation"
+    regex: '\bObservableObject\b|@(Published|StateObject|ObservedObject|EnvironmentObject)\b'
+    message: "Use Swift Observation instead of Combine-backed observable wrappers."
+    severity: error
   # Prefer print statements with tags
   debug_print:
     name: "Debug Print"

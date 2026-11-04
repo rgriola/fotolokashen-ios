@@ -1,6 +1,6 @@
+import CoreLocation
 import Foundation
 import UIKit
-import CoreLocation
 
 /// Phase 1b — Upload queue for the new photo pipeline.
 ///

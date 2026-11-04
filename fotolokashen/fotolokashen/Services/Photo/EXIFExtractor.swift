@@ -1,7 +1,7 @@
-import Foundation
-import UIKit
-import ImageIO
 import CoreLocation
+import Foundation
+import ImageIO
+import UIKit
 
 /// Extracts EXIF metadata from image data using ImageIO (CGImageSource).
 /// Reusable across apps — no fotolokashen-specific dependencies.
@@ -21,84 +21,13 @@ nonisolated struct EXIFExtractor {
 
         var metadata = EXIFMetadata()
 
-        // GPS
         if let gps = properties[kCGImagePropertyGPSDictionary as String] as? [String: Any] {
-            metadata.latitude = gpsCoordinate(
-                from: gps,
-                valueKey: kCGImagePropertyGPSLatitude as String,
-                refKey: kCGImagePropertyGPSLatitudeRef as String,
-                negativeRef: "S"
-            )
-            metadata.longitude = gpsCoordinate(
-                from: gps,
-                valueKey: kCGImagePropertyGPSLongitude as String,
-                refKey: kCGImagePropertyGPSLongitudeRef as String,
-                negativeRef: "W"
-            )
-            metadata.altitude = gps[kCGImagePropertyGPSAltitude as String] as? Double
+            extractGPS(from: gps, into: &metadata)
         }
 
-        // EXIF dictionary
         if let exif = properties[kCGImagePropertyExifDictionary as String] as? [String: Any] {
-            // ISO
-            if let isoArray = exif[kCGImagePropertyExifISOSpeedRatings as String] as? [Int],
-               let iso = isoArray.first {
-                metadata.iso = iso
-            }
-
-            // Focal length
-            if let fl = exif[kCGImagePropertyExifFocalLength as String] as? Double {
-                metadata.focalLength = String(format: "%.1fmm", fl)
-            }
-
-            // Aperture (FNumber)
-            if let fNum = exif[kCGImagePropertyExifFNumber as String] as? Double {
-                metadata.aperture = String(format: "f/%.1f", fNum)
-            }
-
-            // Shutter speed (ExposureTime)
-            if let exposure = exif[kCGImagePropertyExifExposureTime as String] as? Double {
-                if exposure >= 1.0 {
-                    metadata.shutterSpeed = String(format: "%.1fs", exposure)
-                } else {
-                    let denominator = Int(round(1.0 / exposure))
-                    metadata.shutterSpeed = "1/\(denominator)s"
-                }
-            }
-
-            // Exposure mode
-            if let mode = exif[kCGImagePropertyExifExposureMode as String] as? Int {
-                switch mode {
-                case 0: metadata.exposureMode = "Auto"
-                case 1: metadata.exposureMode = "Manual"
-                case 2: metadata.exposureMode = "Auto Bracket"
-                default: metadata.exposureMode = "Unknown"
-                }
-            }
-
-            // White balance
-            if let wb = exif[kCGImagePropertyExifWhiteBalance as String] as? Int {
-                metadata.whiteBalance = wb == 0 ? "Auto" : "Manual"
-            }
-
-            // Flash
-            if let flash = exif[kCGImagePropertyExifFlash as String] as? Int {
-                metadata.flash = (flash & 0x1) != 0 ? "Fired" : "No Flash"
-            }
-
-            // Color space
-            if let cs = exif[kCGImagePropertyExifColorSpace as String] as? Int {
-                switch cs {
-                case 1: metadata.colorSpace = "sRGB"
-                case 0xFFFF: metadata.colorSpace = "Uncalibrated"
-                default: metadata.colorSpace = "Unknown"
-                }
-            }
-
-            // Date taken
-            if let dateStr = exif[kCGImagePropertyExifDateTimeOriginal as String] as? String {
-                metadata.dateTaken = parseExifDate(dateStr)
-            }
+            extractExposure(from: exif, into: &metadata)
+            extractCameraSettings(from: exif, into: &metadata)
         }
 
         // TIFF dictionary (camera make/model)
@@ -137,6 +66,74 @@ nonisolated struct EXIFExtractor {
     }
 
     // MARK: - Private Helpers
+
+    private static func extractGPS(from gps: [String: Any], into metadata: inout EXIFMetadata) {
+        metadata.latitude = gpsCoordinate(
+            from: gps,
+            valueKey: kCGImagePropertyGPSLatitude as String,
+            refKey: kCGImagePropertyGPSLatitudeRef as String,
+            negativeRef: "S"
+        )
+        metadata.longitude = gpsCoordinate(
+            from: gps,
+            valueKey: kCGImagePropertyGPSLongitude as String,
+            refKey: kCGImagePropertyGPSLongitudeRef as String,
+            negativeRef: "W"
+        )
+        metadata.altitude = gps[kCGImagePropertyGPSAltitude as String] as? Double
+    }
+
+    private static func extractExposure(from exif: [String: Any], into metadata: inout EXIFMetadata) {
+        if let isoArray = exif[kCGImagePropertyExifISOSpeedRatings as String] as? [Int],
+           let iso = isoArray.first {
+            metadata.iso = iso
+        }
+        if let focalLength = exif[kCGImagePropertyExifFocalLength as String] as? Double {
+            metadata.focalLength = String(format: "%.1fmm", focalLength)
+        }
+        if let aperture = exif[kCGImagePropertyExifFNumber as String] as? Double {
+            metadata.aperture = String(format: "f/%.1f", aperture)
+        }
+        if let exposure = exif[kCGImagePropertyExifExposureTime as String] as? Double {
+            if exposure >= 1.0 {
+                metadata.shutterSpeed = String(format: "%.1fs", exposure)
+            } else {
+                let denominator = Int(round(1.0 / exposure))
+                metadata.shutterSpeed = "1/\(denominator)s"
+            }
+        }
+    }
+
+    private static func extractCameraSettings(from exif: [String: Any], into metadata: inout EXIFMetadata) {
+        if let mode = exif[kCGImagePropertyExifExposureMode as String] as? Int {
+            metadata.exposureMode = exposureMode(for: mode)
+        }
+        if let whiteBalance = exif[kCGImagePropertyExifWhiteBalance as String] as? Int {
+            metadata.whiteBalance = whiteBalance == 0 ? "Auto" : "Manual"
+        }
+        if let flash = exif[kCGImagePropertyExifFlash as String] as? Int {
+            metadata.flash = (flash & 0x1) != 0 ? "Fired" : "No Flash"
+        }
+        if let colorSpace = exif[kCGImagePropertyExifColorSpace as String] as? Int {
+            switch colorSpace {
+            case 1: metadata.colorSpace = "sRGB"
+            case 0xFFFF: metadata.colorSpace = "Uncalibrated"
+            default: metadata.colorSpace = "Unknown"
+            }
+        }
+        if let date = exif[kCGImagePropertyExifDateTimeOriginal as String] as? String {
+            metadata.dateTaken = parseExifDate(date)
+        }
+    }
+
+    private static func exposureMode(for mode: Int) -> String {
+        switch mode {
+        case 0: return "Auto"
+        case 1: return "Manual"
+        case 2: return "Auto Bracket"
+        default: return "Unknown"
+        }
+    }
 
     /// Parse GPS coordinate from EXIF GPS dictionary, applying N/S or E/W reference.
     private static func gpsCoordinate(

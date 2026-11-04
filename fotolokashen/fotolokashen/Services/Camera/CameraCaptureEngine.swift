@@ -1,9 +1,9 @@
-import Foundation
 import AVFoundation
+import Foundation
 
 /// Owns every mutable capture-session object. All access to its AVFoundation
 /// state is serialized on `sessionQueue`; callbacks carry only Sendable values
-/// back to the main-actor `CameraService`, which holds only published UI state.
+/// back to the main-actor `CameraService`, which holds only observable UI state.
 ///
 /// `@unchecked Sendable` is limited to this boundary: mutable state is only
 /// read or written on `sessionQueue` (including asynchronous device callbacks,
@@ -273,7 +273,7 @@ nonisolated final class CameraCaptureEngine: NSObject, AVCapturePhotoCaptureDele
     }
 
     func capturePhoto(
-        flashMode: CameraFlashMode,
+        request: CameraPhotoRequest,
         completion: @escaping @Sendable (Data?, String?) -> Void
     ) {
         sessionQueue.async { [self] in
@@ -282,9 +282,18 @@ nonisolated final class CameraCaptureEngine: NSObject, AVCapturePhotoCaptureDele
                 completion(nil, "Camera session not running")
                 return
             }
+            guard request.deviceGeneration == generation else {
+                completion(nil, "Camera changed before capture. Please try again.")
+                return
+            }
+            // Set the photo connection, not the independently rotated preview connection.
+            if let connection = capturePhotoOutput.connection(with: .video),
+               connection.isVideoRotationAngleSupported(request.rotationAngle) {
+                connection.videoRotationAngle = request.rotationAngle
+            }
             let settings = AVCapturePhotoSettings()
             settings.flashMode = videoDeviceInput?.device.hasFlash == true
-                ? flashMode.avCaptureMode
+                ? request.flashMode.avCaptureMode
                 : .off
             pendingPhotoCompletions[settings.uniqueID] = completion
             capturePhotoOutput.capturePhoto(with: settings, delegate: self)
@@ -314,6 +323,8 @@ nonisolated final class CameraCaptureEngine: NSObject, AVCapturePhotoCaptureDele
     ) -> CameraDeviceState {
         dispatchPrecondition(condition: .onQueue(sessionQueue))
         return CameraDeviceState(
+            deviceID: device.uniqueID,
+            generation: generation,
             isFrontCamera: device.position == .front,
             currentZoom: zoom,
             minZoom: 1 / displayZoomMultiplier,

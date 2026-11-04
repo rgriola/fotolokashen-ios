@@ -1,5 +1,5 @@
-import SwiftUI
 import Kingfisher
+import SwiftUI
 
 /// Individual location card component matching the web app's photo-prominent design.
 /// Vertical layout: photo carousel on top, name/address/badge below, three-dot menu.
@@ -153,7 +153,7 @@ struct LocationRow: View {
                                 .foregroundStyle(Color.secondary)
                         }
                         .fade(duration: 0.2)
-                        .aspectRatio(contentMode: .fill)
+                        .scaledToFill()
                         .frame(maxWidth: .infinity, maxHeight: 180)
                         .clipped()
                         .allowsHitTesting(false)
@@ -174,7 +174,7 @@ struct LocationRow: View {
                         .foregroundStyle(Color.secondary)
                 }
                 .fade(duration: 0.2)
-                .aspectRatio(contentMode: .fill)
+                .scaledToFill()
         } else {
             // No photos — static map fallback
             staticMapImage
@@ -195,7 +195,7 @@ struct LocationRow: View {
                 }
                 .onFailureView { mapPlaceholder }
                 .fade(duration: 0.2)
-                .aspectRatio(contentMode: .fill)
+                .scaledToFill()
         } else {
             mapPlaceholder
         }
@@ -220,7 +220,6 @@ struct LocationRow: View {
                     .foregroundStyle(Color.secondary)
             }
     }
-
 
     // MARK: - Helpers
 

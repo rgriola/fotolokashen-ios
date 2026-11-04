@@ -1,5 +1,5 @@
-import SwiftUI
 import MapKit
+import SwiftUI
 
 /// Compact map showing where each photo was taken relative to the location pin.
 /// Displayed in LocationDetailView when ≥2 photos have distinct GPS coordinates.

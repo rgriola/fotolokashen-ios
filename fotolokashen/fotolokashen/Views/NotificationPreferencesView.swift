@@ -3,8 +3,8 @@ import SwiftUI
 /// Notification Preferences — email and push notification toggles.
 /// Profile → Notification Preferences
 struct NotificationPreferencesView: View {
-    @EnvironmentObject var authService: AuthService
-    @ObservedObject private var userService = UserService.shared
+    @Environment(AuthService.self) private var authService
+    private let userService = UserService.shared
 
     @State private var emailNotifications = true
     @State private var hasChanges = false
@@ -101,6 +101,6 @@ struct NotificationPreferencesView: View {
 #Preview {
     NavigationStack {
         NotificationPreferencesView()
-            .environmentObject(AuthService())
+            .environment(AuthService())
     }
 }

@@ -1,6 +1,6 @@
-import SwiftUI
 import AVFoundation
 import CoreLocation
+import SwiftUI
 
 /// Camera view with native-style zoom dial, tap-to-focus, exposure control, GPS badge,
 /// and multi-photo session support with disk-backed storage.
@@ -13,9 +13,9 @@ struct CameraView: View {
     /// Maximum photos per session (forwards to VM for backward compat).
     static let maxSessionPhotos = CameraSessionViewModel.maxSessionPhotos
 
-    @StateObject private var cameraService = CameraService()
-    @StateObject private var locationManager = LocationManager()
-    @StateObject private var session = CameraSessionViewModel()
+    @State private var cameraService = CameraService()
+    @State private var locationManager = LocationManager()
+    @State private var session = CameraSessionViewModel()
     @Environment(\.dismiss) var dismiss
 
     @State private var showingError = false
@@ -23,7 +23,7 @@ struct CameraView: View {
     @State private var pinchBaseZoom: CGFloat = 1.0
 
     // Focus indicator
-    @State private var focusPoint: CGPoint? = nil
+    @State private var focusPoint: CGPoint?
     @State private var showFocusSquare = false
     @State private var focusHUDTask: Task<Void, Never>?
 
@@ -408,21 +408,23 @@ struct CameraView: View {
     private func setupCamera() async {
         await cameraService.requestPermission()
 
+        guard !Task.isCancelled else { return }
         guard cameraService.isAuthorized else { return }
 
         do {
             try await cameraService.setupSession()
+            guard !Task.isCancelled else { return }
             cameraService.startSession()
         } catch {
+            guard !Task.isCancelled else { return }
             errorMessage = error.localizedDescription
             showingError = true
         }
 
+        guard !Task.isCancelled else { return }
+        locationManager.startTracking()
         if locationManager.authorizationStatus == .notDetermined {
             locationManager.requestPermission()
-        } else if locationManager.authorizationStatus == .authorizedWhenInUse ||
-                    locationManager.authorizationStatus == .authorizedAlways {
-            locationManager.startTracking()
         }
     }
 

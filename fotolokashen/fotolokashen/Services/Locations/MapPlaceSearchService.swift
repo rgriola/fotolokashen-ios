@@ -1,25 +1,36 @@
 import MapKit
-import Combine
+import Observation
 
 /// Wraps MKLocalSearchCompleter/MKLocalSearch to search Apple's map data (places,
 /// addresses, POIs) for the Map tab search bar. Distinct from LocationStore's search,
 /// which only searches the user's own saved Location records.
+@Observable
 @MainActor
-final class MapPlaceSearchService: NSObject, ObservableObject {
-    @Published private(set) var suggestions: [MKLocalSearchCompletion] = []
-    @Published var queryFragment: String = "" {
-        didSet { completer.queryFragment = queryFragment }
+final class MapPlaceSearchService: NSObject {
+    private(set) var suggestions: [MKLocalSearchCompletion] = []
+    var queryFragment: String = "" {
+        didSet {
+            guard completer != nil || !queryFragment.isEmpty else { return }
+            completerForUse().queryFragment = queryFragment
+        }
     }
-    @Published private(set) var isSearching = false
-    @Published private(set) var errorMessage: String?
+    private(set) var isSearching = false
+    private(set) var errorMessage: String?
 
-    private let completer = MKLocalSearchCompleter()
-    private var activeSearch: MKLocalSearch?
+    /// Created on the first non-empty query so the Map tab doesn't start a completer it never uses.
+    @ObservationIgnored private(set) var completer: MKLocalSearchCompleter?
+    @ObservationIgnored private var activeSearch: MKLocalSearch?
 
-    override init() {
-        super.init()
+    private func completerForUse() -> MKLocalSearchCompleter {
+        if let completer {
+            return completer
+        }
+
+        let completer = MKLocalSearchCompleter()
         completer.delegate = self
         completer.resultTypes = [.address, .pointOfInterest]
+        self.completer = completer
+        return completer
     }
 
     func clear() {

@@ -1,22 +1,23 @@
-import Foundation
-import SwiftUI
 import CoreLocation
-import Combine
+import Foundation
+import Observation
+import UIKit
 
 /// Manages synchronization between local cache and backend API
+@Observable
 @MainActor
-class SyncService: ObservableObject {
+final class SyncService {
     
     // MARK: - Singleton
     
     static let shared = SyncService()
     
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
     
-    @Published var isSyncing: Bool = false
-    @Published var progress: Double = 0.0
-    @Published var lastSyncDate: Date?
-    @Published private(set) var credentialAccessError: String?
+    var isSyncing = false
+    var progress = 0.0
+    var lastSyncDate: Date?
+    private(set) var credentialAccessError: String?
     
     // MARK: - Properties
     
@@ -35,9 +36,6 @@ class SyncService: ObservableObject {
     
     // MARK: - Network Observer
     
-    // REVIEW: Dead code — Notification.Name("NetworkConnected") is never posted anywhere in the codebase.
-    // Either wire up NetworkMonitor to post this notification, or remove this observer and use
-    // NetworkMonitor.$isConnected.sink {} instead for reactive sync-on-reconnect.
     private func setupNetworkObserver() {
         // Sync when network becomes available
         Task {

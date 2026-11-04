@@ -1,5 +1,5 @@
-import SwiftUI
 import Kingfisher
+import SwiftUI
 
 /// People search and discovery view with tabs for Followers, Following, and Discover
 ///
@@ -9,8 +9,8 @@ import Kingfisher
 //    extract to separate files to reduce this file from ~520 to ~200 lines.
 // 3. No VoiceOver announcements when search results load or are empty.
 struct PeopleSearchView: View {
-    @EnvironmentObject var authService: AuthService
-    @ObservedObject private var followService = FollowService.shared
+    @Environment(AuthService.self) private var authService
+    private let followService = FollowService.shared
     @State private var selectedTab = 0
 
     var body: some View {
@@ -47,7 +47,7 @@ struct PeopleSearchView: View {
 // MARK: - Discover Tab
 
 private struct DiscoverTab: View {
-    @ObservedObject private var followService = FollowService.shared
+    private let followService = FollowService.shared
     @State private var searchText = ""
     @State private var searchResults: [SearchUser] = []
     @State private var isSearching = false
@@ -242,8 +242,8 @@ private struct SearchUserRow: View {
 // MARK: - My Following Tab
 
 private struct MyFollowingTab: View {
-    @EnvironmentObject var authService: AuthService
-    @ObservedObject private var followService = FollowService.shared
+    @Environment(AuthService.self) private var authService
+    private let followService = FollowService.shared
     @State private var users: [FollowListUser] = []
     @State private var isLoading = true
     @State private var currentPage = 1
@@ -341,8 +341,8 @@ private struct MyFollowingTab: View {
 // MARK: - My Followers Tab
 
 private struct MyFollowersTab: View {
-    @EnvironmentObject var authService: AuthService
-    @ObservedObject private var followService = FollowService.shared
+    @Environment(AuthService.self) private var authService
+    private let followService = FollowService.shared
     @State private var users: [FollowListUser] = []
     @State private var isLoading = true
     @State private var currentPage = 1
