@@ -14,50 +14,50 @@ struct LocationTypeColors {
         switch normalizedType {
         // Standard Location Types
         case "LIVE ANCHOR", "LIVE_ANCHOR":
-            return UIColor(hex: "#573014")  //- Dark Brown
+            return UIColor(hex: "#573014")  // - Dark Brown
         case "REPORTER LIVE", "REPORTER_LIVE":
             return UIColor(hex: "#7F461D") // Medium Brown
         case "BROLL":
-            return UIColor(hex: "#A85D27")  //- Brown
+            return UIColor(hex: "#A85D27")  // - Brown
         case "STORY":
            // return UIColor(red: 0.937, green: 0.267, blue: 0.267, alpha: 1.0) // 
-            return UIColor(hex: "#D17330")  //- Red
+            return UIColor(hex: "#D17330")  // - Red
         case "INTERVIEW":
            // return UIColor(red: 0.545, green: 0.361, blue: 0.965, alpha: 1.0) // 
-           return UIColor(hex: "#F58638")  //- Orange
+           return UIColor(hex: "#F58638")  // - Orange
         case "EVENT":
-            return UIColor(hex: "#F5DC38")  //- Lime
+            return UIColor(hex: "#F5DC38")  // - Lime
         case "STAKEOUT":
-            return UIColor(hex: "#4C5C54")  //- Gray
+            return UIColor(hex: "#4C5C54")  // - Gray
         case "DRONE":
-            return UIColor(hex: "#5A8F75")  //- Cyan
+            return UIColor(hex: "#5A8F75")  // - Cyan
         case "SCENE":
-            return UIColor(hex: "#53C28C")  //- Green
+            return UIColor(hex: "#53C28C")  // - Green
         case "BATHROOM":
-            return UIColor(hex: "#38F59A")  //- Sky Blue
+            return UIColor(hex: "#38F59A")  // - Sky Blue
         case "OTHER":
-            return UIColor(hex: "#CD38F5")  //- Slate
+            return UIColor(hex: "#CD38F5")  // - Slate
             
         // Admin-Only Location Types
         case "HQ":
-            return UIColor(hex: "#AA53C2")  //- Dark Blue
+            return UIColor(hex: "#AA53C2")  // - Dark Blue
         case "BUREAU":
-            return UIColor(hex: "#835A8F")  //- Violet
+            return UIColor(hex: "#835A8F")  // - Violet
         case "REMOTE STAFF", "REMOTE_STAFF":
-            return UIColor(hex: "#584C5C")  //- Pink
+            return UIColor(hex: "#584C5C")  // - Pink
         case "STORAGE":
-            return UIColor(hex: "#C2B353")  //- Stone
+            return UIColor(hex: "#C2B353")  // - Stone
         // Default fallback
         default:
-            return UIColor(hex: "#44F538")  //- Slate (OTHER)
+            return UIColor(hex: "#44F538")  // - Slate (OTHER)
         }
     }
 
-    static let PUBLIC_LOCATION_COLOR = Color(hex: "#173057") 
+    static let publicLocationColor = Color(hex: "#173057")
     
-    static let HOME_MARKER_COLOR = Color(hex: "#2D5DA8") //- Slate (OTHER)
+    static let homeMarkerColor = Color(hex: "#2D5DA8") // - Slate (OTHER)
 
-    static let USER_LOCATION_COLOR  = Color(hex: "#4285F4") //- Pink
+    static let userLocationColor = Color(hex: "#4285F4") // - Pink
     
     /// Get the SwiftUI Color for a location type (for use in SwiftUI views)
     static func color(for type: String) -> Color {

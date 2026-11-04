@@ -1,6 +1,6 @@
-import SwiftUI
 import GoogleMaps
 import OSLog
+import SwiftUI
 
 enum Acknowledgement: String, CaseIterable, Identifiable {
     case googleMapsNotices, googleMapsPackage, googleMapsUtils, kingfisher

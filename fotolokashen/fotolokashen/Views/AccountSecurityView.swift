@@ -111,7 +111,6 @@ struct AccountSecurityView: View {
         }
     }
 
-
     private var dangerZoneSection: some View {
         Section {
             Button(role: .destructive) {
@@ -621,10 +620,7 @@ private nonisolated struct ChangeEmailRequest: Codable {
     let currentPassword: String
 }
 
-
-
 // MARK: - Profile Detail Row
-
 
 private struct ProfileDetailRow: View {
     let label: String

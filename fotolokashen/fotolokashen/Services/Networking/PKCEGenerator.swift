@@ -1,5 +1,5 @@
-import Foundation
 import CryptoKit
+import Foundation
 
 /// PKCE (Proof Key for Code Exchange) Generator
 /// Implements RFC 7636 for OAuth2 authorization code flow

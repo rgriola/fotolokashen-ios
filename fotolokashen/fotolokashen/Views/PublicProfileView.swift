@@ -1,5 +1,5 @@
-import SwiftUI
 import Kingfisher
+import SwiftUI
 
 /// Public profile view for viewing another user's profile
 /// Shows banner, avatar, bio, follow button, follower/following counts, and public locations

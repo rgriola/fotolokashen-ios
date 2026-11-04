@@ -1,5 +1,5 @@
-import SwiftUI
 import Kingfisher
+import SwiftUI
 import UIKit
 
 // MARK: - Photo Gallery Section

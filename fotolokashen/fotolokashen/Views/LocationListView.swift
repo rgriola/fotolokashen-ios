@@ -1,5 +1,5 @@
-import SwiftUI
 import CoreLocation
+import SwiftUI
 import UIKit
 
 /// Main view for displaying a list of saved locations

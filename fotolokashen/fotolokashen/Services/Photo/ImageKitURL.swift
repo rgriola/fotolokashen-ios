@@ -16,13 +16,13 @@ nonisolated enum ImageKitURL {
     static let baseURL = "https://ik.imagekit.io/rgriola"
 
     private static let transforms: [ImageVariant: String] = [
-        .thumbnail:   "w-120,h-120,c-at_max,fo-auto,q-80",
-        .card:        "w-400,h-300,c-at_max,fo-auto,q-80",
-        .gallery:     "w-800,h-600,c-at_max,fo-auto,q-85",
-        .full:        "w-1600,fo-auto,q-90",
-        .avatar:      "w-128,h-128,c-at_max,fo-auto,q-80",
+        .thumbnail: "w-120,h-120,c-at_max,fo-auto,q-80",
+        .card: "w-400,h-300,c-at_max,fo-auto,q-80",
+        .gallery: "w-800,h-600,c-at_max,fo-auto,q-85",
+        .full: "w-1600,fo-auto,q-90",
+        .avatar: "w-128,h-128,c-at_max,fo-auto,q-80",
         .avatarSmall: "w-48,h-48,c-at_max,fo-auto,q-80",
-        .banner:      "w-800,h-300,c-at_max,fo-auto,q-80",
+        .banner: "w-800,h-300,c-at_max,fo-auto,q-80"
     ]
 
     /// Build an optimized ImageKit URL for the given file path and variant.

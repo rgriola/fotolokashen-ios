@@ -281,7 +281,7 @@ final class AuthService: TokenRefreshing {
         components.path = "/register"
         components.queryItems = [
             URLQueryItem(name: "source", value: "ios"),
-            URLQueryItem(name: "client_id", value: config.oauthClientId),
+            URLQueryItem(name: "client_id", value: config.oauthClientId)
         ]
         
         guard let registerURL = components.url else {
@@ -313,7 +313,7 @@ final class AuthService: TokenRefreshing {
         var components = URLComponents(url: config.backendURL, resolvingAgainstBaseURL: false)!
         components.path = "/forgot-password"
         components.queryItems = [
-            URLQueryItem(name: "source", value: "ios"),
+            URLQueryItem(name: "source", value: "ios")
         ]
 
         guard let forgotURL = components.url else {
@@ -579,7 +579,9 @@ final class AuthService: TokenRefreshing {
     /// fact signed in. Remembering the last completed code makes the late
     /// duplicate a no-op.
     @ObservationIgnored private var lastCompletedCodeExchange: String?
+}
 
+extension AuthService {
     /// Exchange authorization code for access token.
     /// Safe to call multiple times with the same `code`: duplicate calls
     /// await the original in-flight request (or return immediately if it has

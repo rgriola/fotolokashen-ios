@@ -1,5 +1,5 @@
-import SwiftUI
 import CoreLocation
+import SwiftUI
 
 // MARK: - Notification Names
 extension Notification.Name {

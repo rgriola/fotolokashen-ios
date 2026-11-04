@@ -61,7 +61,7 @@ final class LocationService {
             #endif
 
             // Convert production date to ISO string if provided
-            var productionDateString: String? = nil
+            var productionDateString: String?
             if let date = productionDate {
                 let formatter = ISO8601DateFormatter()
                 formatter.formatOptions = [.withFullDate]  // YYYY-MM-DD only

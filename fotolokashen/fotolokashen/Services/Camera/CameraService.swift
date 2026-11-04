@@ -258,7 +258,6 @@ final class CameraService: NSObject {
         }
     }
 
-    
     // MARK: - Photo Capture
     
     /// Capture photo

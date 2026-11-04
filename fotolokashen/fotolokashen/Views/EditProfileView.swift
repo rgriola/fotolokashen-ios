@@ -1,5 +1,5 @@
-import SwiftUI
 import PhotosUI
+import SwiftUI
 import UIKit
 
 /// Edit Profile — all form fields for the user's personal info, avatar, and banner.
@@ -16,7 +16,7 @@ struct EditProfileView: View {
     @State private var city = ""
     @State private var state = ""
     @State private var country = ""
-    @State private var dateOfBirth: Date? = nil
+    @State private var dateOfBirth: Date?
     @State private var showDatePicker = false
 
     // Image picker state
@@ -267,7 +267,6 @@ struct EditProfileView: View {
             }
         }
     }
-
 
     // MARK: - Actions
 

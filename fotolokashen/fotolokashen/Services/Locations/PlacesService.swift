@@ -1,5 +1,5 @@
-import Foundation
 import CoreLocation
+import Foundation
 
 /// Service for reverse geocoding coordinates to addresses
 class PlacesService {

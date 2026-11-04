@@ -1,5 +1,5 @@
-import SwiftUI
 import Kingfisher
+import SwiftUI
 
 /// Reusable view for displaying followers or following list with pagination
 struct FollowListView: View {

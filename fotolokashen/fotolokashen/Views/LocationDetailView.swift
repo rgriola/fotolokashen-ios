@@ -305,8 +305,6 @@ struct LocationDetailView: View {
         }
     }
 
-
-
     // =========================================================================
     // MARK: - Location Header Section
     // =========================================================================
@@ -550,8 +548,6 @@ struct LocationDetailView: View {
             Spacer()
         }
     }
-
-
 
     // =========================================================================
     // MARK: - Visibility Helpers (presentation-only)

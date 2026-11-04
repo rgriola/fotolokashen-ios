@@ -1,5 +1,5 @@
-import SwiftUI
 import Kingfisher
+import SwiftUI
 
 /// Drop-in replacement for AsyncImage with Kingfisher disk + memory caching.
 ///

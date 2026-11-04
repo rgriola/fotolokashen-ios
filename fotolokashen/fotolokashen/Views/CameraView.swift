@@ -23,7 +23,7 @@ struct CameraView: View {
     @State private var pinchBaseZoom: CGFloat = 1.0
 
     // Focus indicator
-    @State private var focusPoint: CGPoint? = nil
+    @State private var focusPoint: CGPoint?
     @State private var showFocusSquare = false
     @State private var focusHUDTask: Task<Void, Never>?
 

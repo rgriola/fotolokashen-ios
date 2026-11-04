@@ -1,5 +1,5 @@
-import SwiftUI
 import MapKit
+import SwiftUI
 
 /// Floating search bar + suggestions list for searching Apple's map data (places,
 /// addresses, POIs) on the Map tab — separate from LocationListView's saved-locations search.

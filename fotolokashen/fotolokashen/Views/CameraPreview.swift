@@ -1,5 +1,5 @@
-import SwiftUI
 import AVFoundation
+import SwiftUI
 
 /// Camera preview layer wrapper for SwiftUI
 struct CameraPreview: UIViewRepresentable {

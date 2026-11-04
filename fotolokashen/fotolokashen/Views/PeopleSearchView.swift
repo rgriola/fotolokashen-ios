@@ -1,5 +1,5 @@
-import SwiftUI
 import Kingfisher
+import SwiftUI
 
 /// People search and discovery view with tabs for Followers, Following, and Discover
 ///

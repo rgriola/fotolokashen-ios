@@ -10,7 +10,7 @@ struct PhotoGridView: View {
     let onRemovePhoto: (UUID) -> Void
     /// Optional: invoked when the user taps the retry button on a failed photo.
     /// Only shown when `photo.stage == .failed(_, retryable: true)`.
-    var onRetryPhoto: ((UUID) -> Void)? = nil
+    var onRetryPhoto: ((UUID) -> Void)?
 
     /// Thumbnail size — square, fixed, fits ~4 on a standard screen width
     private let thumbSize: CGFloat = 80
